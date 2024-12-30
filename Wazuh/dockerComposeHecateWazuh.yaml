@@ -1,0 +1,18 @@
+services:
+  caddy:
+    image: caddy:latest
+    container_name: hecate_wazuh
+    restart: always
+    ports:
+      - "80:80"    # HTTP
+      - "443:443"  # HTTPS
+    volumes:
+      - ./Caddyfile_wazuh:/etc/caddy/Caddyfile  # Caddy configuration file
+      - caddy_data:/data                       # Caddy data (Let's Encrypt, etc.)
+      - caddy_config:/config                   # Caddy internal configurations
+      - ./logs:/var/log/caddy_wazuh            # Persist logs to the host
+    environment:
+      - CADDY_LOG=/var/log/caddy/caddy.log
+volumes:
+  caddy_data:
+  caddy_config:
