@@ -3,7 +3,7 @@
 }
 
 cybermonkey.dev {
-    reverse_proxy http://100.65.138.128:8080 http://100.68.160.40:8080 http://100.88.69.11:8080 {
+    reverse_proxy http://100.65.138.128:9080 http://100.68.160.40:9080 http://100.88.69.11:9080 {
     }
 
     log {
