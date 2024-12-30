@@ -1,6 +1,5 @@
 {
-    email help@cybermonkey.net.au  # Email for Let's Encrypt
-    auto_https on                 # Automatically enable HTTPS
+    email help@cybermonkey.net.au  # Email for Let's Encrypt 
 }
 
 cybermonkey.dev {
