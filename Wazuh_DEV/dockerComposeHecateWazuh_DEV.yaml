@@ -1,5 +1,5 @@
 services:
-  hecate_wazuh:
+  hecate_wazuh_DEV:
     image: caddy:latest
     container_name: hecate_wazuh
     restart: always
@@ -7,7 +7,7 @@ services:
       - "80:80"    # HTTP
       - "443:443"  # HTTPS
     volumes:
-      - ./Caddyfile_wazuh:/etc/caddy/Caddyfile  # Caddy configuration file for Wazuh
+      - ./Caddyfile_wazuh_DEV:/etc/caddy/Caddyfile  # Caddy configuration file for Wazuh
       - caddy_data_wazuh:/data                 # Separate Caddy data for Wazuh
       - caddy_config_wazuh:/config             # Separate Caddy config for Wazuh
       - ./logs_wazuh:/var/log/caddy_wazuh      # Persist logs for Wazuh to the host
