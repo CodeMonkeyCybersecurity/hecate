@@ -3,7 +3,7 @@
 }
 
 wazuh.cybermonkey.dev {
-    reverse_proxy http://100.96.152.16:5601  # Proxy to Wazuh Dashboard
+    reverse_proxy https://100.96.152.16:5601  # Proxy to Wazuh Dashboard
     log {
         output file /var/log/caddy_wazuh/hecate-access.log
         format json
