@@ -4,8 +4,6 @@
 
 cybermonkey.dev {
     reverse_proxy http://100.65.138.128:8080 {
-        health_uri /healthz        # Optional: Check health if your app provides it
-        health_interval 10s       # Optional: Periodic health checks
     }
 
     log {
