@@ -1,0 +1,37 @@
+services:
+  hecate_wazuh:
+    image: caddy:latest
+    container_name: hecate_wazuh
+    restart: always
+    ports:
+      - "80:80"    # HTTP
+      - "443:443"  # HTTPS
+    volumes:
+      - ./Caddyfile_wazuh:/etc/caddy/Caddyfile  # Caddy configuration file for Wazuh
+      - caddy_data_wazuh:/data                 # Separate Caddy data for Wazuh
+      - caddy_config_wazuh:/config             # Separate Caddy config for Wazuh
+      - ./logs_wazuh:/var/log/caddy_wazuh      # Persist logs for Wazuh to the host
+    environment:
+      - CADDY_LOG=/var/log/caddy/caddy.log
+
+  hecate_DEV:
+    image: caddy:latest
+    container_name: hecate_DEV
+    restart: always
+    ports:
+      - "8080:80"  # HTTP on a different port to avoid conflicts
+      - "8443:443" # HTTPS on a different port to avoid conflicts
+    volumes:
+      - ./Caddyfile_DEV:/etc/caddy/Caddyfile  # Caddy configuration file for DEV
+      - ./site:/usr/share/caddy              # HTML site files for DEV
+      - caddy_data_dev:/data                 # Separate Caddy data for DEV
+      - caddy_config_dev:/config             # Separate Caddy config for DEV
+      - ./logs_dev:/var/log/caddy            # Persist logs for DEV to the host
+    environment:
+      - CADDY_LOG=/var/log/caddy/caddy_DEV.log
+
+volumes:
+  caddy_data_wazuh:
+  caddy_config_wazuh:
+  caddy_data_dev:
+  caddy_config_dev:
