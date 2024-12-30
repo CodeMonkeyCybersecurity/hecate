@@ -22,7 +22,7 @@ services:
       - "8080:80"  # HTTP on a different port to avoid conflicts
       - "8443:443" # HTTPS on a different port to avoid conflicts
     volumes:
-      - ./Caddyfile_DEV:/etc/caddy/Caddyfile  # Caddy configuration file for DEV
+      - ./Caddyfile_wazuh:/etc/caddy/Caddyfile  # Caddy configuration file for DEV
       - ./site:/usr/share/caddy              # HTML site files for DEV
       - caddy_data_dev:/data                 # Separate Caddy data for DEV
       - caddy_config_dev:/config             # Separate Caddy config for DEV
