@@ -1,0 +1,17 @@
+{
+    email help@cybermonkey.net.au  # Email for Let's Encrypt 
+}
+
+cybermonkey.sh {
+    reverse_proxy http://100.65.138.128:8080 http://100.68.160.40:8080 http://100.88.69.11:8080 {
+    }
+
+    log {
+        output file /var/log/caddy/hecate-access.log
+        format json
+    }
+
+    tls {
+        on_demand  # Generate TLS certificates as needed
+    }
+}
