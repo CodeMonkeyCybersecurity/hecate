@@ -5,6 +5,7 @@ metadata:
   namespace: ingress
   annotations:
     metallb.universe.tf/address-pool: default  # Optional, if multiple pools exist
+    linkerd.io/inject: enabled
   labels:
     app: nginx-ingress
 spec:
@@ -28,6 +29,12 @@ spec:
                 - cybermonkey-dev
                 - cybermonkey-net
                 - cybermonkey-sh
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                app: nginx-ingress
+            topologyKey: kubernetes.io/hostname
       containers:
       - name: hecate-ingress-controller
         image: registry.k8s.io/ingress-nginx/controller:v1.11.2

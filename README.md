@@ -64,6 +64,12 @@ Keep monitoring the ingress logs to ensure there are no errors or misconfigurati
 kubectl logs -n ingress deployment/hecate-ingress-controller
 ```
 
+Check the metallb-system configuration:
+```
+microk8s kubectl describe configmap config -n metallb-system
+```
+
+
 ## Complaints, compliments, confusion and other communications:
 
 Secure email: [git@cybermonkey.net.au](mailto:git@cybermonkey.net.au)  
