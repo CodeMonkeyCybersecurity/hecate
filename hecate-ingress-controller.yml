@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hecate-ingress-controller
+  namespace: ingress
+  annotations:
+    metallb.universe.tf/address-pool: default  # Optional, if multiple pools exist
+  labels:
+    app: nginx-ingress
+spec:
+  type: LoadBalancer
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-ingress
+  template:
+    metadata:
+      labels:
+        app: nginx-ingress
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values:
+                - cybermonkey-dev
+                - cybermonkey-net
+                - cybermonkey-sh
+      containers:
+      - name: hecate-ingress-controller
+        image: registry.k8s.io/ingress-nginx/controller:v1.11.2
+        args:
+        - /hecate-ingress-controller
+        - --configmap=$(POD_NAMESPACE)/nginx-load-balancer-conf
+        - --tcp-services-configmap=$(POD_NAMESPACE)/nginx-ingress-tcp-conf
+        - --udp-services-configmap=$(POD_NAMESPACE)/nginx-ingress-udp-conf
+        - --ingress-class=public
+        - --publish-status-address=188.245.110.59
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        - name: https
+          containerPort: 443
+          protocol: TCP
+        - name: metrics
+          containerPort: 10254
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 10254
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 10254
+          initialDelaySeconds: 0
+          timeoutSeconds: 5
