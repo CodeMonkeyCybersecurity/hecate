@@ -8,7 +8,6 @@ metadata:
   labels:
     app: nginx-ingress
 spec:
-  type: LoadBalancer
   replicas: 3
   selector:
     matchLabels:
