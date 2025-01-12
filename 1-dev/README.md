@@ -281,6 +281,37 @@ server {
 }
 ```
 
+To keep sensitive values like the backend IP, port number, and hostnames confidential while using Docker Compose, you can use environment variables and a template engine to dynamically inject these values into your nginx.conf. Here’s how you can achieve that securely:
+
+1. Use Environment Variables
+
+Store sensitive values in an .env file and reference them in your docker-compose.yaml.
+
+Create an .env file **on the remote proxy server itself**
+
+Add sensitive values to an .env file. This will not be committed to git as `*.env` has been added to the `.gitignore`:
+```
+cd $HOME/hecate/1-dev
+nano .env
+```
+
+Copy this template and paste it into your new .env file
+```
+# .env
+BACKEND_IP=<backend IP> # must be reachable from INSIDE the hecate docker container. If using tailscale, will look something like: 100.xxx.yyy.zzz)
+BACKEND_PORT=<backend port> # must be reachable from INSIDE the hecate docker container, eg. 8080)
+SERVER_NAMES=localhost <local-hostname> <DNS name> # eg. if using tailscale, this will look something like 'localhost domain-com domain.com'
+```
+
+A completed example might look something like 
+```
+# .env
+BACKEND_IP=100.xxx.yyy.zzz
+BACKEND_PORT=8080
+SERVER_NAMES=localhost domain-com domain.com
+```
+
+
 ### If you're adding Wazuh 
 Your nginx.conf file needs to be:
 ```
