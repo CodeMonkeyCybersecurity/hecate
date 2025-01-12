@@ -48,24 +48,24 @@ See the diagram below for clarification on how this separation of infrastructure
 
 ```
                          ┌───────────────────────────┐
-                         │         Clients           │
-                         │ (User Browsers, Apps, etc)│
-                         └────────────┬──────────────┘
+                         │         Clients           │    # This is how your cloud instance will be
+                         │ (User Browsers, Apps, etc)│    # accessed. Usually a browser.
+                         └────────────┬──────────────┘ 
                                       │
                                       ▼
                          ┌───────────────────────────┐
-                         │       DNS Resolution      │
-                         │ (domain.com,           |
-                         | cybermonkey.net.au, etc.) │
+                         │       DNS Resolution      │    # This needs to be set up
+                         │ (domain.com,              |    # with your cloud provider or DNS broker, eg.
+                         | cybermonkey.net.au, etc.) │    # GoDaddy, Cloudflare, Hetzner, etc.
                          └────────────┬──────────────┘
                                       │
                                       ▼
             **This your remote server (reverse proxy/proxy/cloud instance)**
-                           ┌─────────────────┐
-                           │   Reverse Proxy │
-                           │ (NGINX, Caddy,  │
-                           │   Ingress, etc) │
-                           └───┬─────────────┘
+                           ┌─────────────────┐    
+                           │   Reverse Proxy │    # This is what we are setting up `hecate`.
+                           │ (NGINX, Caddy,  │    # All your traffic between the internet and
+                           │   Ingress, etc) │    # the backend servers gets router through
+                           └───┬─────────────┘    # here.
                                │
       ┌────────────────────────┼─────────────────────────┐
       │                        │                         │
@@ -73,25 +73,21 @@ See the diagram below for clarification on how this separation of infrastructure
       **These are your local servers (backend/virtual hosts)**
 ┌──────────────┐       ┌──────────────┐          ┌──────────────┐
 │  Backend 1   │       │  Backend 2   │          │  Backend 3   │
-│  (backend1)  │       │  (backend2)  │          │  (backend3)  │ # If using tailscale, these are the magicDNS hostnames
-│  ┌────────┐  │       │  ┌────────┐  │          │  ┌────────┐  │
-│  │ Service│  │       │  │ Service│  │          │  │ Service│  │
-│  │ Pod/   │  │       │  │ Pod/   │  │          │  │ Pod/   │  │
-│  │ Docker │  │       │  │ Docker │  │          │  │ Docker │  │
-│  │  (eg.  │  │       │  │  (eg.  │  │          │  │  (eg.  │  │
-│  │Website)│  │       │  │ Wazuh) │  │          │  │Mailcow)│  │
-│  └────────┘  │       │  └────────┘  │          │  └────────┘  │
-└──────────────┘       └──────────────┘          └──────────────┘
+│  (backend1)  │       │  (backend2)  │          │  (backend3)  │    # If using tailscale,
+│  ┌────────┐  │       │  ┌────────┐  │          │  ┌────────┐  │    # these are the magicDNS hostnames.
+│  │ Service│  │       │  │ Service│  │          │  │ Service│  │    # For setting up a demo website instance, 
+│  │ Pod/   │  │       │  │ Pod/   │  │          │  │ Pod/   │  │    # see our `helen` repository
+│  │ Docker │  │       │  │ Docker │  │          │  │ Docker │  │    # To set up Wazuh, check out
+│  │  (eg.  │  │       │  │  (eg.  │  │          │  │  (eg.  │  │    # eos/legacy/wazuh/README.md.
+│  │Website)│  │       │  │ Wazuh) │  │          │  │Mailcow)│  │    #
+│  └────────┘  │       │  └────────┘  │          │  └────────┘  │    #
+└──────────────┘       └──────────────┘          └──────────────┘    #
 ```
 
 ### 1. Clone the Repository
 
 Clone this repository to your server:
 ```
-su
-umask
-# 0022 <- Verify it is 0022
-cd /opt
 git clone codeMonkeyCybersecurity/hecate
 cd $HOME/hecate/1-dev
 ```
