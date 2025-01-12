@@ -44,10 +44,6 @@ These two computers need to both be set up. Instructions relating to the reverse
 
 **On your remote server (reverse proxy/proxy/cloud instance)**
 
-Instructions relating to the local backend server will have the subheading:
-
-**On your local server (backend/virtual host)**
-
 There are several reasons why we have split the two roles here:
 * to keep cloud costs to a minimum by running all the heavy workloads on your own computers/servers
 * to not connect your home network to the internet by making sure all traffic designed for your website/web app is proxied through your cloud instance reverse proxy. If this is done correctly, this will mean that the only part of your setup directly exposed to the internet is the part controlled by the cloud provider.
@@ -82,11 +78,13 @@ See the diagram below for clarification on how this separation of infrastructure
       **These are your local servers (backend/virtual hosts)**
 ┌──────────────┐       ┌──────────────┐          ┌──────────────┐
 │  Backend 1   │       │  Backend 2   │          │  Backend 3   │
-│   (vhost5)   │       │   (vhost7)   │          │   (vhost11)  │
+│  (backend1)  │       │  (backend2)  │          │  (backend3)  │ # If using tailscale, these are the magicDNS hostnames
 │  ┌────────┐  │       │  ┌────────┐  │          │  ┌────────┐  │
 │  │ Service│  │       │  │ Service│  │          │  │ Service│  │
 │  │ Pod/   │  │       │  │ Pod/   │  │          │  │ Pod/   │  │
 │  │ Docker │  │       │  │ Docker │  │          │  │ Docker │  │
+│  │  (eg.  │  │       │  │  (eg.  │  │          │  │  (eg.  │  │
+│  │Website)│  │       │  │ Wazuh) │  │          │  │Mailcow)│  │
 │  └────────┘  │       │  └────────┘  │          │  └────────┘  │
 └──────────────┘       └──────────────┘          └──────────────┘
 ```
@@ -99,8 +97,8 @@ su
 umask
 # 0022 <- Verify it is 0022
 cd /opt
-git clone codeMonkeyCybersecurity/helen
-cd helen
+git clone codeMonkeyCybersecurity/hecate
+cd $HOME/hecate/1-dev
 ```
 
 Below is a simple, reliable approach to obtain SSL certificates with Certbot and use them in an NGINX Docker container—without battling volume-mount issues for Let’s Encrypt directories. This method involves two separate steps:
@@ -111,7 +109,6 @@ Below is a simple, reliable approach to obtain SSL certificates with Certbot and
 By doing it this way, you avoid dealing with /var/lib/letsencrypt or /etc/letsencrypt inside Docker. Once you have your certificates on the host, you simply share them with the NGINX container.
 
 ## 1.	Stop Any Services on Port 80
-**On your remote server (reverse proxy/proxy/cloud instance)**
 Stop or remove any containers or services (like NGINX) that are currently listening on port 80:
 ```
 docker-compose down
@@ -120,7 +117,6 @@ sudo systemctl stop nginx
 This is necessary because Certbot’s standalone mode needs to bind port 80.
 
 ## 2.	Install Certbot on the Remote Host
-**On your remote server (reverse proxy/proxy/cloud instance)**
 On Ubuntu/Debian:
 ```
 sudo apt update
@@ -128,7 +124,6 @@ sudo apt install certbot
 ```
 
 ## 3.	Obtain the Certificates (Standalone Mode)
-**On your remote server (reverse proxy/proxy/cloud instance)**
 Run Certbot to generate certificates using its built-in standalone server:
 ```
 sudo certbot certonly --standalone \
@@ -171,16 +166,19 @@ You should see:
 ## 5.	Create a Local Directory for Docker
 Make a local directory in your project for the certs:
 ```
+cd $HOME/hecate/1-dev
 mkdir -p certs
 ```
 Copy your certificates into it:
 ```
+cd $HOME/hecate/1-dev
 sudo cp /etc/letsencrypt/live/domain.com/fullchain.pem certs/
 sudo cp /etc/letsencrypt/live/domain.com/privkey.pem certs/
 ```
 
 Adjust permissions to be readable:
 ```
+cd $HOME/hecate/1-dev
 sudo chmod 644 certs/fullchain.pem
 sudo chmod 600 certs/privkey.pem
 ```
@@ -188,102 +186,104 @@ sudo chmod 600 certs/privkey.pem
 ### If you're adding Wazuh 
 Copy your certificates into it:
 ```
+cd $HOME/hecate/1-dev
 sudo cp /etc/letsencrypt/live/wazuh.domain.com/fullchain.pem certs/wazuh.fullchain.pem
 sudo cp /etc/letsencrypt/live/wazuh.domain.com/privkey.pem certs/wazuh.privkey.pem
 ```
 
 Adjust permissions to be readable:
 ```
+cd $HOME/hecate/1-dev
 sudo chmod 644 certs/wazuh.fullchain.pem
 sudo chmod 600 certs/wazuh.privkey.pem
 ```
 
 ### If you're adding Mailcow 
-**On your remote server (reverse proxy/proxy/cloud instance)**
 Copy your certificates into it:
 ```
+cd $HOME/hecate/1-dev
 sudo cp /etc/letsencrypt/live/mail.domain.com/fullchain.pem certs/mail.fullchain.pem
 sudo cp /etc/letsencrypt/live/mail.domain.com/privkey.pem certs/mail.privkey.pem
 ```
 
 Adjust permissions to be readable:
 ```
+cd $HOME/hecate/1-dev
 sudo chmod 644 certs/mail.fullchain.pem
 sudo chmod 600 certs/mail.privkey.pem
 ```
 
-**On your local server (backend/virtual host)**
-Install mailcow with:
-```
-su
-umask
-# 0022 # <- Verify it is 0022
-netstat -tulpn | grep -E -w '25|80|110|143|443|465|587|993|995|4190' # check you can receive traffic on the necessary ports
-cd /opt
-git clone https://github.com/mailcow/mailcow-dockerized
-cd mailcow-dockerized
-./generate_config.sh # put in appropriate info
-docker compose up -d
-```
-
-
-Full and up to date instructions on https://docs.mailcow.email/getstarted/install/#install-mailcow 
-
 
 ## 6.	Use the Certificates in Docker
-**On your remote server (reverse proxy/proxy/cloud instance)**
 
+### For a webpage
 In your docker-compose.yml, mount the local certs folder into the container:
 
 ```
+# docker-compose.yaml
 services:
   nginx:
-    image: nginx:alpine
-    container_name: helen-dev
+    image: nginx
+    container_name: hecate-dev
     volumes:
-      - ./:/usr/share/nginx/html:ro # Shared webroot for validation
       - ./nginx.conf:/etc/nginx/nginx.conf:ro # Custom NGINX configuration
       - ./certs:/etc/nginx/certs:ro  # SSL certificates
     ports:
       - "80:80"
       - "443:443"
-      - "1514:1514"
-      - "1515:1515"
     restart: always
 ```
 
 
 
 ## 7.	Configure nginx.conf
-**On your remote server (reverse proxy/proxy/cloud instance)**
 
 Point to the copied certs in /etc/nginx/certs:
 
-### For having the webpage set up only
+### For a webpage
 ```
-server {
-    listen 80;
-    server_name domain.com;
-    return 301 https://$host$request_uri;
+worker_processes auto;
+
+events {
+    worker_connections 1024;
 }
 
-server {
-    listen 443 ssl;
-    server_name domain.com;
+http {
+    include mime.types;
+    default_type application/octet-stream;
 
-    ssl_certificate /etc/nginx/certs/fullchain.pem;
-    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    error_log /var/log/nginx/error.log debug;
+    access_log /var/log/nginx/access.log;
 
-    location / {
-        root /usr/share/nginx/html;
-        index index.html;
+    server {
+        listen 80 default_server;
+        server_name ${SERVER_NAMES};
+
+        # Redirect all HTTP traffic to HTTPS
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443 ssl default_server;
+        server_name ${SERVER_NAMES};
+
+        ssl_certificate /etc/nginx/certs/fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+        location / {
+            proxy_pass http://${BACKEND_IP}:${BACKEND_PORT};
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
     }
 }
 ```
 
-To keep sensitive values like the backend IP, port number, and hostnames confidential while using Docker Compose, you can use environment variables and a template engine to dynamically inject these values into your nginx.conf. Here’s how you can achieve that securely:
 
-1. Use Environment Variables
+### Use Environment Variables
+To keep sensitive values like the backend IP, port number, and hostnames confidential while using Docker Compose, you can use environment variables and a template engine to dynamically inject these values into your nginx.conf. Here’s how you can achieve that securely:
 
 Store sensitive values in an .env file and reference them in your docker-compose.yaml.
 
@@ -300,7 +300,7 @@ Copy this template and paste it into your new .env file
 # .env
 BACKEND_IP=<backend IP> # must be reachable from INSIDE the hecate docker container. If using tailscale, will look something like: 100.xxx.yyy.zzz)
 BACKEND_PORT=<backend port> # must be reachable from INSIDE the hecate docker container, eg. 8080)
-SERVER_NAMES=localhost <local-hostname> <DNS name> # eg. if using tailscale, this will look something like 'localhost domain-com domain.com'
+SERVER_NAMES=localhost <proxy-hostname> <DNS name> # eg. if using tailscale, this will look something like 'localhost domain-com domain.com'
 ```
 
 A completed example might look something like 
@@ -533,7 +533,6 @@ http {
 ```
 
 ## 8.	Start NGINX
-**On your remote server (reverse proxy/proxy/cloud instance)**
 With certificates in place and nginx.conf updated, start your container:
 ```
 docker-compose down
@@ -559,7 +558,6 @@ You should now test your endpoints. Using a **private browsing window**, navigat
 Below are a few important security considerations:
 
 ### Firewall
-**On your remote server (reverse proxy/proxy/cloud instance)**
 * On the remote proxy server, allow inbound on 80/443 (for web) + the mail ports (993, 587, 25 if needed), 1514, 1515 for Wazuh.
 
 ```
