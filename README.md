@@ -86,6 +86,13 @@ This section outlines what cloud-native web applications are currently supported
 | Security Onion  | :x:                | :x:                | [Security monitoring](https://securityonionsolutions.com/) |
 | Restic API      | :x:                | :x:                | [Backups](https://restic.net/) |
 | Keycloak        | :x:                | :x:                | [Identity and access management](https://www.keycloak.org/) |
+| Keycloak        | :x:                | :x:                | [Identity and access management](https://www.keycloak.org/) |
+| Theia        | :x:                | :x:                | [IDE](https://theia-ide.org/) |
+| Matomo        | :x:                | :x:                | [Privacy focussed web analytics](https://matomo.org/) |
+| MinIO        | :x:                | :x:                | [S3 compatible object storage](https://min.io/) |
+| Penpot        | :x:                | :x:                | [UX design](https://github.com/penpot/penpot) |
+
+More to come regarding distributed, highly available, and kubernetes-based deployments.
 
 
 ## Project Structure
