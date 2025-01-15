@@ -148,7 +148,7 @@ For these instructions, a remote cloud-based front end proxy/reverse proxy serve
 * Docker and Docker Compose installed on your server 
 * Certbot installed on your reverse proxy server
 
-### Isn't it easier to just deploy the whole app on one computer?
+### Isn't it easier to just deploy the whole app on one node?
 There are several reasons why we have split the deployment of the web app into two roles:
 * to keep cloud costs to a minimum by running all the heavy workloads on your own computers/servers
 * to not connect your home network to the internet by making sure all traffic designed for your website/web app is proxied through your cloud instance reverse proxy. If this is done correctly, this will mean that the only part of your setup directly exposed to the internet is the part controlled by the cloud provider.
@@ -197,7 +197,10 @@ sudo certbot certonly --standalone \
 ```
 This will spin up a temporary web server on port 80. Certbot will place certificates in /etc/letsencrypt/live/domain.com/.
 
-### If you're adding Wazuh 
+### Certificates for sub-domains
+Each application you intend to install will be served on its own subdomain. Each subdomain will need its own TLS certificate. Below are examples for requesting certificates for Wazuh and Mailcow, but these can be generalised to include `any.domain.com` for any Web app you chose.
+
+### Example 1: If you're adding Wazuh 
 Run Certbot to generate certificates using its built-in standalone server:
 ```
 sudo certbot certonly --standalone \
@@ -206,7 +209,7 @@ sudo certbot certonly --standalone \
     --agree-tos
 ```
 
-### If you're adding Mailcow 
+### Example 2: If you're adding Mailcow 
 Run Certbot to generate certificates using its built-in standalone server:
 ```
 sudo certbot certonly --standalone \
@@ -221,11 +224,20 @@ After a successful run, check:
 sudo ls -l /etc/letsencrypt/live/domain.com/
 ```
 
-You should see:
+If you are deploying sub-domains, do this for each of them too. For example:
+```
+sudo ls -l /etc/letsencrypt/live/wazuh.domain.com/
+sudo ls -l /etc/letsencrypt/live/mail.domain.com/
+...
+sudo ls -l /etc/letsencrypt/live/any.domain.com/
+```
+
+In each directory, you should see:
 * cert.pem
 * chain.pem
 * fullchain.pem
 * privkey.pem
+
 
 ## 5.	Create a Local Directory for Docker
 Make a local directory in your project for the certs:
@@ -281,8 +293,7 @@ sudo chmod 600 certs/mail.privkey.pem
 ## 6.	Use the Certificates in Docker
 
 ### For a webpage
-In your docker-compose.yml, mount the local certs folder into the container:
-
+In your docker-compose.yml, mount the local certs folder into the container and point to the copied certs in /etc/nginx/certs:
 ```
 # docker-compose.yaml
 services:
@@ -299,8 +310,7 @@ services:
 ```
 
 ## 7.	Configure nginx.conf
-
-Point to the copied certs in /etc/nginx/certs:
+This is where the actual custom configuration NGINX will adopt is set 
 
 ### For a webpage
 ```
@@ -347,17 +357,17 @@ http {
 ### Use Environment Variables
 To keep sensitive values like the backend IP, port number, and hostnames confidential while using Docker Compose, you can use environment variables and a template engine to dynamically inject these values into your nginx.conf. Here’s how you can achieve that securely:
 
-Store sensitive values in an .env file and reference them in your docker-compose.yaml.
+Store sensitive values in an .env file and reference them in your docker-compose.yaml. By default, these will not be committed to git as `*.env` has been added to the `.gitignore`
 
-Create an .env file **on the reverse proxy server itself**
+We have created an example env.template for you to use. For each application that you deploy, you need to delete the comment out of the file. The web page configuration comes uncommented by default, but the variables for your specific environment (ie. frontend IP, backend IP, domain and hostnames, ports) will still need to be manually set by you. 
 
-Add sensitive values to an .env file. This will not be committed to git as `*.env` has been added to the `.gitignore`:
+To set your specific environment variables 
 ```
 cd $HOME/hecate/1-dev
 nano .env
 ```
 
-Copy this template and paste it into your new .env file.
+A sample from the .env file looks like 
 ```
 # .env
 BACKEND_IP=<backend IP> # must be reachable from INSIDE the hecate docker container. If using tailscale, will look something like: 100.xxx.yyy.zzz)
@@ -365,58 +375,41 @@ BACKEND_PORT=<backend port> # must be reachable from INSIDE the hecate docker co
 SERVER_NAMES=localhost <proxy-hostname> <DNS name> # eg. if using tailscale, this will look something like 'localhost domain-com domain.com'
 ```
 
-Examples of templates for each application could include:
+Once you have set the variables you want, you need to rename the the env.template file
+```
+mv env.template .env
+```
+
+Examples of templates for each application could include and their corresponding nginx.conf could include:
 
 ### Example 1: If you're adding Wazuh 
-Your nginx.conf file needs to be:
 ```
-server {
-    listen 80;
-    server_name domain.com;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name domain.com;
-
-    ssl_certificate /etc/nginx/certs/fullchain.pem;
-    ssl_certificate_key /etc/nginx/certs/privkey.pem;
-
-    location / {
-        root /usr/share/nginx/html;
-        index index.html;
+...
+    #--------------------------------------------------
+    # 2) WAZUH: wazuh.domain.com
+    #--------------------------------------------------
+    server {
+        listen 80;
+        server_name wazuh.domain.com;
+        return 301 https://$host$request_uri;
     }
-}
 
-server {
-    listen 80;
-    server_name wazuh.domain.com;
-    return 301 https://$host$request_uri;  # Redirect HTTP to HTTPS
-}
+    server {
+        listen 443 ssl;
+        server_name wazuh.domain.com;
 
-server {
-    listen 443 ssl;
-    server_name wazuh.domain.com;
+        ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
 
-    # SSL Certificate settings
-    ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
-    ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
-
-    location / {
-        # Forward to your Wazuh Dashboard (on IP ww.xx.yy.zz port 5601)
-        # If it's HTTP on the backend:
-        proxy_pass https://ww.xx.yy.zz:5601/;
-
-        # If the backend is HTTPS with self-signed cert:
-        # proxy_pass https://ww.xx.yy.zz:5601/;
-        # proxy_ssl_verify off;
-
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        # Proxy pass to Kibana interface on local Wazuh
+        location / {
+            proxy_pass https://ww.xx.yy.zz:5601/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
     }
-}
+...
 ```
 
 A completed .env example might look something like 
@@ -432,11 +425,14 @@ Make sure the `proxy_pass https://ww.xx.yy.zz:5601/;` IP address values given ab
 
 ### Example 2: If you're adding mailcow
 ```
+...
 worker_processes  auto;
 
 events {
     worker_connections  1024;
 }
+
+...
 
 ###
 # STREAM BLOCK for mail protocols
@@ -535,30 +531,7 @@ http {
         }
     }
 
-    #--------------------------------------------------
-    # 2) WAZUH: wazuh.domain.com
-    #--------------------------------------------------
-    server {
-        listen 80;
-        server_name wazuh.domain.com;
-        return 301 https://$host$request_uri;
-    }
-
-    server {
-        listen 443 ssl;
-        server_name wazuh.domain.com;
-
-        ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
-        ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
-
-        # Proxy pass to Kibana interface on local Wazuh
-        location / {
-            proxy_pass https://ww.xx.yy.zz:5601/;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-    }
+...
 
     #--------------------------------------------------
     # 3) MAILCOW WEB UI: mail.domain.com
@@ -589,6 +562,7 @@ http {
         }
     }
 }
+...
 ```
 
 ## 8.	Start NGINX
@@ -599,7 +573,6 @@ docker-compose up -d
 ```
 
 You should now test your endpoints. Using a **private browsing window**, navigate to:
-
 
 ### For your website
 * http://domain.com/ → should redirect to HTTPS.
