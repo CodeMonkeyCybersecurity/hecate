@@ -1,6 +1,6 @@
 services:
   nginx:
-    image: nginx:alpine
+    image: nginx
     container_name: helen-stage
     volumes:
       - ./:/usr/share/nginx/html:ro # Shared webroot for validation
