@@ -1,7 +1,7 @@
 services:
   nginx:
     image: nginx
-    container_name: helen-stage
+    container_name: hecate-stage
     volumes:
       - ./:/usr/share/nginx/html:ro # Shared webroot for validation
       - ./nginx.conf:/etc/nginx/nginx.conf:ro # Custom NGINX configuration
