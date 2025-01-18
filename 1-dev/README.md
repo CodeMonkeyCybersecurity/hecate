@@ -597,12 +597,10 @@ spec:
 EOF
 ```
 
-## Apply
+### Understanding our Current Traefik Setup in K3S
 Since we installed the basic K3S distribution, which includes Traefik by default, we need to adjust the existing Traefik configuration differently to add additional entrypoints for TCP (Stream) traffic on ports 1515 and 1514.
 
 We need to go through the necessary steps to modify Traefik’s configuration within our K3S cluster to support our Hecate-dev gateway requirements.
-
-### Understanding our Current Traefik Setup in K3S
 
 K3S comes bundled with Traefik as the default Ingress Controller, installed in the kube-system namespace. To customize Traefik (e.g., adding new entrypoints for TCP traffic), we need to modify its existing configuration.
 
@@ -707,3 +705,66 @@ Open your browser and navigate to http://<hostname>:9000/dashboard/.
 
 ##### Check EntryPoints:
 In the dashboard, navigate to the “Entrypoints” section to confirm that wazuh1515 and wazuh1514 are listed and active.
+
+
+## Apply
+Applying and Verifying Your Kubernetes Manifests
+
+Now that Traefik is configured to handle both HTTP/S and TCP traffic, proceed to apply your remaining Kubernetes manifests.
+
+### Navigate to Your Manifests Directory:
+```
+cd $HOME/hecate/1-dev/manifests/
+```
+
+### Apply TLS Secrets:
+
+Ensure you’ve already created and applied hecate-tls.yaml and wazuh-tls.yaml as discussed earlier.
+```
+kubectl apply -f secrets/hecate-tls.yaml
+kubectl apply -f secrets/wazuh-tls.yaml
+```
+
+### Apply Deployments and Services:
+#### Hecate Web Deployment and Service:
+```
+kubectl apply -f deployments/hecate-deployment.yaml
+kubectl apply -f services/hecate-service.yaml
+```
+
+#### Hecate Wazuh Deployment and Service:
+```
+kubectl apply -f deployments/wazuh-deployment.yaml
+kubectl apply -f services/wazuh-service.yaml
+```
+
+### Apply Ingress Resources:
+#### HTTP/S Ingress for Hecate:
+```
+kubectl apply -f ingress/hecate-ingress.yaml
+```
+
+#### HTTP/S Ingress for Wazuh:
+```
+kubectl apply -f ingress/wazuh-ingress.yaml
+```
+
+### Apply IngressRouteTCP Resources:
+
+As done previously, apply the TCP routes.
+```
+kubectl apply -f hecate-stage/manifests/ingressroute_tcp/ingressroute_tcp.yaml
+```
+
+### Verify All Resources Are Applied Correctly:
+#### Check Deployments:
+```
+kubectl get deployments
+```
+
+Expected output
+```
+NAME      READY   UP-TO-DATE   AVAILABLE   AGE
+hecate    1/1     1            1           5m
+wazuh     1/1     1            1           5m
+```
