@@ -598,4 +598,112 @@ EOF
 ```
 
 ## Apply
+Since we installed the basic K3S distribution, which includes Traefik by default, we need to adjust the existing Traefik configuration differently to add additional entrypoints for TCP (Stream) traffic on ports 1515 and 1514.
 
+We need to go through the necessary steps to modify Traefik’s configuration within our K3S cluster to support our Hecate-dev gateway requirements.
+
+### Understanding our Current Traefik Setup in K3S
+
+K3S comes bundled with Traefik as the default Ingress Controller, installed in the kube-system namespace. To customize Traefik (e.g., adding new entrypoints for TCP traffic), we need to modify its existing configuration.
+
+#### Verify Traefik Deployment:
+Run the following command to list Traefik-related resources. Let's do this in our `$HOME`, but create a new folder so we don't make a mess:
+```
+cd $HOME
+mkdir -p edittingTraefik
+cd edittingTraefik
+kubectl get all -n kube-system | grep traefik
+```
+
+Expected output (confirming that Traefik is running correctly within our cluster.):
+```
+...
+deployment.apps/traefik-57b79cf995-rl8kw   1/1     Running   0          55s
+service/traefik                          ClusterIP 10.43.232.190   <none>        9000/TCP,80/TCP,443/TCP   55s
+...
+```
+
+#### Adding Additional EntryPoints to Traefik
+To handle TCP (Stream) traffic on ports 1515 and 1514, you’ll need to define new entrypoints in Traefik’s configuration.
+
+##### Edit Traefik’s ConfigMap
+Traefik’s configuration in K3S is managed via a ConfigMap named traefik in the kube-system namespace. You’ll modify this ConfigMap to include the new TCP entrypoints. Retrieve the Existing ConfigMap:
+```
+kubectl get configmap traefik -n kube-system -o yaml > traefik-configmap.yaml
+```
+
+Let's back this up before openning the `traefik-configmap.yaml` file in your preferred text editor:
+```
+sudo cp traefik-configmap.yaml "$(date)-traefik-configmap.yaml.bak" # need sudo here because the .pem files should have limited access.
+```
+
+##### Edit the ConfigMap:
+```
+nano traefik-configmap.yaml
+```
+
+Add New EntryPoints:
+Locate the entryPoints section and add the new TCP entrypoints wazuh1515 and wazuh1514. Here’s an example of how to modify it:
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traefik
+  namespace: kube-system
+data:
+  traefik.yaml: |
+    entryPoints:
+      web:
+        address: ":80"
+      websecure:
+        address: ":443"
+      wazuh1515:
+        address: ":1515/tcp"
+      wazuh1514:
+        address: ":1514/tcp"
+
+    providers:
+      kubernetesCRD: {}
+      kubernetesIngress: {}
+
+    api:
+      insecure: true
+      dashboard: true
+
+    log:
+      level: DEBUG # This level of debugging is only appropraite for development servers.
+```
+Notes:
+* Ensure proper indentation as YAML is sensitive to spaces.
+* The entryPoints section now includes wazuh1515 and wazuh1514 listening on ports 1515 and 1514 respectively with the /tcp protocol.
+
+##### Apply the Updated ConfigMap:
+```
+kubectl apply -f traefik-configmap.yaml
+```
+
+##### Restart Traefik Pods to Apply Changes:
+After updating the ConfigMap, Traefik needs to reload its configuration. Restarting the Traefik pods ensures the new configuration is loaded.
+```
+kubectl rollout restart deployment/traefik -n kube-system
+```
+
+##### Verify Traefik Pods Are Running with Updated Configuration:
+Ensure that the Traefik pods are in the Running state without restarts indicating issues.
+```
+kubectl get pods -n kube-system | grep traefik
+```
+
+#### Confirm EntryPoints Are Active
+
+Access the Traefik dashboard to verify that the new entrypoints are active.
+##### Port-Forward to Access Dashboard:
+```
+kubectl port-forward service/traefik -n kube-system 9000:9000
+```
+
+##### Access Dashboard:
+Open your browser and navigate to http://<hostname>:9000/dashboard/.
+
+##### Check EntryPoints:
+In the dashboard, navigate to the “Entrypoints” section to confirm that wazuh1515 and wazuh1514 are listed and active.
