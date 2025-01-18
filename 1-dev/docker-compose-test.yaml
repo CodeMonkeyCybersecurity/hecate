@@ -109,85 +109,85 @@ services:
     #--------------------------------------------------
     # WEB: domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # ELK STACK: elk.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # ERPNEXT: erpnext.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # GRAFANA: grafana.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # JENKINS: jenkins.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # KEYCLOAK: keycloak.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # MAILCOW WEB UI: mail.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # MATTERMOST: mattermost.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # NEBULA: nebula.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # NEXTCLOUD: nextcloud.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # OPENSTACK: oc.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # RESTIC: restic.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # SECURITY ONION: soc.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
       && nginx -g 'daemon off;'"
 
     #--------------------------------------------------
     # WAZUH: wazuh.domain.com
     #--------------------------------------------------
-    sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
-      && nginx -g 'daemon off;'"
+      # sh -c "envsubst '\$BACKEND_IP \$BACKEND_PORT \$SERVER_NAMES' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+      # && nginx -g 'daemon off;'"
       
     restart: always
