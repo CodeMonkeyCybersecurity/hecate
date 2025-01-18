@@ -21,9 +21,8 @@ docker compose down
 
 We then [installed k3s](https://github.com/CodeMonkeyCybersecurity/eos/tree/main/legacy/k3s)
 
-
-## Development reorganisation
-### Reorganize project structure
+## Directory structure
+We need to reorganize project structure
 Our current directory structure:
 ```
 1-dev
@@ -85,7 +84,8 @@ cd manifests/
 mkdir -p secrets/ deployments/ ingress/ ingressroute_tcp/
 ```
 
-## Migrating our NGINX Configuration to Traefik
+## NGINX -> Traefik
+Migrate our NGINX Configuration to Traefik because this is k3s' default Gateway
 Given that Traefik is our Ingress Controller in K3S, we’ll translate our existing nginx.conf into Kubernetes resources. Traefik handles HTTP/S traffic through Ingress or IngressRoute resources and TCP (Stream) traffic via IngressRouteTCP.
 
 This is our current nginx.conf
@@ -191,7 +191,8 @@ services:
     restart: always
 ```
 
-### Create secrets
+### Secrets: Handle TLS Certificates with Kubernetes Secrets
+#### Transcribe our certs so they can be used by Traefik
 Encode your .pem files in Base64:
 ```
 cd $HOME/hecate/1-dev/certs
@@ -235,7 +236,7 @@ cat wazuh.fullchain.b64 # <base64-encoded-wazuh.fullchain.pem>
 cat wazuh.privkey.b64 # <base64-encoded-wazuh.privkey.pem>
 ```
 
-### Placing TLS secrets
+#### Placing TLS secrets so they can be used 
 Based on our directory structure, TLS secret YAML files should reside in the `$HOME/hecate/1-dev/manifests/secrets/`.
 ```
 cd $HOME/hecate/1-dev/manifests/secrets/
@@ -243,7 +244,7 @@ cd $HOME/hecate/1-dev/manifests/secrets/
 
 Now create hecate-tls.yaml:
 ```
-nano hecate-tls.yaml > EOF "
+cat <<EOF > hecate-tls.yaml
 # hecate-tls.yaml
 apiVersion: v1
 kind: Secret
@@ -260,7 +261,7 @@ EOF
 
 Now create wazuh-tls.yaml:
 ```
-nano hecate-tls.yaml > EOF "
+cat <<EOF > wazuh-tls.yaml
 # wazuh-tls.yaml
 apiVersion: v1
 kind: Secret
@@ -276,4 +277,325 @@ EOF
 * make sure to replace the values of <base64-encoded-wazuh.privkey.pem>  and <base64-encoded-wazuh.fullchain.pem> here too
 
 
+#### Applying the Secrets to our K3S Cluster
+Apply the Secrets:
+```
+cd $HOME/hecate/1-dev/manifests/secrets/
+kubectl apply -f hecate-tls.yaml
+kubectl apply -f wazuh-tls.yaml
+```
+
+Verify they have been applied correctly
+```
+kubectl get secrets
+```
+
+The output should look something like
+```
+NAME         TYPE                DATA   AGE
+hecate-tls   kubernetes.io/tls   2      <age>
+wazuh-tls    kubernetes.io/tls   2      <age>
+```
+
+#### Make sure not to expose our secrets to Git publically
+Open `.gitignore`:
+```
+cd $HOME/hecate
+nano .gitignore
+```
+
+Add the following lines to .gitignore file to exclude the secrets directory and .env files:
+```
+# Kubernetes Secrets
+hecate/1-dev/manifests/secrets/*.yaml
+hecate/2-stage/manifests/secrets/*.yaml
+hecate/3-prod/manifests/secrets/*.yaml
+hecate/4-sh/manifests/secrets/*.yaml
+
+# Environment variables
+.env
+```
+
+#### We decided just for our development environment not to use External Secret Management just now
+For enhanced security, we considered using external secret management tools like HashiCorp Vault, Sealed Secrets, or External Secrets Operator because these tools provide more robust mechanisms for managing and distributing secrets securely.
+
+
+
+### Deployments and Services
+Now secrets are defined, we can define deployments and services
+
+#### Deployments
+
+Reverse proxy for [Helen](https://github.com/CodeMonkeyCybersecurity/helen.git). To create the reverse proxy for our plain HTML webpage, [Helen](https://github.com/CodeMonkeyCybersecurity/helen.git)
+
+Navigate to the appropriate directory
+```
+cd $HOME/hecate/1-dev/manifests/deployments
+```
+
+##### Hecate Web Deployment `hecate-deployment.yaml`:
+Create the hecate deployment:
+```
+cat << EOF > hecate-deployment.yaml
+# hecate-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hecate
+  labels:
+    app: hecate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hecate
+  template:
+    metadata:
+      labels:
+        app: hecate
+    spec:
+      containers:
+      - name: hecate
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        - containerPort: 443
+        - containerPort: 1515
+        - containerPort: 1514
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: certs
+          mountPath: /etc/nginx/certs
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: hecate-nginx-config
+      - name: certs
+        secret:
+          secretName: hecate-tls
+EOF
+```
+ 
+##### Hecate Wazuh Deployment `wazuh-deployment.yaml`:
+For our Wazuh instance [delphi](https://github.com/CodeMonkeyCybersecurity/eos/tree/main/legacy/wazuh). Assuming Wazuh backend is accessible on ports 5601.
+```
+cat << EOF > wazuh-deployment.yaml
+# wazuh-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wazuh
+  labels:
+    app: wazuh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wazuh
+  template:
+    metadata:
+      labels:
+        app: wazuh
+    spec:
+      containers:
+      - name: wazuh
+        image: wazuh/wazuh:latest
+        ports:
+        - containerPort: 5601
+        # Add necessary environment variables or volumes if required
+EOF
+```
+
+#### Services
+Navigate to the appropriate directory
+```
+cd $HOME/hecate/1-dev/manifests/services/
+```
+##### Hecate Web Service `hecate-service.yaml`:
+Create hecate service. This will expose Hecate internally within the cluster.
+```
+cat <<EOF > hecate-service.yaml
+# hecate-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hecate-service
+  labels:
+    app: hecate
+spec:
+  selector:
+    app: hecate
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+    - protocol: TCP
+      port: 443
+      targetPort: 443
+    - protocol: TCP
+      port: 1515
+      targetPort: 1515
+    - protocol: TCP
+      port: 1514
+      targetPort: 1514
+  type: ClusterIP
+```
+
+##### Hecate Wazuh Service `wazuh-service.yaml`:
+```
+cat << EOF > wazuh-service.yaml
+# wazuh-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: wazuh-service
+  labels:
+    app: wazuh
+spec:
+  selector:
+    app: wazuh
+  ports:
+    - protocol: TCP
+      port: 5601
+      targetPort: 5601
+  type: ClusterIP
+EOF
+```
+
+### Traefik for Ingress and TCP Routing
+Traefik, as an Ingress Controller, can handle both HTTP/S and TCP (Stream) traffic efficiently. Below, I’ll outline how to configure Traefik to replicate your NGINX reverse proxy setup.
+
+#### HTTP/S Routing with Ingress Resources
+Define Ingress resources to handle HTTP/S traffic. Traefik can manage SSL termination and routing based on hostnames.
+Navigate to the ingress directory
+```
+cd $HOME/hecate/1-dev/manifests/ingress/
+```
+
+##### Hecate Web Ingress `hecate-ingress.yaml`:
+```
+cat << EOF > hecate-ingress.yaml
+# hecate-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hecate-ingress
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  rules:
+  - host: <FQDN>
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: <backend-service-name>
+            port:
+              number: 8080
+  tls:
+  - hosts:
+    - <FQDN>
+    secretName: hecate-tls
+EOF
+```
+
+##### Hecate Wazuh Ingress `wazuh-ingress.yaml`
+```
+cat << EOF > wazuh-ingress.yaml
+# wazuh-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wazuh-ingress
+  namespace: default
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  rules:
+  - host: wazuh.cybermonkey.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: wazuh-service
+            port:
+              number: 5601
+  tls:
+  - hosts:
+    - wazuh.cybermonkey.dev
+    secretName: wazuh-tls
+EOF
+```
+
+#### TCP (Stream) Routing with IngressRouteTCP
+Traefik allows you to define TCP services via IngressRouteTCP resources.
+
+Navigate to the `ingressroute_tcp` directory
+```
+cd $HOME/hecate/1-dev/manifests/ingressroute_tcp/
+```
+
+Create `hecate-ingressroute_tcp.yaml`
+```
+cat << EOF > hecate-ingressroute_tcp.yaml
+# hecate-ingressroute_tcp.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: wazuh-1515
+  namespace: default
+spec:
+  entryPoints:
+    - wazuh1515
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: wazuh-service
+          port: 1515
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: wazuh-1514
+  namespace: default
+spec:
+  entryPoints:
+    - wazuh1514
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: wazuh-service
+          port: 1514
+EOF
+```
+
+Define Traefik EntryPoints for TCP Ports `traefik-config.yaml`:
+```
+cat << EOF > traefik-config.yaml
+# traefik-config.yaml
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: tcp-entrypoints
+  namespace: default
+spec:
+  entryPoints:
+    - web
+    - websecure
+    - wazuh1515
+    - wazuh1514
+EOF
+```
+
+## Apply
 
