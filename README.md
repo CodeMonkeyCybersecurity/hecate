@@ -1,7 +1,7 @@
 # Hecate
 A Gateway for the Modern Cyber Underworld
 
-Welcome to Hecate, the ultimate reverse proxy setup powered by Caddy. Named after the ancient Greek goddess of crossroads, boundaries, and the arcane arts, Hecate stands as the gatekeeper between your infrastructure and the outside world.
+Welcome to Hecate, the ultimate reverse proxy setup, powered by Docker and Nginx. Named after the ancient Greek goddess of crossroads, boundaries, and the arcane arts, Hecate stands as the gatekeeper between your infrastructure and the outside world.
 
 
 # Reverse proxy framework for locally hosted, cloud native backend web apps
