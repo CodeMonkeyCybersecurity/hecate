@@ -144,23 +144,69 @@ services:
 ### 7.	Configure nginx.conf
 Point to the copied certs in /etc/nginx/certs:
 ```
-server {
-    listen 80;
-    server_name cybermonkey.net.au;
-    return 301 https://$host$request_uri;
+# nginx.conf
+worker_processes  auto;
+
+events {
+    worker_connections  1024;
 }
 
-server {
-    listen 443 ssl;
-    server_name cybermonkey.net.au;
+# The HTTP block
+http {
 
-    ssl_certificate /etc/nginx/certs/fullchain.pem;
-    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    include       mime.types;
+    default_type  application/octet-stream;
 
-    location / {
-        root /usr/share/nginx/html;
-        index index.html;
+    # Enable debug logging
+    error_log /var/log/nginx/error.log;
+
+    # enable access logging
+    access_log /var/log/nginx/access.log;
+
+    # Web block
+    server {
+        listen 80 default_server;
+        server_name localhost <hostname> cybermonkey.net.au; # or _ for any host
+
+        # Redirect all HTTP traffic to HTTPS
+        return 301 https://$host$request_uri;
     }
+
+    server {
+        listen 443 ssl default_server;
+        server_name localhost <hostname> cybermonkey.net.au; # or _ for any host
+
+        ssl_certificate /etc/nginx/certs/fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+        location / {
+            proxy_pass http://<backendIP>:8080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+
+    # server {
+    #     listen 80;
+    #     server_name <WebApp FQDN>;
+    #     return 301 https://$host$request_uri;
+    # }
+
+    # server {
+    #     listen 443 ssl;
+    #     server_name WebApp FQDN>;
+    #     ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
+    #     ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
+    #     location / {
+    #         proxy_pass https://<backendIP>:<backendPort>/;
+    #         proxy_set_header Host $host;
+    #         proxy_set_header X-Real-IP $remote_addr;
+    #         proxy_set_header X-Forwarded-Proto $scheme;
+    #     }
+    # }
 }
 ```
 
