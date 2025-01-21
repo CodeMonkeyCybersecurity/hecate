@@ -99,7 +99,7 @@ You should see:
 
 Make a local directory in your project for the certs:
 ```
-$HOME/hecate/4-sh
+cd $HOME/hecate/4-sh
 mkdir -p certs
 ```
 Copy your certificates into it:
@@ -113,51 +113,11 @@ sudo chmod 644 certs/fullchain.pem
 sudo chmod 600 certs/privkey.pem
 ```
 
-### 6.	Use the Certificates in Docker
-In your docker-compose.yaml, mount the local certs folder into the container:
 
-```
-services:
-  nginx:
-    image: nginx:alpine
-    container_name: hecate-sh
-    volumes:
-      - ./html:/usr/share/nginx/html:ro
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./certs:/etc/nginx/certs:ro
-    ports:
-      - "80:80"
-      - "443:443"
-    restart: always
-```
-
-### 7.	Configure nginx.conf
-Point to the copied certs in /etc/nginx/certs:
-```
-server {
-    listen 80;
-    server_name ${YOUR_FQDN};
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name ${YOUR_FQDN};
-
-    ssl_certificate /etc/nginx/certs/fullchain.pem;
-    ssl_certificate_key /etc/nginx/certs/privkey.pem;
-
-    location / {
-        root /usr/share/nginx/html;
-        index index.html;
-    }
-}
-```
-
-### 8.	Start NGINX
+### 6.	Start your docker container
 With certificates in place and nginx.conf updated, start your container:
 ```
-docker-compose up -d
+docker compose up -d
 ```
 You should now be able to browse to https://${YOUR_FQDN}.
 
