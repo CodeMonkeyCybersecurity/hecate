@@ -19,7 +19,7 @@ This project sets up an NGINX web server using Docker Compose to serve static fi
 
 • Docker and Docker Compose installed on your server.
  
-• A domain name (cybermonkey.sh) pointing to your server’s IP address.
+• A domain name (${YOUR_FQDN}) pointing to your server’s IP address.
  
 • Certbot installed on your server for certificate generation.
 
@@ -32,10 +32,6 @@ This project sets up an NGINX web server using Docker Compose to serve static fi
 ├── index.html                 # Example HTML file
 ├── nginx.conf                 # Custom NGINX configuration file
 ├── certs/                     # Directory for SSL certificates
-├── css/
-├── fonts/
-├── openColour/
-├── images/
 └── README.md                  # Documentation for the setup
 ```
 ## Setup Instructions
@@ -44,8 +40,8 @@ This project sets up an NGINX web server using Docker Compose to serve static fi
 
 Clone this repository to your server:
 ```
-git clone <repository-url>
-cd <repository-directory>
+git clone (https://github.com/CodeMonkeyCybersecurity/hecate.git
+cd hecate
 ```
 
 Below is a simple, reliable approach to obtain SSL certificates with Certbot and use them in an NGINX Docker container—without battling volume-mount issues for Let’s Encrypt directories. This method involves two separate steps:
@@ -75,14 +71,14 @@ sudo apt install certbot
 Run Certbot to generate certificates using its built-in standalone server:
 ```
 sudo certbot certonly --standalone \
-    -d cybermonkey.sh \
-    --email main@cybermonkey.sh \
+    -d ${YOUR_FQDN} \
+    --email main@${YOUR_FQDN} \
     --agree-tos
 ```
 This will spin up a temporary web server on port 80. Certbot will place certificates in:
 
 ```
-/etc/letsencrypt/live/cybermonkey.sh/
+/etc/letsencrypt/live/${YOUR_FQDN}/
 ```
 
 
@@ -90,29 +86,26 @@ This will spin up a temporary web server on port 80. Certbot will place certific
 After a successful run, check:
 
 ```
-ls -l /etc/letsencrypt/live/cybermonkey.sh/
+sudo ls -l /etc/letsencrypt/live/${YOUR_FQDN}/
 ```
 
 You should see:
-
-•	cert.pem
-
-•	chain.pem
-
-•	fullchain.pem
-
-•	privkey.pem
+* cert.pem
+* chain.pem
+* fullchain.pem
+* privkey.pem
 
 ### 5.	Create a Local Directory for Docker
 
 Make a local directory in your project for the certs:
 ```
-mkdir certs
+$HOME/hecate/4-sh
+mkdir -p certs
 ```
 Copy your certificates into it:
 ```
-sudo cp /etc/letsencrypt/live/cybermonkey.sh/fullchain.pem certs/
-sudo cp /etc/letsencrypt/live/cybermonkey.sh/privkey.pem certs/
+sudo cp /etc/letsencrypt/live/${YOUR_FQDN}/fullchain.pem certs/
+sudo cp /etc/letsencrypt/live/${YOUR_FQDN}/privkey.pem certs/
 ```
 Adjust permissions to be readable:
 ```
@@ -127,7 +120,7 @@ In your docker-compose.yaml, mount the local certs folder into the container:
 services:
   nginx:
     image: nginx:alpine
-    container_name: helen-stage
+    container_name: hecate-sh
     volumes:
       - ./html:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
@@ -143,13 +136,13 @@ Point to the copied certs in /etc/nginx/certs:
 ```
 server {
     listen 80;
-    server_name cybermonkey.sh;
+    server_name ${YOUR_FQDN};
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl;
-    server_name cybermonkey.sh;
+    server_name ${YOUR_FQDN};
 
     ssl_certificate /etc/nginx/certs/fullchain.pem;
     ssl_certificate_key /etc/nginx/certs/privkey.pem;
@@ -166,7 +159,7 @@ With certificates in place and nginx.conf updated, start your container:
 ```
 docker-compose up -d
 ```
-You should now be able to browse to https://cybermonkey.sh.
+You should now be able to browse to https://${YOUR_FQDN}.
 
 ### 9.	Automate Certificate Renewal (Optional)
 •	Since Certbot is on your host, just rely on its standard cron-based renewal:
