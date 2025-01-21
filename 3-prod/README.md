@@ -125,17 +125,19 @@ sudo chmod 600 certs/privkey.pem
 In your docker-compose.yaml, mount the local certs folder into the container:
 
 ```
+# docker-compose.yaml
 services:
   nginx:
-    image: nginx:alpine
-    container_name: helen-stage
+    image: nginx
+    container_name: hecate-prod
     volumes:
-      - ./html:/usr/share/nginx/html:ro
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./certs:/etc/nginx/certs:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro # Custom NGINX configuration
+      - ./certs:/etc/nginx/certs:ro  # SSL certificates
     ports:
       - "80:80"
       - "443:443"
+      #- "1515:1515" # uncomment if setting up wazuh
+      #- "1514:1514" # uncomment if setting up wazuh
     restart: always
 ```
 
