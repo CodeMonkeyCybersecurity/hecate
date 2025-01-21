@@ -91,129 +91,40 @@ This will spin up a temporary web server on port 80. Certbot will place certific
 After a successful run, check:
 
 ```
-ls -l /etc/letsencrypt/live/cybermonkey.net.au/
+sudo ls -l /etc/letsencrypt/live/cybermonkey.net.au/
 ```
 
 You should see:
-
-•	cert.pem
-
-•	chain.pem
-
-•	fullchain.pem
-
-•	privkey.pem
+* cert.pem
+* chain.pem
+* fullchain.pem
+* privkey.pem
 
 ### 5.	Create a Local Directory for Docker
 
 Make a local directory in your project for the certs:
 ```
-mkdir certs
+cd $HOME/hecate/3-prod
+mkdir -p certs
 ```
 Copy your certificates into it:
 ```
+cd $HOME/hecate/3-prod
 sudo cp /etc/letsencrypt/live/cybermonkey.net.au/fullchain.pem certs/
 sudo cp /etc/letsencrypt/live/cybermonkey.net.au/privkey.pem certs/
 ```
 Adjust permissions to be readable:
 ```
+cd $HOME/hecate/3-prod
 sudo chmod 644 certs/fullchain.pem
 sudo chmod 600 certs/privkey.pem
 ```
 
-### 6.	Use the Certificates in Docker
-In your docker-compose.yaml, mount the local certs folder into the container:
-
-```
-# docker-compose.yaml
-services:
-  nginx:
-    image: nginx
-    container_name: hecate-prod
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro # Custom NGINX configuration
-      - ./certs:/etc/nginx/certs:ro  # SSL certificates
-    ports:
-      - "80:80"
-      - "443:443"
-      #- "1515:1515" # uncomment if setting up wazuh
-      #- "1514:1514" # uncomment if setting up wazuh
-    restart: always
-```
-
-### 7.	Configure nginx.conf
-Point to the copied certs in /etc/nginx/certs:
-```
-# nginx.conf
-worker_processes  auto;
-
-events {
-    worker_connections  1024;
-}
-
-# The HTTP block
-http {
-
-    include       mime.types;
-    default_type  application/octet-stream;
-
-    # Enable debug logging
-    error_log /var/log/nginx/error.log;
-
-    # enable access logging
-    access_log /var/log/nginx/access.log;
-
-    # Web block
-    server {
-        listen 80 default_server;
-        server_name localhost <hostname> cybermonkey.net.au; # or _ for any host
-
-        # Redirect all HTTP traffic to HTTPS
-        return 301 https://$host$request_uri;
-    }
-
-    server {
-        listen 443 ssl default_server;
-        server_name localhost <hostname> cybermonkey.net.au; # or _ for any host
-
-        ssl_certificate /etc/nginx/certs/fullchain.pem;
-        ssl_certificate_key /etc/nginx/certs/privkey.pem;
-
-        location / {
-            proxy_pass http://<backendIP>:8080;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-    }
-
-
-    # server {
-    #     listen 80;
-    #     server_name <WebApp FQDN>;
-    #     return 301 https://$host$request_uri;
-    # }
-
-    # server {
-    #     listen 443 ssl;
-    #     server_name WebApp FQDN>;
-    #     ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
-    #     ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
-    #     location / {
-    #         proxy_pass https://<backendIP>:<backendPort>/;
-    #         proxy_set_header Host $host;
-    #         proxy_set_header X-Real-IP $remote_addr;
-    #         proxy_set_header X-Forwarded-Proto $scheme;
-    #     }
-    # }
-}
-```
-
-### 8.	Start NGINX
+### 8.	Start your docker container
 With certificates in place and nginx.conf updated, start your container:
 ```
-docker-compose up -d
+cd $HOME/hecate/3-prod
+docker compose up -d
 ```
 You should now be able to browse to https://cybermonkey.net.au.
 
