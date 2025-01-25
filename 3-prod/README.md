@@ -19,7 +19,7 @@ This project sets up an NGINX web server using Docker Compose to serve static fi
 
 • Docker and Docker Compose installed on your server.
  
-• A domain name (cybermonkey.net.au) pointing to your server’s IP address.
+• A domain name (domain.com) pointing to your server’s IP address.
  
 • Certbot installed on your server for certificate generation.
 
@@ -54,13 +54,13 @@ Below is a simple, reliable approach to obtain SSL certificates with Certbot and
 
 2.	Mount the certificates into your Dockerized NGINX.
 
-By doing it this way, you avoid dealing with /var/lib/letsencrypt or /etc/letsencrypt inside Docker. Once you have your certificates on the host, you simply share them with the NGINX container.
+By doing it this way, you avoid dealing with `/var/lib/letsencrypt` or `/etc/letsencrypt` inside Docker. Once you have your certificates on the host, you simply share them with the NGINX container.
 
 ## Option A: Generate Certificates Directly on the Host
 ### 1.	Stop Any Services on Port 80
 Stop or remove any containers or services (like NGINX) that are currently listening on port 80:
 ```
-docker-compose down
+docker compose down # needs to be done in directory where docker-compose.yml file is for any docker containers listeniing on port 80 
 sudo systemctl stop nginx
 ```
 This is necessary because Certbot’s standalone mode needs to bind port 80.
@@ -73,25 +73,45 @@ sudo apt install certbot
 ```
 
 ### 3.	Obtain the Certificates (Standalone Mode)
-Run Certbot to generate certificates using its built-in standalone server:
+Run Certbot to generate certificates using its built-in standalone server
+
+For your main domain:
 ```
 sudo certbot certonly --standalone \
-    -d cybermonkey.net.au \
-    --email main@cybermonkey.net.au \
+    -d domain.com \
+    --email main@domain.com \
     --agree-tos
 ```
-This will spin up a temporary web server on port 80. Certbot will place certificates in:
 
+For a subdomain:
 ```
-/etc/letsencrypt/live/cybermonkey.net.au/
+sudo certbot certonly --standalone \
+    -d sub.domain.com \
+    --email main@domain.com \
+    --agree-tos
+```
+
+This will spin up a temporary web server on port 80. Certbot will place certificates in:
+```
+/etc/letsencrypt/live/domain.com/
+```
+
+For a subdomain:
+```
+/etc/letsencrypt/live/sub.domain.com/
 ```
 
 
 ### 4.	Verify Certificate Files
 After a successful run, check:
-
+For main domain (base domain)
 ```
-sudo ls -l /etc/letsencrypt/live/cybermonkey.net.au/
+sudo ls -l /etc/letsencrypt/live/domain.com/
+```
+
+For subdomains
+```
+sudo ls -l /etc/letsencrypt/live/sub.domain.com/
 ```
 
 You should see:
@@ -107,17 +127,38 @@ Make a local directory in your project for the certs:
 cd $HOME/hecate/3-prod
 mkdir -p certs
 ```
-Copy your certificates into it:
+
+Copy your certificates into it the certs directory
+
+For base domain:
 ```
 cd $HOME/hecate/3-prod
-sudo cp /etc/letsencrypt/live/cybermonkey.net.au/fullchain.pem certs/
-sudo cp /etc/letsencrypt/live/cybermonkey.net.au/privkey.pem certs/
+sudo cp /etc/letsencrypt/live/domain.com/fullchain.pem certs/
+sudo cp /etc/letsencrypt/live/domain.com/privkey.pem certs/
 ```
-Adjust permissions to be readable:
+
+For subdomains:
+```
+cd $HOME/hecate/3-prod
+sudo cp /etc/letsencrypt/live/sub.domain.com/fullchain.pem certs/sub.fullchain.pem
+sudo cp /etc/letsencrypt/live/sub.domain.com/privkey.pem certs/sub.privkey.pem
+```
+
+
+Adjust permissions to be readable
+
+For the main domain:
 ```
 cd $HOME/hecate/3-prod
 sudo chmod 644 certs/fullchain.pem
 sudo chmod 600 certs/privkey.pem
+```
+
+For subdomains
+```
+cd $HOME/hecate/3-prod
+sudo chmod 644 certs/sub.fullchain.pem
+sudo chmod 600 certs/sub.privkey.pem
 ```
 
 ### 8.	Start your docker container
@@ -126,7 +167,8 @@ With certificates in place and nginx.conf updated, start your container:
 cd $HOME/hecate/3-prod
 docker compose up -d
 ```
-You should now be able to browse to https://cybermonkey.net.au.
+You should now be able to browse to `https://domain.com`, or for subdomains at `https://sub.domain.com`.
+
 
 ### 9.	Automate Certificate Renewal (Optional)
 •	Since Certbot is on your host, just rely on its standard cron-based renewal:
