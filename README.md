@@ -1,4 +1,7 @@
 # Hecate
+
+For more actively maintained knowledge base and documentation, see [**Athena**](https://wiki.cybermonkey.net.au/Hecate).
+
 A Gateway for the Modern Cyber Underworld
 
 Welcome to Hecate, the ultimate reverse proxy setup, powered by Docker and Nginx. Named after the ancient Greek goddess of crossroads, boundaries, and the arcane arts, Hecate stands as the gatekeeper between your infrastructure and the outside world.
