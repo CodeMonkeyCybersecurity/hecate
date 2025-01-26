@@ -8,6 +8,7 @@ events {
 ###
 # STREAM BLOCK
 ###
+
 stream {
     # -- 1515 --
     upstream wazuh_manager_1515 {
