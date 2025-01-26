@@ -27,9 +27,9 @@ prompt_input() {
 echo "=== NGINX Configuration Generator ==="
 
 # Prompt the user for input values
-backendIP=$(prompt_input "backendIP" "Enter the backend IP address (e.g., 100.91.138.9)")
-HOSTNAME=$(prompt_input "HOSTNAME" "Enter the hostname for the NGINX server (e.g., chickenj0-cloud)")
-BASE_DOMAIN=$(prompt_input "BASE_DOMAIN" "Enter the base domain for your services (e.g., chickenj0.cloud)")
+backendIP=$(prompt_input "backendIP" "Enter the backend IP address")
+HOSTNAME=$(prompt_input "HOSTNAME" "Enter the hostname for the NGINX server")
+BASE_DOMAIN=$(prompt_input "BASE_DOMAIN" "Enter the base domain for your services")
 
 # Define file paths
 TEMPLATE_FILE="nginx.conf.template"  # Assuming you have a template file
