@@ -9,7 +9,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      #- "1515:1515" # uncomment if using Wazuh behind proxy
-      #- "1514:1514"
-      #- "55000:55000"
+      #- "1515:1515"    # <- uncomment if using Wazuh behind proxy # Wazuh API
+      #- "1514:1514"    # <- # Additional Wazuh ports
+      #- "55000:55000"  # <- # Wazuh API HTTPS
     restart: always
+    env_file:
+      - .env
