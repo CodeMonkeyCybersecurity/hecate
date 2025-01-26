@@ -1,35 +1,56 @@
 #!/bin/bash
-# generateNginxConf.sh
+
+# Script: generate_nginx_conf.sh
+# Description: Prompts the user for backendIP, HOSTNAME, and BASE_DOMAIN,
+#              then replaces the placeholders in nginx.conf with these values.
 
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-# Check if .env file exists
-if [ ! -f .env ]; then
-    echo "Error: .env file not found!"
+# Function to prompt for input and ensure it's not empty
+prompt_input() {
+    local var_name=$1
+    local prompt_message=$2
+    local input
+
+    while true; do
+        read -rp "$prompt_message: " input
+        if [[ -n "$input" ]]; then
+            echo "$input"
+            return
+        else
+            echo "Error: $var_name cannot be empty. Please enter a valid value."
+        fi
+    done
+}
+
+echo "=== NGINX Configuration Generator ==="
+
+# Prompt the user for input values
+backendIP=$(prompt_input "backendIP" "Enter the backend IP address (e.g., 100.91.138.9)")
+HOSTNAME=$(prompt_input "HOSTNAME" "Enter the hostname for the NGINX server (e.g., chickenj0-cloud)")
+BASE_DOMAIN=$(prompt_input "BASE_DOMAIN" "Enter the base domain for your services (e.g., chickenj0.cloud)")
+
+# Define file paths
+TEMPLATE_FILE="nginx.conf.template"  # Assuming you have a template file
+OUTPUT_FILE="nginx.conf"
+
+# Check if the template file exists
+if [[ ! -f "$TEMPLATE_FILE" ]]; then
+    echo "Error: Template file '$TEMPLATE_FILE' not found in the current directory."
     exit 1
 fi
 
-# Export environment variables from .env
-export $(grep -v '^#' .env | xargs)
-
-# Define paths
-TEMPLATE=/etc/nginx/nginx.conf.template
-OUTPUT=/etc/nginx/nginx.conf
-
-# Check if the template exists
-if [ ! -f "$TEMPLATE" ]; then
-    echo "Error: nginx.conf.template not found at $TEMPLATE"
-    exit 1
+# Backup existing nginx.conf if it exists
+if [[ -f "$OUTPUT_FILE" ]]; then
+    cp "$OUTPUT_FILE" "${OUTPUT_FILE}.bak"
+    echo "Backup of existing '$OUTPUT_FILE' created as '${OUTPUT_FILE}.bak'."
 fi
 
-# Substitute environment variables in the template
-envsubst '${backendIP} ${HOSTNAME} ${BASE_DOMAIN}' < "$TEMPLATE" > "$OUTPUT"
+# Replace placeholders with actual values using sed
+sed -e "s/\${backendIP}/$backendIP/g" \
+    -e "s/\${HOSTNAME}/$HOSTNAME/g" \
+    -e "s/\${BASE_DOMAIN}/$BASE_DOMAIN/g" \
+    "$TEMPLATE_FILE" > "$OUTPUT_FILE"
 
-echo "nginx.conf has been generated successfully."
-
-# Validate the NGINX configuration
-nginx -t
-
-# Start NGINX in the foreground
-exec nginx -g 'daemon off;'
+echo "nginx.conf has been generated successfully with the provided values."
