@@ -28,6 +28,7 @@ go.work.sum
 
 # Ignore any certs directories and all its contents
 **/certs/
+*.conf
 
 # MacOS
 .DS_Store
