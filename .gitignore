@@ -26,9 +26,8 @@ go.work.sum
 *.key
 *.env
 
-# Ignore the certs directory and all its contents
-certs/
-
+# Ignore any certs directories and all its contents
+**/certs/
 
 # MacOS
 .DS_Store
