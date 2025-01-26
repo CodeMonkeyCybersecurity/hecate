@@ -5,22 +5,35 @@ events {
     worker_connections  1024;
 }
 
-# The STREAM block
+###
+# STREAM BLOCK
+###
 stream {
+    # -- 1515 --
     upstream wazuh_manager_1515 {
-        server <backendIP>:1515;
+        server ${backendIP}:1515;
     }
     server {
         listen 1515;
         proxy_pass wazuh_manager_1515;
     }
 
+    # -- 1514 --
     upstream wazuh_manager_1514 {
-        server <backendIP>:1514;
+        server ${backendIP}:1514;
     }
     server {
         listen 1514;
         proxy_pass wazuh_manager_1514;
+    }
+
+    # -- 55000 --
+    upstream wazuh_manager_55000 {
+        server ${backendIP}:55000;
+    }
+    server {
+        listen 55000;
+        proxy_pass wazuh_manager_55000;
     }
 }
 
@@ -33,12 +46,12 @@ http {
     # Enable debug logging
     error_log /var/log/nginx/error.log debug;
 
-    # enable access logging
+    # enable access logging 
     access_log /var/log/nginx/access.log;
 
     server {
         listen 80 default_server;
-        server_name localhost <hostname> <FQDN>; # or _ for any host
+        server_name localhost ${HOSTNAME} ${BASE_DOMAIN}; # or _ for any host
 
         # Redirect all HTTP traffic to HTTPS
         return 301 https://$host$request_uri;
@@ -46,57 +59,36 @@ http {
 
     server {
         listen 443 ssl default_server;
-        server_name localhost <hostname> <FQDN>; # or _ for any host
+        server_name localhost ${HOSTNAME} ${BASE_DOMAIN}; # or _ for any host
 
         ssl_certificate /etc/nginx/certs/fullchain.pem;
         ssl_certificate_key /etc/nginx/certs/privkey.pem;
 
         location / {
-            proxy_pass http://<backendIP>:8080;
+            proxy_pass http://${backendIP}:8080;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
-
-    #Wazuh block
+    
     server {
         listen 80;
-        server_name wazuh.cybermonkey.dev;
+        server_name wazuh.${BASE_DOMAIN};
         return 301 https://$host$request_uri;
     }
 
     server {
         listen 443 ssl;
-        server_name wazuh.cybermonkey.dev;
+        server_name wazuh.${BASE_DOMAIN};
         ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
         ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
         location / {
-            proxy_pass https://<backendIP>:5601/;
+            proxy_pass https://${backendIP}:5601/;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
-
-
-    # server {
-    #     listen 80;
-    #     server_name <WebApp FQDN>;
-    #     return 301 https://$host$request_uri;
-    # }
-
-    # server {
-    #     listen 443 ssl;
-    #     server_name WebApp FQDN>;
-    #     ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
-    #     ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
-    #     location / {
-    #         proxy_pass https://<backendIP>:<backendPort>/;
-    #         proxy_set_header Host $host;
-    #         proxy_set_header X-Real-IP $remote_addr;
-    #         proxy_set_header X-Forwarded-Proto $scheme;
-    #     }
-    # }
 }
