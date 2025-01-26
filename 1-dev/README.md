@@ -12,6 +12,14 @@ cd $HOME
 sudo cp -r hecate/ "$(date)-hecate.bak" # need sudo here because the .pem files should have limited access.
 ```
 
+## Prerequisites
+Ensure `envsubst` is Available:
+`envsubst` is part of the gettext package. It’s typically available in Unix-like systems.
+```
+sudo apt-get update
+sudo apt-get install gettext
+```
+
 ## Stopping docker services 
 This is going to result in some downtime 
 ```
