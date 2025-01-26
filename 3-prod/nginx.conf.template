@@ -75,13 +75,13 @@ http {
     
     server {
         listen 80;
-        server_name wazuh.${BASE_DOMAIN};
+        server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
         return 301 https://$host$request_uri;
     }
 
     server {
         listen 443 ssl;
-        server_name wazuh.${BASE_DOMAIN};
+        server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
         ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
         ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
         location / {
@@ -89,6 +89,47 @@ http {
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+    #--------------------------------------------------
+    # WIKI_JS WEB UI: wiki.domain.com
+    #--------------------------------------------------
+
+    # Redirect HTTP traffic to HTTPS for Wiki.js
+    server {
+        listen 80;
+        server_name localhost ${HOSTNAME} wiki.${BASE_DOMAIN};
+        return 301 https://$host$request_uri; # Redirect to HTTPS
+    }
+
+    # HTTPS  for Wiki.js
+    server {
+        listen 443 ssl;
+        server_name localhost ${HOSTNAME} wiki.${BASE_DOMAIN};
+
+        # SSL certificates
+        ssl_certificate /etc/nginx/certs/wiki.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/wiki.privkey.pem;
+
+        # Increase buffer sizes (optional, for large responses)
+        client_max_body_size 50M; # Adjust as needed
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
+
+        # Proxy settings for Wiki.js
+        location / {
+            proxy_pass http://${backendIP}:11080;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Handle WebSocket connections
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
         }
     }
 }
