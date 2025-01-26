@@ -9,7 +9,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "1515:1515"
-      - "1514:1514"
-      - "55000:55000"
+      #- "1515:1515" # uncomment if using Wazuh behind proxy
+      #- "1514:1514"
+      #- "55000:55000"
     restart: always
