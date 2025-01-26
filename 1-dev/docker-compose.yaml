@@ -1,6 +1,6 @@
 services:
   nginx:
-    image: nginx:alpine
+    image: nginx
     container_name: hecate-dev
     volumes:
       - ./nginx.conf.template:/etc/nginx/nginx.conf.template:ro  # Template with placeholders
