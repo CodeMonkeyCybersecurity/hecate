@@ -116,43 +116,43 @@ http {
     # # ERPNext WEB UI: erp.${BASE_DOMAIN}
     # #--------------------------------------------------
 
-    # # Redirect HTTP traffic to HTTPS for ERPNext
-    # server {
-    #     listen 80;
-    #     listen [::]:80;
-    #     server_name localhost ${HOSTNAME} erp.${BASE_DOMAIN};
-    #     return 301 https://$host$request_uri; # Redirect to HTTPS
-    # }
+    # Redirect HTTP traffic to HTTPS for ERPNext
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name localhost ${HOSTNAME} erp.${BASE_DOMAIN};
+        return 301 https://$host$request_uri; # Redirect to HTTPS
+    }
 
-    # # HTTPS for ERPNext
-    # server {
-    #     listen 443 ssl http2;
-    #     listen [::]:443 ssl http2;
-    #     server_name localhost ${HOSTNAME} erp.${BASE_DOMAIN};
+    # HTTPS for ERPNext
+    server {
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+        server_name localhost ${HOSTNAME} erp.${BASE_DOMAIN};
 
-    #     # SSL certificates
-    #     ssl_certificate /etc/nginx/certs/erp.fullchain.pem;
-    #     ssl_certificate_key /etc/nginx/certs/erp.privkey.pem;
+        # SSL certificates
+        ssl_certificate /etc/nginx/certs/erp.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/erp.privkey.pem;
 
-    #     # Increase buffer sizes (optional, for large responses)
-    #     client_max_body_size 50M; # Adjust as needed
-    #     proxy_buffer_size 128k;
-    #     proxy_buffers 4 256k;
-    #     proxy_busy_buffers_size 256k;
+        # Increase buffer sizes (optional, for large responses)
+        client_max_body_size 50M; # Adjust as needed
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
 
-    #     # Proxy settings for ERPNext
-    #     location / {
-    #         proxy_pass http://${backendIP}:8080;
-    #         proxy_set_header Host $host;
-    #         proxy_set_header X-Real-IP $remote_addr;
-    #         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    #         proxy_set_header X-Forwarded-Proto $scheme;
+        # Proxy settings for ERPNext
+        location / {
+            proxy_pass http://${backendIP}:8080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
 
-    #         # Handle WebSocket connections
-    #         proxy_set_header Upgrade $http_upgrade;
-    #         proxy_set_header Connection "upgrade";
-    #     }
-    # }
+            # Handle WebSocket connections
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+    }
 
     #--------------------------------------------------
     # JENKINS WEB UI: jenkins.${BASE_DOMAIN}
