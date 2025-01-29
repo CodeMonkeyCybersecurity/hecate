@@ -44,7 +44,7 @@ fi
 # Backup existing nginx.conf if it exists
 if [[ -f "$OUTPUT_FILE" ]]; then
     cp "$OUTPUT_FILE" "$(date)_$(hostname)_${OUTPUT_FILE}.bak"
-    echo "Backup of existing '$OUTPUT_FILE' created as '${OUTPUT_FILE}.bak'."
+    echo "Backup of existing '$OUTPUT_FILE' created as '$(date)_$(hostname)_${OUTPUT_FILE}.bak'."
 fi
 
 # Replace placeholders with actual values using sed
