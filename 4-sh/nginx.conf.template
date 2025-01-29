@@ -194,5 +194,34 @@ http {
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
         }
+
+    #--------------------------------------------------
+    # MATOMO PAGE: Matomo.${BASE_DOMAIN}
+    #--------------------------------------------------
+
+    # Redirect HTTP → HTTPS
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name localhost ${HOSTNAME} matomo.${BASE_DOMAIN}; # or _ for any host
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+         listen 443 ssl http2;
+         listen [::]:443 ssl http2;
+         server_name localhost ${HOSTNAME} matomo.${BASE_DOMAIN}; # or _ for any host
+
+        ssl_certificate /etc/nginx/certs/matomo.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/matomo.privkey.pem;
+
+        location / {
+            proxy_pass http://${backendIP}:12080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
     }
 }
