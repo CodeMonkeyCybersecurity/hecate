@@ -9,34 +9,34 @@ events {
 # STREAM BLOCK
 ###
 
-stream {
-    # -- 1515 --
-    upstream wazuh_manager_1515 {
-        server ${backendIP}:1515;
-    }
-    server {
-        listen 1515;
-        proxy_pass wazuh_manager_1515;
-    }
+# stream {
+#     # -- 1515 --
+#     upstream wazuh_manager_1515 {
+#         server ${backendIP}:1515;
+#     }
+#     server {
+#         listen 1515;
+#         proxy_pass wazuh_manager_1515;
+#     }
 
-    # -- 1514 --
-    upstream wazuh_manager_1514 {
-        server ${backendIP}:1514;
-    }
-    server {
-        listen 1514;
-        proxy_pass wazuh_manager_1514;
-    }
+#     # -- 1514 --
+#     upstream wazuh_manager_1514 {
+#         server ${backendIP}:1514;
+#     }
+#     server {
+#         listen 1514;
+#         proxy_pass wazuh_manager_1514;
+#     }
 
-    # -- 55000 --
-    upstream wazuh_manager_55000 {
-        server ${backendIP}:55000;
-    }
-    server {
-        listen 55000;
-        proxy_pass wazuh_manager_55000;
-    }
-}
+#     # -- 55000 --
+#     upstream wazuh_manager_55000 {
+#         server ${backendIP}:55000;
+#     }
+#     server {
+#         listen 55000;
+#         proxy_pass wazuh_manager_55000;
+#     }
+# }
 
 ###
 # HTTP BLOCK
@@ -48,7 +48,7 @@ http {
     default_type  application/octet-stream;
 
     # Enable debug logging
-    error_log /var/log/nginx/error.log debug;
+    error_log /var/log/nginx/error.log warn;
 
     # enable access logging 
     access_log /var/log/nginx/access.log;
@@ -86,73 +86,73 @@ http {
         }
     }
 
-    #--------------------------------------------------
-    # WAZUH WEB UI: wazuh.${BASE_DOMAIN}
-    #--------------------------------------------------
+    # #--------------------------------------------------
+    # # WAZUH WEB UI: wazuh.${BASE_DOMAIN}
+    # #--------------------------------------------------
 
-    server {
-        listen 80;
-        listen [::]:80;
-        server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
-        return 301 https://$host$request_uri;
-    }
+    # server {
+    #     listen 80;
+    #     listen [::]:80;
+    #     server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
+    #     return 301 https://$host$request_uri;
+    # }
 
-    server {
-        listen 443 ssl http2;
-        listen [::]:443 ssl http2;
-        server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
+    # server {
+    #     listen 443 ssl http2;
+    #     listen [::]:443 ssl http2;
+    #     server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
 
-        ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
-        ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
-        location / {
-            proxy_pass https://${backendIP}:5601/;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
-    }
+    #     ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
+    #     ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
+    #     location / {
+    #         proxy_pass https://${backendIP}:5601/;
+    #         proxy_set_header Host $host;
+    #         proxy_set_header X-Real-IP $remote_addr;
+    #         proxy_set_header X-Forwarded-Proto $scheme;
+    #     }
+    # }
 
-    #--------------------------------------------------
-    # ERPNext WEB UI: erp.${BASE_DOMAIN}
-    #--------------------------------------------------
+    # #--------------------------------------------------
+    # # ERPNext WEB UI: erp.${BASE_DOMAIN}
+    # #--------------------------------------------------
 
-    # Redirect HTTP traffic to HTTPS for ERPNext
-    server {
-        listen 80;
-        listen [::]:80;
-        server_name localhost ${HOSTNAME} erp.${BASE_DOMAIN};
-        return 301 https://$host$request_uri; # Redirect to HTTPS
-    }
+    # # Redirect HTTP traffic to HTTPS for ERPNext
+    # server {
+    #     listen 80;
+    #     listen [::]:80;
+    #     server_name localhost ${HOSTNAME} erp.${BASE_DOMAIN};
+    #     return 301 https://$host$request_uri; # Redirect to HTTPS
+    # }
 
-    # HTTPS for ERPNext
-    server {
-        listen 443 ssl http2;
-        listen [::]:443 ssl http2;
-        server_name localhost ${HOSTNAME} erp.${BASE_DOMAIN};
+    # # HTTPS for ERPNext
+    # server {
+    #     listen 443 ssl http2;
+    #     listen [::]:443 ssl http2;
+    #     server_name localhost ${HOSTNAME} erp.${BASE_DOMAIN};
 
-        # SSL certificates
-        ssl_certificate /etc/nginx/certs/erp.fullchain.pem;
-        ssl_certificate_key /etc/nginx/certs/erp.privkey.pem;
+    #     # SSL certificates
+    #     ssl_certificate /etc/nginx/certs/erp.fullchain.pem;
+    #     ssl_certificate_key /etc/nginx/certs/erp.privkey.pem;
 
-        # Increase buffer sizes (optional, for large responses)
-        client_max_body_size 50M; # Adjust as needed
-        proxy_buffer_size 128k;
-        proxy_buffers 4 256k;
-        proxy_busy_buffers_size 256k;
+    #     # Increase buffer sizes (optional, for large responses)
+    #     client_max_body_size 50M; # Adjust as needed
+    #     proxy_buffer_size 128k;
+    #     proxy_buffers 4 256k;
+    #     proxy_busy_buffers_size 256k;
 
-        # Proxy settings for ERPNext
-        location / {
-            proxy_pass http://${backendIP}:9000;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+    #     # Proxy settings for ERPNext
+    #     location / {
+    #         proxy_pass http://${backendIP}:9000;
+    #         proxy_set_header Host $host;
+    #         proxy_set_header X-Real-IP $remote_addr;
+    #         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #         proxy_set_header X-Forwarded-Proto $scheme;
 
-            # Handle WebSocket connections
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
-        }
-    }
+    #         # Handle WebSocket connections
+    #         proxy_set_header Upgrade $http_upgrade;
+    #         proxy_set_header Connection "upgrade";
+    #     }
+    # }
 
     #--------------------------------------------------
     # JENKINS WEB UI: jenkins.${BASE_DOMAIN}
@@ -166,7 +166,7 @@ http {
         return 301 https://$host$request_uri; # Redirect to HTTPS
     }
 
-    # HTTPS for ERPNext
+    # HTTPS for Jenkins
     server {
         listen 443 ssl http2;
         listen [::]:443 ssl http2;
