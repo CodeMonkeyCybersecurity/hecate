@@ -16,7 +16,7 @@ events {
 stream {
 
     #--------------------------------------------------
-    # WAZUH WEB UI: wazuh.${BASE_DOMAIN}
+    # WAZUH STREAMS
     #--------------------------------------------------
 
     # -- 1515 --
@@ -44,10 +44,10 @@ stream {
     server {
         listen 55000;
         proxy_pass wazuh_manager_55000;
-
+    }
 
     #--------------------------------------------------
-    # MAILCOW
+    # MAILCOW STREAMS
     #--------------------------------------------------
 
     # --- SMTP (port 25) ---
@@ -75,9 +75,6 @@ stream {
     }
     server {
         listen 465;
-        # If you want to do full TLS termination in the front NGINX for SMTPS,
-        # configure ssl_certificate and ssl_certificate_key, or simply do
-        # a TCP pass-through. This example shows pass-through with no extra SSL config:
         proxy_pass mailcow_smtps;
     }
 
@@ -149,8 +146,6 @@ http {
         listen [::]:80;
         server_name localhost ${HOSTNAME} ${BASE_DOMAIN}; # or _ for any host
 
-        http2 on;
-
         return 301 https://$host$request_uri;
     }
 
@@ -162,8 +157,14 @@ http {
 
          server_name localhost ${HOSTNAME} ${BASE_DOMAIN}; # or _ for any host
 
+        # SSL certificates
          ssl_certificate /etc/nginx/certs/fullchain.pem;
          ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+        # Basic SSL config (adapt cipher suites, etc. to your needs)
+        ssl_protocols        TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5:!SHA1:!kRSA;
+        ssl_prefer_server_ciphers on;
 
          location / {
              proxy_pass http://${backendIP}:8081;
@@ -183,23 +184,44 @@ http {
         listen [::]:80;
         server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
 
-        http2 on;
-
         return 301 https://$host$request_uri;
     }
 
     server {
-        listen 443 ssl http2;
-        listen [::]:443 ssl http2;
+        listen 443 ssl;
+        listen [::]:443 ssl;
+
+        http2 on;
+
         server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
 
+        # SSL certificates
         ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
         ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
+
+        # Basic SSL config (adapt cipher suites, etc. to your needs)
+        ssl_protocols        TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5:!SHA1:!kRSA;
+        ssl_prefer_server_ciphers on;
+
+        # Increase buffer sizes (optional, for large responses)
+        client_max_body_size 50M; # Adjust as needed
+        proxy_buffer_size 128k;
+        proxy_buffers 64 512k;
+        proxy_busy_buffers_size 512k;
+
+
+        # Proxy settings
         location / {
             proxy_pass https://${backendIP}:5601/;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-Proto $scheme;
+            client_max_body_size 0;
+            proxy_buffer_size 128k;
+            proxy_buffers 64 512k;
+            proxy_busy_buffers_size 512k;
+
         }
     }
 
@@ -212,8 +234,6 @@ http {
         listen 80;
         listen [::]:80;
         server_name localhost ${HOSTNAME} erp.${BASE_DOMAIN};
-
-        http2 on;
 
         return 301 https://$host$request_uri; # Redirect to HTTPS
     }
@@ -231,11 +251,16 @@ http {
         ssl_certificate /etc/nginx/certs/erp.fullchain.pem;
         ssl_certificate_key /etc/nginx/certs/erp.privkey.pem;
 
+        # Basic SSL config (adapt cipher suites, etc. to your needs)
+        ssl_protocols        TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5:!SHA1:!kRSA;
+        ssl_prefer_server_ciphers on;
+
         # Increase buffer sizes (optional, for large responses)
         client_max_body_size 50M; # Adjust as needed
         proxy_buffer_size 128k;
-        proxy_buffers 4 256k;
-        proxy_busy_buffers_size 256k;
+        proxy_buffers 64 512k;
+        proxy_busy_buffers_size 512k;
 
         # Proxy settings for ERPNext
         location / {
@@ -244,6 +269,10 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            client_max_body_size 0;
+            proxy_buffer_size 128k;
+            proxy_buffers 64 512k;
+            proxy_busy_buffers_size 512k;
 
             # Handle WebSocket connections
             proxy_set_header Upgrade $http_upgrade;
@@ -261,8 +290,6 @@ http {
         listen [::]:80;
         server_name localhost ${HOSTNAME} jenkins.${BASE_DOMAIN};
 
-        http2 on;
-
         return 301 https://$host$request_uri; # Redirect to HTTPS
     }
 
@@ -278,11 +305,16 @@ http {
         ssl_certificate /etc/nginx/certs/jenkins.fullchain.pem;
         ssl_certificate_key /etc/nginx/certs/jenkins.privkey.pem;
 
+        # Basic SSL config (adapt cipher suites, etc. to your needs)
+        ssl_protocols        TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5:!SHA1:!kRSA;
+        ssl_prefer_server_ciphers on;
+
         # Increase buffer sizes (optional, for large responses)
         client_max_body_size 50M; # Adjust as needed
         proxy_buffer_size 128k;
-        proxy_buffers 4 256k;
-        proxy_busy_buffers_size 256k;
+        proxy_buffers 64 512k;
+        proxy_busy_buffers_size 512k;
 
         # Proxy settings for Jenkins
         location / {
@@ -291,6 +323,10 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            client_max_body_size 0;
+            proxy_buffer_size 128k;
+            proxy_buffers 64 512k;
+            proxy_busy_buffers_size 512k;
 
             # Handle WebSocket connections
             proxy_set_header Upgrade $http_upgrade;
@@ -306,9 +342,7 @@ http {
     server {
         listen 80;
         listen [::]:80;
-        server_name localhost ${HOSTNAME} mail.${BASE_DOMAIN};
-
-        http2 on;
+        server_name localhost ${HOSTNAME} mail.${BASE_DOMAIN} autodiscover.* autoconfig.*;
 
         return 301 https://$host$request_uri; # Redirect everything else to HTTPS
 
@@ -318,7 +352,7 @@ http {
     server {
         listen 443 ssl;
         listen [::]:443 ssl;
-        server_name localhost ${HOSTNAME} mail.${BASE_DOMAIN};
+        server_name localhost ${HOSTNAME} mail.${BASE_DOMAIN} autodiscover.* autoconfig.*;
 
         http2 on;
 
@@ -328,6 +362,7 @@ http {
         
         # Basic SSL config (adapt cipher suites, etc. to your needs)
         ssl_protocols        TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5:!SHA1:!kRSA;
         ssl_prefer_server_ciphers on;
 
         # Forward all HTTPS traffic to Mailcow’s internal Nginx (on port  12443)
@@ -337,8 +372,11 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            client_max_body_size 0;
+            proxy_buffer_size 128k;
+            proxy_buffers 64 512k;
+            proxy_busy_buffers_size 512k;
 
         }
     }
-
 }
