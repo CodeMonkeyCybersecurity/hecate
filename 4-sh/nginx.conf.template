@@ -42,11 +42,82 @@ events {
 #     }
 # }
 
+stream {
+    # --- SMTP (port 25) ---
+    upstream mailcow_smtp {
+        # The Postfix container typically listens on port 25 internally
+        server postfix-mailcow:25;
+    }
+    server {
+        listen 25;
+        proxy_pass mailcow_smtp;
+    }
+
+    # --- Submission (port 587) ---
+    upstream mailcow_submission {
+        server postfix-mailcow:587;
+    }
+    server {
+        listen 587;
+        proxy_pass mailcow_submission;
+    }
+
+    # --- SMTPS (port 465) ---
+    upstream mailcow_smtps {
+        server postfix-mailcow:465;
+    }
+    server {
+        listen 465 ssl;
+        # If you want to do full TLS termination in the front NGINX for SMTPS,
+        # configure ssl_certificate and ssl_certificate_key, or simply do
+        # a TCP pass-through. This example shows pass-through with no extra SSL config:
+        proxy_pass mailcow_smtps;
+    }
+
+    # --- POP3 (port 110) ---
+    upstream mailcow_pop3 {
+        server dovecot-mailcow:110;
+    }
+    server {
+        listen 110;
+        proxy_pass mailcow_pop3;
+    }
+
+    # --- POP3S (port 995) ---
+    upstream mailcow_pop3s {
+        server dovecot-mailcow:995;
+    }
+    server {
+        listen 995 ssl;
+        proxy_pass mailcow_pop3s;
+    }
+
+    # --- IMAP (port 143) ---
+    upstream mailcow_imap {
+        server dovecot-mailcow:143;
+    }
+    server {
+        listen 143;
+        proxy_pass mailcow_imap;
+    }
+
+    # --- IMAPS (port 993) ---
+    upstream mailcow_imaps {
+        server dovecot-mailcow:993;
+    }
+    server {
+        listen 993 ssl;
+        proxy_pass mailcow_imaps;
+    }
+}
+
 ###
 # HTTP BLOCK
 ###
 
 http {
+    # Hide NGINX version
+    server_tokens off;
 
     include       mime.types;
     default_type  application/octet-stream;
@@ -200,55 +271,40 @@ http {
         }
     }
 
+
     #--------------------------------------------------
-    # MATOMO PAGE: Reverse Proxy Configuration
+    # MAILCOW PAGE: mail.${BASE_DOMAIN}
     #--------------------------------------------------
-    
-    # Redirect HTTP → HTTPS
+    # --- Server block for HTTP (80) ---
     server {
         listen 80;
         listen [::]:80;
-        server_name matomo.${BASE_DOMAIN};  # Replace with your actual domain, e.g., matomo.example.com
-    
-        # Redirect all HTTP requests to HTTPS
-        return 301 https://$host$request_uri;
+        server_name localhost ${HOSTNAME} mail.${BASE_DOMAIN};
+        return 301 https://$host$request_uri; # Redirect everything else to HTTPS
     }
-    
-    # Handle HTTPS and proxy to Backend Nginx
+
+    # --- Server block for HTTPS (443) ---
     server {
         listen 443 ssl http2;
         listen [::]:443 ssl http2;
-        server_name matomo.${BASE_DOMAIN};  # Replace with your actual domain, e.g., matomo.example.com
-    
-        # SSL Certificate and Key
-        ssl_certificate /etc/nginx/certs/matomo.fullchain.pem;
-        ssl_certificate_key /etc/nginx/certs/matomo.privkey.pem;
-    
-        # Recommended SSL Settings
-        ssl_protocols TLSv1.2 TLSv1.3;
-        ssl_ciphers HIGH:!aNULL:!MD5;
+        server_name localhost ${HOSTNAME} mail.${BASE_DOMAIN};
+
+        # SSL certs if you're terminating TLS here
+        ssl_certificate /etc/nginx/certs/mail.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/mail.privkey.pem;
+        
+        # Basic SSL config (adapt cipher suites, etc. to your needs)
+        ssl_protocols        TLSv1.2 TLSv1.3;
         ssl_prefer_server_ciphers on;
-        ssl_session_cache shared:SSL:10m;
-        ssl_session_timeout 10m;
-    
-        # Security Headers
-        add_header X-Content-Type-Options nosniff;
-        add_header X-Frame-Options SAMEORIGIN;
-        add_header X-XSS-Protection "1; mode=block";
-        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
-    
-        # Proxy Settings
+
+        # Forward all HTTPS traffic to Mailcow’s internal Nginx (on port  12443)
         location / {
-            proxy_pass http://${backendIP}:12080;  # 'backend-nginx' is the service name in docker-compose.yaml
+            proxy_pass https://${backendIP}:12443
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
-    
-            # Optional: WebSocket Support
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection "upgrade";
+
         }
     }
 
