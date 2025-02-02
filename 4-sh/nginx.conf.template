@@ -1,4 +1,8 @@
-# nginx.conf
+###
+# NGINX main configuration context
+###
+user  nginx;
+
 worker_processes  auto;
 
 events {
