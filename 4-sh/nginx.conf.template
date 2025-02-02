@@ -67,7 +67,7 @@ stream {
          server ${backendIP}:465;
     }
     server {
-        listen 465 ssl;
+        listen 465;
         # If you want to do full TLS termination in the front NGINX for SMTPS,
         # configure ssl_certificate and ssl_certificate_key, or simply do
         # a TCP pass-through. This example shows pass-through with no extra SSL config:
