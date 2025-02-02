@@ -88,7 +88,7 @@ stream {
          server ${backendIP}:995;
     }
     server {
-        listen 995 ssl;
+        listen 995;
         proxy_pass mailcow_pop3s;
     }
 
@@ -106,7 +106,7 @@ stream {
          server ${backendIP}:993;
     }
     server {
-        listen 993 ssl;
+        listen 993;
         proxy_pass mailcow_imaps;
     }
 }
