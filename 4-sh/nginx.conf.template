@@ -46,7 +46,7 @@ stream {
     # --- SMTP (port 25) ---
     upstream mailcow_smtp {
         # The Postfix container typically listens on port 25 internally
-        server postfix-mailcow:25;
+         server ${backendIP}:25;
     }
     server {
         listen 25;
@@ -55,7 +55,7 @@ stream {
 
     # --- Submission (port 587) ---
     upstream mailcow_submission {
-        server postfix-mailcow:587;
+         server ${backendIP}:587;
     }
     server {
         listen 587;
@@ -64,7 +64,7 @@ stream {
 
     # --- SMTPS (port 465) ---
     upstream mailcow_smtps {
-        server postfix-mailcow:465;
+         server ${backendIP}:465;
     }
     server {
         listen 465 ssl;
@@ -76,7 +76,7 @@ stream {
 
     # --- POP3 (port 110) ---
     upstream mailcow_pop3 {
-        server dovecot-mailcow:110;
+         server ${backendIP}:110;
     }
     server {
         listen 110;
@@ -85,7 +85,7 @@ stream {
 
     # --- POP3S (port 995) ---
     upstream mailcow_pop3s {
-        server dovecot-mailcow:995;
+         server ${backendIP}:995;
     }
     server {
         listen 995 ssl;
@@ -94,7 +94,7 @@ stream {
 
     # --- IMAP (port 143) ---
     upstream mailcow_imap {
-        server dovecot-mailcow:143;
+         server ${backendIP}:143;
     }
     server {
         listen 143;
@@ -103,7 +103,7 @@ stream {
 
     # --- IMAPS (port 993) ---
     upstream mailcow_imaps {
-        server dovecot-mailcow:993;
+         server ${backendIP}:993;
     }
     server {
         listen 993 ssl;
