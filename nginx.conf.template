@@ -13,36 +13,43 @@ events {
 # STREAM BLOCK
 ###
 
-# stream {
-#     # -- 1515 --
-#     upstream wazuh_manager_1515 {
-#         server ${backendIP}:1515;
-#     }
-#     server {
-#         listen 1515;
-#         proxy_pass wazuh_manager_1515;
-#     }
-
-#     # -- 1514 --
-#     upstream wazuh_manager_1514 {
-#         server ${backendIP}:1514;
-#     }
-#     server {
-#         listen 1514;
-#         proxy_pass wazuh_manager_1514;
-#     }
-
-#     # -- 55000 --
-#     upstream wazuh_manager_55000 {
-#         server ${backendIP}:55000;
-#     }
-#     server {
-#         listen 55000;
-#         proxy_pass wazuh_manager_55000;
-#     }
-# }
-
 stream {
+
+    #--------------------------------------------------
+    # WAZUH WEB UI: wazuh.${BASE_DOMAIN}
+    #--------------------------------------------------
+
+    # -- 1515 --
+    upstream wazuh_manager_1515 {
+        server ${backendIP}:1515;
+    }
+    server {
+        listen 1515;
+        proxy_pass wazuh_manager_1515;
+    }
+
+    # -- 1514 --
+    upstream wazuh_manager_1514 {
+        server ${backendIP}:1514;
+    }
+    server {
+        listen 1514;
+        proxy_pass wazuh_manager_1514;
+    }
+
+    # -- 55000 --
+    upstream wazuh_manager_55000 {
+        server ${backendIP}:55000;
+    }
+    server {
+        listen 55000;
+        proxy_pass wazuh_manager_55000;
+
+
+    #--------------------------------------------------
+    # MAILCOW
+    #--------------------------------------------------
+
     # --- SMTP (port 25) ---
     upstream mailcow_smtp {
         # The Postfix container typically listens on port 25 internally
@@ -123,7 +130,7 @@ http {
     default_type  application/octet-stream;
 
     # Enable debug logging
-    error_log /var/log/nginx/error.log warn;
+    error_log /var/log/nginx/error.log warn; #change warn to debug if installing a development server
 
     # enable access logging 
     access_log /var/log/nginx/access.log;
@@ -167,35 +174,38 @@ http {
         }
     }
 
-    # #--------------------------------------------------
-    # # WAZUH WEB UI: wazuh.${BASE_DOMAIN}
-    # #--------------------------------------------------
+    #--------------------------------------------------
+    # WAZUH WEB UI: wazuh.${BASE_DOMAIN}
+    #--------------------------------------------------
 
-    # server {
-    #     listen 80;
-    #     listen [::]:80;
-    #     server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
-    #     return 301 https://$host$request_uri;
-    # }
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
 
-    # server {
-    #     listen 443 ssl http2;
-    #     listen [::]:443 ssl http2;
-    #     server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
+        http2 on;
 
-    #     ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
-    #     ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
-    #     location / {
-    #         proxy_pass https://${backendIP}:5601/;
-    #         proxy_set_header Host $host;
-    #         proxy_set_header X-Real-IP $remote_addr;
-    #         proxy_set_header X-Forwarded-Proto $scheme;
-    #     }
-    # }
+        return 301 https://$host$request_uri;
+    }
 
-    # #--------------------------------------------------
-    # # ERPNext WEB UI: erp.${BASE_DOMAIN}
-    # #--------------------------------------------------
+    server {
+        listen 443 ssl http2;
+        listen [::]:443 ssl http2;
+        server_name localhost ${HOSTNAME} wazuh.${BASE_DOMAIN};
+
+        ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
+        location / {
+            proxy_pass https://${backendIP}:5601/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+    #--------------------------------------------------
+    # ERPNext WEB UI: erp.${BASE_DOMAIN}
+    #--------------------------------------------------
 
     # Redirect HTTP traffic to HTTPS for ERPNext
     server {
