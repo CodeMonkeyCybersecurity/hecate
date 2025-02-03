@@ -3,12 +3,12 @@
 # Script: generate_nginx_conf.sh
 # Description: Prompts the user for backendIP, HOSTNAME, and BASE_DOMAIN,
 #              then replaces placeholders in nginx.conf.template with these values.
-#              Remembers last-used values in .last_nginx_conf.
+#              Remembers last-used values in .last_nginx.conf.
 
 set -e
 
 # Where we store the last-used values
-LAST_VALUES_FILE=".last_nginx_conf"
+LAST_VALUES_FILE=".last_nginx.conf"
 
 # If we have a saved file from a previous run, load it.
 # This defines $backendIP, $HOSTNAME, $BASE_DOMAIN if present.
