@@ -422,8 +422,22 @@ http {
         ssl_stapling on;
         ssl_stapling_verify on;
 
-        # Debug header for TLS 1.3 early data (optional)
-        add_header X-Early-Data $tls1_3_early_data;
+        # Standard (HTTP) traffic
+        location / {
+            proxy_pass http://${backendIP}:8065;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            client_max_body_size               100M;
+            proxy_set_header Connection         "";
+            proxy_set_header X-Frame-Options    SAMEORIGIN;
+            proxy_buffers                      256 16k;
+            proxy_buffer_size                  16k;
+            proxy_read_timeout                 600s;
+            proxy_http_version                 1.1;
+
+        }
 
         # WebSocket (real-time) connections for Mattermost
         location ~ /api/v[0-9]+/(users/)?websocket$ {
@@ -448,23 +462,6 @@ http {
             proxy_send_timeout                  300s;
             proxy_read_timeout                  90s;
             proxy_http_version                  1.1;
-
-            proxy_pass http://${backendIP}:8065;
-        }
-
-        # Standard (HTTP) traffic
-        location / {
-            client_max_body_size               100M;
-            proxy_set_header Connection         "";
-            proxy_set_header Host               $host;
-            proxy_set_header X-Real-IP          $remote_addr;
-            proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto  $scheme;
-            proxy_set_header X-Frame-Options    SAMEORIGIN;
-            proxy_buffers                      256 16k;
-            proxy_buffer_size                  16k;
-            proxy_read_timeout                 600s;
-            proxy_http_version                 1.1;
 
             proxy_pass http://${backendIP}:8065;
         }
