@@ -1,6 +1,9 @@
 #!/bin/bash
 # generateCerts.sh
 
+echo "check docker processes"
+docker ps 
+
 echo "stop hecate, for now"
 docker compose down
 
@@ -29,14 +32,8 @@ sudo chmod 600 certs/*privkey.pem
 echo "verify certs are present"
 ls -lah certs/
 
-echo "bring Hecate back up"
-docker compose up -d
-
-echo "check docker processes"
-docker ps 
-
 echo "You should now have the appropriate certificates for https://$SUB_CERT"
 
-echo "You should now run ./generateNginxConf.sh"
+echo "You should now run ./generateNginxConf.sh before restarting Hecate" 
 
 echo "finis"
