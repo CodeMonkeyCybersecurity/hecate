@@ -405,7 +405,7 @@ http {
         ssl_certificate /etc/nginx/certs/collaborate.fullchain.pem;
         ssl_certificate_key /etc/nginx/certs/collaborate.privkey.pem;
 
-`       # Recommended SSL/TLS config
+        # Recommended SSL/TLS config
         ssl_session_timeout 1d;
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_early_data on;
