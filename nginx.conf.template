@@ -565,8 +565,8 @@ http {
         }
 
         # SSL certificates
-        ssl_certificate /etc/nginx/certs/analytics.fullchain.pem;
-        ssl_certificate_key /etc/nginx/certs/analytics.privkey.pem;
+        ssl_certificate /etc/nginx/certs/cloud.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/cloud.privkey.pem;
 
         ssl_dhparam /etc/dhparam; # curl -L https://ssl-config.mozilla.org/ffdhe2048.txt -o /etc/dhparam
 
