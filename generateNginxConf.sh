@@ -53,13 +53,11 @@ echo "=== NGINX Configuration Generator ==="
 
 # Prompt for values (will show defaults if any)
 backendIP=$(prompt_input "backendIP" "Enter the backend IP address")
-HOSTNAME=$(prompt_input "HOSTNAME" "Enter the hostname for the NGINX server")
 BASE_DOMAIN=$(prompt_input "BASE_DOMAIN" "Enter the base domain for your services")
 
 # Save the values so future runs start with the same defaults
 cat <<EOF > "$LAST_VALUES_FILE"
 backendIP="$backendIP"
-HOSTNAME="$HOSTNAME"
 BASE_DOMAIN="$BASE_DOMAIN"
 EOF
 
@@ -74,13 +72,12 @@ fi
 
 # Backup existing nginx.conf if it exists
 if [[ -f "$OUTPUT_FILE" ]]; then
-    cp "$OUTPUT_FILE" "$(date +"%Y%m%d_%H%M%S")_${OUTPUT_FILE}.bak"
+    cp "$OUTPUT_FILE" "$(date)_${OUTPUT_FILE}.bak"
     echo "Backup of existing '$OUTPUT_FILE' created."
 fi
 
 # Replace placeholders with user values
 sed -e "s/\${backendIP}/$backendIP/g" \
-    -e "s/\${HOSTNAME}/$HOSTNAME/g" \
     -e "s/\${BASE_DOMAIN}/$BASE_DOMAIN/g" \
     "$TEMPLATE_FILE" > "$OUTPUT_FILE"
 
