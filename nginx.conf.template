@@ -571,7 +571,6 @@ http {
 
         ssl_early_data on;
         ssl_session_timeout 1d;
-        ssl_session_cache shared:SSL:10m;
 
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_ecdh_curve x25519:x448:secp521r1:secp384r1:secp256r1;
