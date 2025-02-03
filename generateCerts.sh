@@ -37,6 +37,6 @@ docker ps
 
 echo "You should now have the appropriate certificates for https://$SUB_CERT"
 
-
+echo "You should now run ./generateNginxConf.sh"
 
 echo "finis"
