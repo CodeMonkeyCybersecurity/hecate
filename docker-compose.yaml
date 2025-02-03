@@ -2,7 +2,7 @@
 services:
   nginx:
     image: nginx
-    container_name: hecate-sh
+    container_name: hecate
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro # Custom NGINX configuration
       - ./certs:/etc/nginx/certs:ro  # SSL certificates
