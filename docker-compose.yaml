@@ -12,4 +12,11 @@ services:
       #- "1515:1515"    # <- uncomment if using Wazuh behind proxy # Wazuh API
       #- "1514:1514"    # <- # Additional Wazuh ports
       #- "55000:55000"  # <- # Wazuh API HTTPS
+      - "25:25"
+      - "587:587"
+      - "465:465"
+      - "110:110"
+      - "995:995"
+      - "143:143"
+      - "993:993"
     restart: always
