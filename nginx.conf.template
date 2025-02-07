@@ -3,6 +3,7 @@
 ###
 user  nginx;
 worker_processes  auto;
+pid        /var/run/nginx.pid;
 
 events {
     worker_connections  1024;
@@ -131,6 +132,9 @@ http {
     # enable access logging 
     access_log /var/log/nginx/access.log;
 
+    sendfile        on;
+    keepalive_timeout  65;
+
     ###
     # SERVER BLOCKS
     ###
@@ -216,7 +220,7 @@ http {
         ssl_prefer_server_ciphers on;
 
         # Increase buffer sizes (optional, for large responses)
-        client_max_body_size 50M; # Adjust as needed
+        client_max_body_size 0; # Adjust as needed
         proxy_buffer_size 128k;
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
@@ -267,7 +271,7 @@ http {
         ssl_prefer_server_ciphers on;
 
         # Increase buffer sizes (optional, for large responses)
-        client_max_body_size 50M; # Adjust as needed
+        client_max_body_size 0; # Adjust as needed
         proxy_buffer_size 128k;
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
@@ -320,7 +324,7 @@ http {
         ssl_prefer_server_ciphers on;
 
         # Increase buffer sizes (optional, for large responses)
-        client_max_body_size 50M; # Adjust as needed
+        client_max_body_size 0; # Adjust as needed
         proxy_buffer_size 128k;
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
@@ -433,7 +437,7 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
-            client_max_body_size               100M;
+            client_max_body_size               0;
             proxy_set_header Connection         "";
             proxy_set_header X-Frame-Options    SAMEORIGIN;
             proxy_buffers                      256 16k;
@@ -449,7 +453,7 @@ http {
             proxy_set_header Connection          "upgrade";
 
             # Basic proxy settings
-            client_max_body_size                50M;
+            client_max_body_size                0;
             proxy_set_header Host               $host;
             proxy_set_header X-Real-IP          $remote_addr;
             proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
@@ -557,12 +561,6 @@ http {
             proxy_set_header Host $host;
             proxy_set_header Early-Data $ssl_early_data;
 
-            # Websocket
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection $connection_upgrade;
-        }
-
         # SSL certificates
         ssl_certificate /etc/nginx/certs/cloud.fullchain.pem;
         ssl_certificate_key /etc/nginx/certs/cloud.privkey.pem;
@@ -578,6 +576,54 @@ http {
         ssl_prefer_server_ciphers on;
         ssl_conf_command Options PrioritizeChaCha;
         ssl_ciphers TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-GCM-SHA256;
+        }
+    }
+
+    #--------------------------------------------------
+    # MINIO: s3.${BASE_DOMAIN}
+    #--------------------------------------------------
+
+    # Redirect HTTP → HTTPS
+    server {
+        listen 80;
+        listen [::]:80;
+        server_name s3.${BASE_DOMAIN}; # or _ for any host
+
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+         listen 443 ssl;
+         listen [::]:443 ssl;
+         http2 on;
+
+         server_name s3.${BASE_DOMAIN}; # or _ for any host
+
+        # SSL certificates
+         ssl_certificate /etc/nginx/certs/s3.fullchain.pem;
+         ssl_certificate_key /etc/nginx/certs/s3.privkey.pem;
+
+        # Basic SSL config (adapt cipher suites, etc. to your needs)
+        ssl_protocols        TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5:!SHA1:!kRSA;
+        ssl_prefer_server_ciphers on;
+
+        # Increase buffer sizes (optional, for large responses)
+        client_max_body_size 0;                     # Allow any size file to be uploaded.
+        proxy_buffering off;                        # To disable buffering
+        proxy_request_buffering off;                # <-
+
+         location / {
+             proxy_pass http://${backendIP}:8123;
+             proxy_set_header Host $host;
+             proxy_set_header X-Real-IP $remote_addr;
+             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+             proxy_set_header X-Forwarded-Proto $scheme;
+             client_max_body_size 0;
+
+             # Handle WebSocket connections
+             proxy_set_header Upgrade $http_upgrade;
+             proxy_set_header Connection "upgrade";
         }
     }
 }
