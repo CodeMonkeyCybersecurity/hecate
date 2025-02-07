@@ -631,14 +631,14 @@ http {
 
 
     #--------------------------------------------------
-    # MINIO API: s3console.${BASE_DOMAIN}
+    # MINIO API: s3api.${BASE_DOMAIN}
     #--------------------------------------------------
 
     # Redirect HTTP → HTTPS
     server {
         listen 80;
         listen [::]:80;
-        server_name s3console.${BASE_DOMAIN}; # or _ for any host
+        server_name s3api.${BASE_DOMAIN}; # or _ for any host
 
         return 301 https://$host$request_uri;
     }
@@ -648,11 +648,11 @@ http {
          listen [::]:443 ssl;
          http2 on;
 
-         server_name s3console.${BASE_DOMAIN}; # or _ for any host
+         server_name s3api.${BASE_DOMAIN}; # or _ for any host
 
         # SSL certificates
-         ssl_certificate /etc/nginx/certs/s3console.fullchain.pem;
-         ssl_certificate_key /etc/nginx/certs/s3console.privkey.pem;
+         ssl_certificate /etc/nginx/certs/s3api.fullchain.pem;
+         ssl_certificate_key /etc/nginx/certs/s3api.privkey.pem;
 
         # Basic SSL config (adapt cipher suites, etc. to your needs)
         ssl_protocols        TLSv1.2 TLSv1.3;
