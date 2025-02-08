@@ -1,31 +1,54 @@
-<!-- error_pages/custom_error.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Something went wrong</title>
   <style>
-    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 50px;
+      background-color: #fafafa;
+      color: #333;
+    }
+    /* Style for the ASCII art */
+    .ascii-art {
+      font-family: "Courier New", Courier, monospace; /* ensures a monospaced font */
+      background-color: #f0f0f0; /* a light background to set it apart */
+      padding: 15px;
+      border: 1px solid #ddd;
+      display: inline-block; /* centers nicely when combined with text-align: center on body */
+      margin-top: 20px;
+      font-size: 14px;
+      line-height: 1.4;
+      white-space: pre; /* preserves spacing */
+    }
+    /* Style for your links */
+    a {
+      color: #007acc;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <h2>Oops! An error occurred.</h2>
   <h1>Thanks all we know :(</h1>
   <p>Please <strong>let us know</strong> and try again later...</p>
-  <p> </p>
-  <p>Secure email: [main@cybermonkey.net.au](mailto:main@cybermonkey.net.au)</p>
-  <p>Website: [cybermonkey.net.au](https://cybermonkey.net.au)</p>
-
-  <pre><code>
-  #     ___         _       __  __          _
-  #    / __|___  __| |___  |  \/  |___ _ _ | |_____ _  _
-  #   | (__/ _ \/ _` / -_) | |\/| / _ \ ' \| / / -_) || |
-  #    \___\___/\__,_\___| |_|  |_\___/_||_|_\_\___|\_, |
-  #                  / __|  _| |__  ___ _ _         |__/
-  #                 | (_| || | '_ \/ -_) '_|
-  #                  \___\_, |_.__/\___|_|
-  #                      |__/
-   <pre><code>
-
+  <p>Secure email: <a href="mailto:main@cybermonkey.net.au">main@cybermonkey.net.au</a></p>
+  <p>Website: <a href="https://cybermonkey.net.au">cybermonkey.net.au</a></p>
+  
+  <pre class="ascii-art">
+     ___         _       __  __          _
+    / __|___  __| |___  |  \/  |___ _ _ | |_____ _  _
+   | (__/ _ \/ _` / -_) | |\/| / _ \ ' \| / / -_) || |
+    \___\___/\__,_\___| |_|  |_\___/_||_|_\_\___|\_, |
+                  / __|  _| |__  ___ _ _         |__/
+                 | (_| || | '_ \/ -_) '_|
+                  \___\_, |_.__/\___|_|
+                      |__/
+  </pre>
 </body>
 </html>
