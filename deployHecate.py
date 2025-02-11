@@ -23,20 +23,20 @@ If Wazuh (option 2) or Mailcow (option 3) is selected, the final configuration w
 both the stream and HTTP blocks. The script also checks that the required TLS certificate files
 are present for each FQDN.
 
-Note: Rather than using wildcard certificates, the following file names are expected:
+Note: Instead of using wildcard certificates, the following file names are expected:
 
 Static site:
     fullchain.pem
     privkey.pem
 
-For subdomains (for example, for Wazuh):
+For subdomains (e.g., for Wazuh):
     delphi.fullchain.pem
     delphi.privkey.pem
 
 For Minio:
     s3.fullchain.pem, s3.privkey.pem, s3api.fullchain.pem, s3api.privkey.pem
 
-(And similarly for the other applications.)
+(and similarly for the other applications)
 """
 
 import os
@@ -69,7 +69,7 @@ SUBDOMAIN_MAP = {
     7: "erp",          # ERPNext
     8: "jellyfin",     # Jellyfin
     9: "observe",      # Grafana
-    10: "s3",          # Minio (for primary domain; also check s3api separately)
+    10: "s3",          # Minio (primary; also check s3api)
     11: "jenkins",     # Jenkins
     12: "wiki"         # Wiki
 }
@@ -179,43 +179,40 @@ def check_certificates(base_domain, selected_apps):
     else:
         print("All required certificate files are present.\n")
 
-def write_env_file(backend_ip, base_domain, selected_apps, include_stream):
+def substitute_config_files(backend_ip, base_domain, include_stream):
     """
-    Write a .env file with the provided values.
-    The docker-compose file should read variables (e.g. BACKEND_IP, BASE_DOMAIN, INCLUDE_STREAM,
-    and each application's subdomain FQDN) from this file.
+    Recursively process configuration files (e.g. in conf.d and snippets) and substitute
+    any occurrences of ${BACKEND_IP}, $BACKEND_IP, ${BASE_DOMAIN}, and ${INCLUDE_STREAM} with the
+    user-provided values.
+    
+    This function modifies files in place.
     """
-    env_lines = [
-        f"BACKEND_IP={backend_ip}",
-        f"BASE_DOMAIN={base_domain}",
-        f"INCLUDE_STREAM={'yes' if include_stream else 'no'}"
-    ]
+    dirs_to_process = ["conf.d", "snippets"]
+    substitutions = {
+        "${BACKEND_IP}": backend_ip,
+        "$BACKEND_IP": backend_ip,
+        "${BASE_DOMAIN}": base_domain,
+        "$BASE_DOMAIN": base_domain,
+        "${INCLUDE_STREAM}": "yes" if include_stream else "no",
+        "$INCLUDE_STREAM": "yes" if include_stream else "no"
+    }
     
-    # For static site (option 1), domain is the base domain.
-    if 1 in selected_apps:
-        env_lines.append(f"STATIC_SITE_DOMAIN={base_domain}")
-    
-    # For each other application, add its FQDN.
-    for app in selected_apps:
-        if app == 1:
-            continue
-        if app in ENV_VAR_MAP and app in SUBDOMAIN_MAP:
-            fqdn = f"{SUBDOMAIN_MAP[app]}.{base_domain}"
-            env_lines.append(f"{ENV_VAR_MAP[app]}={fqdn}")
-            print(f"{ENV_VAR_MAP[app]} set to {fqdn}")
-        if app == 10:
-            fqdn_api = f"s3api.{base_domain}"
-            env_lines.append(f"MINIO_API_DOMAIN={fqdn_api}")
-            print(f"MINIO_API_DOMAIN set to {fqdn_api}")
-    
-    env_content = "\n".join(env_lines) + "\n"
-    try:
-        with open(".env", "w") as env_file:
-            env_file.write(env_content)
-        print("\nEnvironment file (.env) written successfully.\n")
-    except Exception as e:
-        print(f"Error writing .env file: {e}")
-        sys.exit(1)
+    for d in dirs_to_process:
+        for root, dirs, files in os.walk(d):
+            for file in files:
+                # Process only files ending in .conf (or you can adjust the pattern)
+                if file.endswith(".conf"):
+                    path = os.path.join(root, file)
+                    try:
+                        with open(path, "r") as f:
+                            content = f.read()
+                        for key, val in substitutions.items():
+                            content = content.replace(key, val)
+                        with open(path, "w") as f:
+                            f.write(content)
+                        print(f"Substituted variables in {path}")
+                    except Exception as e:
+                        print(f"Error processing {path}: {e}")
 
 def cleanup_conf_files(selected_apps, include_stream):
     """
@@ -311,8 +308,8 @@ def main():
     # Step 4: Check for required TLS certificate files for each domain/subdomain.
     check_certificates(base_domain, selected_apps)
     
-    # Step 5: Write out the .env file so docker-compose can use these values.
-    write_env_file(backend_ip, base_domain, selected_apps, include_stream)
+    # Step 5: Substitute environment variables in the configuration files.
+    substitute_config_files(backend_ip, base_domain, include_stream)
     
     # Step 6: Delete unused .conf files from conf.d/servers and conf.d/stream.
     cleanup_conf_files(selected_apps, include_stream)
