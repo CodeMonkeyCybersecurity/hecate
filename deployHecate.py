@@ -36,11 +36,11 @@ For subdomains:
     cloud.fullchain.pem / cloud.privkey.pem
     erp.fullchain.pem / erp.privkey.pem
     media.fullchain.pem / media.privkey.pem
-    wiki.fullchain.pem / wiki.privkey.pem
     observe.fullchain.pem / observe.privkey.pem
     s3.fullchain.pem / s3.privkey.pem
     s3api.fullchain.pem / s3api.privkey.pem
     jenkins.fullchain.pem / jenkins.privkey.pem
+    wiki.fullchain.pem / wiki.privkey.pem
 """
 
 import os
