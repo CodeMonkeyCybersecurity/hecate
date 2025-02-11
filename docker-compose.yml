@@ -9,6 +9,10 @@ services:
       - ./snippets:/etc/nginx/snippets:ro              # Your snippets (security-headers and error-pages)
       - ./certs:/etc/nginx/certs:ro                    # Your SSL certificates
       - ./error_pages:/usr/share/nginx/html:ro         # Your error pages (custom_error.html, etc.)
+    environment:
+      - BACKEND_IP=${BACKEND_IP}
+      - BASE_DOMAIN=${BASE_DOMAIN}
+      - INCLUDE_STREAM=${INCLUDE_STREAM}
     ports:
       - "80:80"
       - "443:443"
