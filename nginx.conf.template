@@ -177,6 +177,7 @@ http {
         # Security headers
         # Enforce a Content Security Policy (adjust as needed)
         add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
+        
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -248,9 +249,6 @@ http {
         proxy_busy_buffers_size 512k;
 
         # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -320,10 +318,7 @@ http {
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
 
-        # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
+        # Security headers    
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -397,9 +392,6 @@ http {
         proxy_busy_buffers_size 512k;
 
         # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -468,9 +460,6 @@ http {
         ssl_prefer_server_ciphers on;
 
         # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -545,10 +534,7 @@ http {
             internal;
         }
 
-         # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
+        # Security headers  
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -642,10 +628,7 @@ http {
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
 
-        # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
+        # Security headers 
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -705,10 +688,7 @@ http {
 
         server_name cloud.${BASE_DOMAIN};
 
-        # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
+        # Security headers   
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -792,9 +772,6 @@ http {
         proxy_request_buffering off;                # <-
 
         # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -864,9 +841,6 @@ http {
         proxy_request_buffering off;                # <-
 
         # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -930,10 +904,7 @@ http {
         proxy_buffers 4 256k;
         proxy_busy_buffers_size 256k;
 
-        # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
+        # Security headers    
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -968,7 +939,7 @@ http {
     }
 
     #--------------------------------------------------
-    # WIKI_JS WEB UI: jellyfin.${BASE_DOMAIN}
+    # JELLYFIN: jellyfin.${BASE_DOMAIN}
     #--------------------------------------------------
 
     # Redirect HTTP → HTTPS
@@ -997,10 +968,7 @@ http {
         proxy_buffers 4 256k;
         proxy_busy_buffers_size 256k;
 
-        # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
+        # Security headers    
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
@@ -1069,10 +1037,7 @@ http {
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
 
-        # Security headers
-        # Enforce a Content Security Policy (adjust as needed)
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'nonce-{{nonce}}';" always;    
-    
+        # Security headers    
         # Prevent clickjacking
         proxy_hide_header X-Frame-Options;
         add_header X-Frame-Options "SAMEORIGIN" always;
