@@ -15,12 +15,31 @@ will be deployed on a subdomain with these defaults:
     ERPNext     -> erp
     Jellyfin    -> media
     Grafana     -> observe
-    Minio       -> s3 and s3api
+    Minio       -> s3 (and also s3api)
     Jenkins     -> jenkins
 
 If Wazuh (option 2) or Mailcow (option 3) is selected, the final configuration will include
 both the stream and HTTP blocks. The script also checks that the required TLS certificate files
-are present for each FQDN. (No wildcard certificates are assumed.)
+are present for each FQDN.
+
+Note: Instead of using wildcard certificates, the following file names are expected:
+
+Static site:
+    fullchain.pem
+    privkey.pem
+
+For subdomains:
+    delphi.fullchain.pem / delphi.privkey.pem
+    mail.fullchain.pem / mail.privkey.pem
+    analytics.fullchain.pem / analytics.privkey.pem
+    collaborate.fullchain.pem / collaborate.privkey.pem
+    cloud.fullchain.pem / cloud.privkey.pem
+    erp.fullchain.pem / erp.privkey.pem
+    media.fullchain.pem / media.privkey.pem
+    observe.fullchain.pem / observe.privkey.pem
+    s3.fullchain.pem / s3.privkey.pem
+    s3api.fullchain.pem / s3api.privkey.pem
+    jenkins.fullchain.pem / jenkins.privkey.pem
 """
 
 import os
@@ -52,8 +71,8 @@ SUBDOMAIN_MAP = {
     7: "erp",          # ERPNext
     8: "media",        # Jellyfin
     9: "observe",      # Grafana
-    10: "s3" "s3api",   # Minio (and also s3api)
-    11: "jenkins"      # Jenkins 
+    10: "s3",          # Minio (for primary domain; also check s3api separately)
+    11: "jenkins"      # Jenkins
 }
 
 # Mapping from application number to the environment variable name that will hold its FQDN.
@@ -89,51 +108,50 @@ def get_applications():
             sys.exit(1)
     return selected
 
+
 def check_certificates(base_domain, selected_apps):
     """
     Check for required TLS certificate files.
 
     For a static website (option 1), we expect certificates for the base domain:
-      ./certs/<base_domain>.fullchain.pem
-      ./certs/<base_domain>.privkey.pem
+      ./certs/fullchain.pem
+      ./certs/privkey.pem
 
     For each selected application (except option 1), we expect certificates for the
-    corresponding subdomain:
-      ./certs/<subdomain>.<base_domain>.fullchain.pem
-      ./certs/<subdomain>.<base_domain>.privkey.pem
+    corresponding subdomain using the subdomain name alone:
+      ./certs/<subdomain>.fullchain.pem
+      ./certs/<subdomain>.privkey.pem
 
     For Minio (option 10), we also expect certificates for the "s3api" subdomain.
     """
     missing_files = []
 
-    # If static website is selected, check base domain certificate.
+    # Check certificates for the static site (option 1)
     if 1 in selected_apps:
-        base_fullchain = f"./certs/{base_domain}.fullchain.pem"
-        base_privkey = f"./certs/{base_domain}.privkey.pem"
-        if not os.path.exists(base_fullchain):
-            missing_files.append(base_fullchain)
-        if not os.path.exists(base_privkey):
-            missing_files.append(base_privkey)
+        static_fullchain = "./certs/fullchain.pem"
+        static_privkey = "./certs/privkey.pem"
+        if not os.path.exists(static_fullchain):
+            missing_files.append(static_fullchain)
+        if not os.path.exists(static_privkey):
+            missing_files.append(static_privkey)
 
     # Check certificates for each other application.
     for app in selected_apps:
         if app == 1:
             continue
-        # For Minio (option 10), check two FQDNs.
+        # For Minio (option 10), check two sets.
         if app == 10:
-            fqdn = f"{SUBDOMAIN_MAP[app]}.{base_domain}"  # e.g., s3.example.com
-            fqdn_api = f"s3api.{base_domain}"              # For s3api domain.
-            for domain in [fqdn, fqdn_api]:
-                fullchain = f"./certs/{domain}.fullchain.pem"
-                privkey = f"./certs/{domain}.privkey.pem"
+            for name in ["s3", "s3api"]:
+                fullchain = f"./certs/{name}.fullchain.pem"
+                privkey = f"./certs/{name}.privkey.pem"
                 if not os.path.exists(fullchain):
                     missing_files.append(fullchain)
                 if not os.path.exists(privkey):
                     missing_files.append(privkey)
         else:
-            fqdn = f"{SUBDOMAIN_MAP[app]}.{base_domain}"
-            fullchain = f"./certs/{fqdn}.fullchain.pem"
-            privkey = f"./certs/{fqdn}.privkey.pem"
+            subdomain = SUBDOMAIN_MAP[app]
+            fullchain = f"./certs/{subdomain}.fullchain.pem"
+            privkey = f"./certs/{subdomain}.privkey.pem"
             if not os.path.exists(fullchain):
                 missing_files.append(fullchain)
             if not os.path.exists(privkey):
@@ -148,11 +166,12 @@ def check_certificates(base_domain, selected_apps):
     else:
         print("All required certificate files are present.\n")
 
+
 def write_env_file(backend_ip, base_domain, selected_apps, include_stream):
     """
     Write a .env file with the provided values.
     The docker-compose file should read variables (e.g. BACKEND_IP, BASE_DOMAIN, INCLUDE_STREAM,
-    and each application's subdomain) from this file.
+    and each application's subdomain FQDN) from this file.
     """
     env_lines = [
         f"BACKEND_IP={backend_ip}",
@@ -164,7 +183,7 @@ def write_env_file(backend_ip, base_domain, selected_apps, include_stream):
     if 1 in selected_apps:
         env_lines.append(f"STATIC_SITE_DOMAIN={base_domain}")
     
-    # For each other application, compute its FQDN and add an environment variable.
+    # For each other application, compute its FQDN (subdomain + base_domain) and add an environment variable.
     for app in selected_apps:
         if app == 1:
             continue
@@ -187,6 +206,7 @@ def write_env_file(backend_ip, base_domain, selected_apps, include_stream):
         print(f"Error writing .env file: {e}")
         sys.exit(1)
 
+
 def deploy_stack():
     """Bring the docker-compose stack down and then up in detached mode."""
     print("Tearing down any existing containers...")
@@ -194,6 +214,7 @@ def deploy_stack():
     print("Starting up the reverse proxy stack in detached mode...")
     subprocess.run("docker-compose up -d", shell=True, check=True)
     print("Deployment successful!\n")
+
 
 def main():
     print("\n--- Reverse Proxy Deployment Script ---\n")
@@ -215,7 +236,7 @@ def main():
     else:
         print("\nStream configuration is not required.")
     
-    # Step 4: Check for required TLS certificate files (for each subdomain).
+    # Step 4: Check for required TLS certificate files for each domain/subdomain.
     check_certificates(base_domain, selected_apps)
     
     # Step 5: Write out the .env file so docker-compose can use these values.
@@ -237,6 +258,7 @@ def main():
             print("\nLog tailing interrupted.")
     else:
         print("Deployment complete.")
+
 
 if __name__ == "__main__":
     try:
