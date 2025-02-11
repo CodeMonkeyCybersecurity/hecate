@@ -8,39 +8,35 @@ the backend IP, and the base domain. All applications except for the static HTTP
 will be deployed on a subdomain with these defaults:
 
     Wazuh       -> delphi
-    Mailcow     -> mail
+    Mailcow     -> mailcow
     Umami       -> analytics
     Mattermost  -> collaborate
     Nextcloud   -> cloud
     ERPNext     -> erp
-    Jellyfin    -> media
+    Jellyfin    -> jellyfin
     Grafana     -> observe
     Minio       -> s3 (and also s3api)
     Jenkins     -> jenkins
+    Wiki        -> wiki
 
 If Wazuh (option 2) or Mailcow (option 3) is selected, the final configuration will include
 both the stream and HTTP blocks. The script also checks that the required TLS certificate files
 are present for each FQDN.
 
-Note: Instead of using wildcard certificates, the following file names are expected:
+Note: Rather than using wildcard certificates, the following file names are expected:
 
 Static site:
     fullchain.pem
     privkey.pem
 
-For subdomains:
-    delphi.fullchain.pem / delphi.privkey.pem
-    mail.fullchain.pem / mail.privkey.pem
-    analytics.fullchain.pem / analytics.privkey.pem
-    collaborate.fullchain.pem / collaborate.privkey.pem
-    cloud.fullchain.pem / cloud.privkey.pem
-    erp.fullchain.pem / erp.privkey.pem
-    media.fullchain.pem / media.privkey.pem
-    observe.fullchain.pem / observe.privkey.pem
-    s3.fullchain.pem / s3.privkey.pem
-    s3api.fullchain.pem / s3api.privkey.pem
-    jenkins.fullchain.pem / jenkins.privkey.pem
-    wiki.fullchain.pem / wiki.privkey.pem
+For subdomains (for example, for Wazuh):
+    delphi.fullchain.pem
+    delphi.privkey.pem
+
+For Minio:
+    s3.fullchain.pem, s3.privkey.pem, s3api.fullchain.pem, s3api.privkey.pem
+
+(And similarly for the other applications.)
 """
 
 import os
@@ -66,19 +62,19 @@ APP_OPTIONS = {
 # Mapping from application number to the default subdomain (for FQDN)
 SUBDOMAIN_MAP = {
     2: "delphi",       # Wazuh
-    3: "mail",         # Mailcow
+    3: "mailcow",      # Mailcow
     4: "analytics",    # Umami
     5: "collaborate",  # Mattermost
     6: "cloud",        # Nextcloud
     7: "erp",          # ERPNext
-    8: "media",        # Jellyfin
+    8: "jellyfin",     # Jellyfin
     9: "observe",      # Grafana
     10: "s3",          # Minio (for primary domain; also check s3api separately)
-    11: "jenkins",      # Jenkins
-    12: "wiki"
+    11: "jenkins",     # Jenkins
+    12: "wiki"         # Wiki
 }
 
-# Mapping from application number to the environment variable name that will hold its FQDN.
+# Mapping from application number to the environment variable name for its FQDN.
 ENV_VAR_MAP = {
     2: "DELPHI_DOMAIN",
     3: "MAIL_DOMAIN",
@@ -86,13 +82,29 @@ ENV_VAR_MAP = {
     5: "COLLABORATE_DOMAIN",
     6: "CLOUD_DOMAIN",
     7: "ERP_DOMAIN",
-    8: "MEDIA_DOMAIN",
+    8: "JELLYFIN_DOMAIN",
     9: "OBSERVE_DOMAIN",
     10: "MINIO_DOMAIN",    # For Minio primary (s3)
     11: "JENKINS_DOMAIN",
     12: "WIKI_DOMAIN"
 }
 
+# Mapping from application number to the expected conf file name(s) in conf.d/servers.
+# For static site (option 1), we expect "base.conf"
+CONF_FILE_MAP = {
+    1: "base.conf",
+    2: "delphi.conf",
+    3: "mailcow.conf",
+    4: "analytics.conf",
+    5: "collaborate.conf",
+    6: "cloud.conf",
+    7: "erp.conf",
+    8: "jellyfin.conf",
+    9: "observe.conf",
+    10: ["s3.conf", "s3api.conf"],
+    11: "jenkins.conf",
+    12: "wiki.conf"
+}
 
 def get_applications():
     """Prompt the user to select which applications to deploy."""
@@ -112,25 +124,23 @@ def get_applications():
             sys.exit(1)
     return selected
 
-
 def check_certificates(base_domain, selected_apps):
     """
     Check for required TLS certificate files.
 
-    For a static website (option 1), we expect certificates for the base domain:
+    For a static website (option 1), we expect:
       ./certs/fullchain.pem
       ./certs/privkey.pem
 
-    For each selected application (except option 1), we expect certificates for the
-    corresponding subdomain using the subdomain name alone:
+    For each selected application (except option 1), we expect certificate files named:
       ./certs/<subdomain>.fullchain.pem
       ./certs/<subdomain>.privkey.pem
 
-    For Minio (option 10), we also expect certificates for the "s3api" subdomain.
+    For Minio (option 10), we expect both for "s3" and "s3api".
     """
     missing_files = []
 
-    # Check certificates for the static site (option 1)
+    # Check static site certificates if option 1 is selected.
     if 1 in selected_apps:
         static_fullchain = "./certs/fullchain.pem"
         static_privkey = "./certs/privkey.pem"
@@ -143,7 +153,6 @@ def check_certificates(base_domain, selected_apps):
     for app in selected_apps:
         if app == 1:
             continue
-        # For Minio (option 10), check two sets.
         if app == 10:
             for name in ["s3", "s3api"]:
                 fullchain = f"./certs/{name}.fullchain.pem"
@@ -170,7 +179,6 @@ def check_certificates(base_domain, selected_apps):
     else:
         print("All required certificate files are present.\n")
 
-
 def write_env_file(backend_ip, base_domain, selected_apps, include_stream):
     """
     Write a .env file with the provided values.
@@ -183,11 +191,11 @@ def write_env_file(backend_ip, base_domain, selected_apps, include_stream):
         f"INCLUDE_STREAM={'yes' if include_stream else 'no'}"
     ]
     
-    # For the static HTTP site (option 1), its domain is the base domain.
+    # For static site (option 1), domain is the base domain.
     if 1 in selected_apps:
         env_lines.append(f"STATIC_SITE_DOMAIN={base_domain}")
     
-    # For each other application, compute its FQDN (subdomain + base_domain) and add an environment variable.
+    # For each other application, add its FQDN.
     for app in selected_apps:
         if app == 1:
             continue
@@ -195,7 +203,6 @@ def write_env_file(backend_ip, base_domain, selected_apps, include_stream):
             fqdn = f"{SUBDOMAIN_MAP[app]}.{base_domain}"
             env_lines.append(f"{ENV_VAR_MAP[app]}={fqdn}")
             print(f"{ENV_VAR_MAP[app]} set to {fqdn}")
-        # Special handling for Minio (option 10): add a variable for s3api.
         if app == 10:
             fqdn_api = f"s3api.{base_domain}"
             env_lines.append(f"MINIO_API_DOMAIN={fqdn_api}")
@@ -210,6 +217,68 @@ def write_env_file(backend_ip, base_domain, selected_apps, include_stream):
         print(f"Error writing .env file: {e}")
         sys.exit(1)
 
+def cleanup_conf_files(selected_apps, include_stream):
+    """
+    Delete .conf files in conf.d/servers and conf.d/stream that are not used
+    based on the selected applications.
+    """
+    # Cleanup HTTP server configuration files.
+    servers_dir = os.path.join(".", "conf.d", "servers")
+    expected_files = set()
+    # For static site (option 1), expect "base.conf"
+    if 1 in selected_apps:
+        expected_files.add(CONF_FILE_MAP[1])
+    # For every other selected app, add the expected file(s)
+    for app in selected_apps:
+        if app == 1:
+            continue
+        conf_entry = CONF_FILE_MAP.get(app)
+        if conf_entry:
+            if isinstance(conf_entry, list):
+                for fname in conf_entry:
+                    expected_files.add(fname)
+            else:
+                expected_files.add(conf_entry)
+    print("Expected server conf files:", expected_files)
+    for filename in os.listdir(servers_dir):
+        if filename.endswith(".conf"):
+            if filename not in expected_files:
+                full_path = os.path.join(servers_dir, filename)
+                print(f"Deleting unused server conf file: {full_path}")
+                try:
+                    os.remove(full_path)
+                except Exception as e:
+                    print(f"Error deleting {full_path}: {e}")
+    
+    # Cleanup stream configuration files.
+    stream_dir = os.path.join(".", "conf.d", "stream")
+    if include_stream:
+        # Only keep stream files for Wazuh (option 2) and Mailcow (option 3) if selected.
+        expected_stream_files = set()
+        if 2 in selected_apps:
+            expected_stream_files.add("delphi.conf")
+        if 3 in selected_apps:
+            expected_stream_files.add("mailcow.conf")
+        print("Expected stream conf files:", expected_stream_files)
+        for filename in os.listdir(stream_dir):
+            if filename.endswith(".conf"):
+                if filename not in expected_stream_files:
+                    full_path = os.path.join(stream_dir, filename)
+                    print(f"Deleting unused stream conf file: {full_path}")
+                    try:
+                        os.remove(full_path)
+                    except Exception as e:
+                        print(f"Error deleting {full_path}: {e}")
+    else:
+        # Remove all stream conf files if stream configuration is not needed.
+        for filename in os.listdir(stream_dir):
+            if filename.endswith(".conf"):
+                full_path = os.path.join(stream_dir, filename)
+                print(f"Deleting stream conf file (not needed): {full_path}")
+                try:
+                    os.remove(full_path)
+                except Exception as e:
+                    print(f"Error deleting {full_path}: {e}")
 
 def deploy_stack():
     """Bring the docker-compose stack down and then up in detached mode."""
@@ -218,7 +287,6 @@ def deploy_stack():
     print("Starting up the reverse proxy stack in detached mode...")
     subprocess.run("docker-compose up -d", shell=True, check=True)
     print("Deployment successful!\n")
-
 
 def main():
     print("\n--- Reverse Proxy Deployment Script ---\n")
@@ -246,14 +314,13 @@ def main():
     # Step 5: Write out the .env file so docker-compose can use these values.
     write_env_file(backend_ip, base_domain, selected_apps, include_stream)
     
-    # (Optional) You could modify or select specific docker-compose files based on the selections.
-    # For simplicity, we assume your docker-compose.yml is set up to include stream blocks
-    # when INCLUDE_STREAM is set to "yes".
+    # Step 6: Delete unused .conf files from conf.d/servers and conf.d/stream.
+    cleanup_conf_files(selected_apps, include_stream)
     
-    # Step 6: Deploy the docker-compose stack.
+    # Step 7: Deploy the docker-compose stack.
     deploy_stack()
     
-    # Optionally, you can offer to tail logs.
+    # Optionally, offer to tail logs.
     tail = input("Would you like to tail the logs? (y/N): ").strip().lower()
     if tail == "y":
         try:
@@ -262,7 +329,6 @@ def main():
             print("\nLog tailing interrupted.")
     else:
         print("Deployment complete.")
-
 
 if __name__ == "__main__":
     try:
