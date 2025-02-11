@@ -205,13 +205,13 @@ http {
     }
 
     #--------------------------------------------------
-    # WAZUH WEB UI: wazuh.${BASE_DOMAIN}
+    # WAZUH WEB UI: delphi.${BASE_DOMAIN}
     #--------------------------------------------------
 
     server {
         listen 80;
         listen [::]:80;
-        server_name wazuh.${BASE_DOMAIN};
+        server_name delphi.${BASE_DOMAIN};
 
         return 301 https://$host$request_uri;
     }
@@ -221,11 +221,11 @@ http {
         listen [::]:443 ssl;
         http2 on;
 
-        server_name wazuh.${BASE_DOMAIN};
+        server_name delphi.${BASE_DOMAIN};
 
         # SSL certificates
-        ssl_certificate /etc/nginx/certs/wazuh.fullchain.pem;
-        ssl_certificate_key /etc/nginx/certs/wazuh.privkey.pem;
+        ssl_certificate /etc/nginx/certs/delphi.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/delphi.privkey.pem;
 
         # Basic SSL config (adapt cipher suites, etc. to your needs)
         ssl_protocols        TLSv1.2 TLSv1.3;
