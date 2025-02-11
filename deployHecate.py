@@ -36,6 +36,7 @@ For subdomains:
     cloud.fullchain.pem / cloud.privkey.pem
     erp.fullchain.pem / erp.privkey.pem
     media.fullchain.pem / media.privkey.pem
+    wiki.fullchain.pem / wiki.privkey.pem
     observe.fullchain.pem / observe.privkey.pem
     s3.fullchain.pem / s3.privkey.pem
     s3api.fullchain.pem / s3api.privkey.pem
@@ -58,7 +59,8 @@ APP_OPTIONS = {
     8: "Jellyfin",
     9: "Grafana",
     10: "Minio",
-    11: "Jenkins"
+    11: "Jenkins",
+    12: "Wiki"
 }
 
 # Mapping from application number to the default subdomain (for FQDN)
@@ -72,7 +74,8 @@ SUBDOMAIN_MAP = {
     8: "media",        # Jellyfin
     9: "observe",      # Grafana
     10: "s3",          # Minio (for primary domain; also check s3api separately)
-    11: "jenkins"      # Jenkins
+    11: "jenkins",      # Jenkins
+    12: "wiki"
 }
 
 # Mapping from application number to the environment variable name that will hold its FQDN.
@@ -86,7 +89,8 @@ ENV_VAR_MAP = {
     8: "MEDIA_DOMAIN",
     9: "OBSERVE_DOMAIN",
     10: "MINIO_DOMAIN",    # For Minio primary (s3)
-    11: "JENKINS_DOMAIN"
+    11: "JENKINS_DOMAIN",
+    12: "WIKI_DOMAIN"
 }
 
 
