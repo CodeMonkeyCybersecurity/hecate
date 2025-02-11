@@ -1,6 +1,8 @@
 #!/bin/bash
 # generateCerts.sh
 
+set -e
+
 echo "check docker processes"
 docker ps 
 
@@ -37,3 +39,5 @@ echo "You should now have the appropriate certificates for https://$SUB_CERT"
 echo "You should now run ./generateNginxConf.sh before restarting Hecate" 
 
 echo "finis"
+
+set +e
