@@ -135,8 +135,6 @@ http {
     access_log /var/log/nginx/access.log;
 
     sendfile        on;
-    keepalive_timeout  65;
-
     ###
     # SERVER BLOCKS
     ###
@@ -155,15 +153,15 @@ http {
     }
 
     server {
-         listen 443 ssl;
-         listen [::]:443 ssl;
-         http2 on;
+        listen 443 ssl;
+        listen [::]:443 ssl;
+        http2 on;
 
-         server_name ${BASE_DOMAIN}; # or _ for any host
+        server_name ${BASE_DOMAIN}; # or _ for any host
 
         # SSL certificates
-         ssl_certificate /etc/nginx/certs/fullchain.pem;
-         ssl_certificate_key /etc/nginx/certs/privkey.pem;
+        ssl_certificate /etc/nginx/certs/fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/privkey.pem;
 
         # Basic SSL config (adapt cipher suites, etc. to your needs)
         ssl_protocols        TLSv1.2 TLSv1.3;
@@ -175,6 +173,18 @@ http {
         proxy_buffer_size 128k;
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
+
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
@@ -237,6 +247,18 @@ http {
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
 
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
         error_page 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 418 421 422 423 424 425 426 428 429 431 451 500 501 502 503 504 505 506 507 508 510 511 /custom_error.html;
@@ -296,6 +318,18 @@ http {
         proxy_buffer_size 128k;
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
+
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
@@ -360,6 +394,18 @@ http {
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
 
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
         error_page 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 418 421 422 423 424 425 426 428 429 431 451 500 501 502 503 504 505 506 507 508 510 511 /custom_error.html;
@@ -417,6 +463,18 @@ http {
         ssl_protocols        TLSv1.2 TLSv1.3;
         ssl_ciphers HIGH:!aNULL:!MD5:!SHA1:!kRSA;
         ssl_prefer_server_ciphers on;
+
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
@@ -483,8 +541,17 @@ http {
             internal;
         }
 
-        # HSTS: ensure browsers use HTTPS only (six months)
-        add_header Strict-Transport-Security max-age=15768000;
+         # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
         # Enable OCSP stapling
         ssl_stapling on;
@@ -570,6 +637,18 @@ http {
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
 
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
         error_page 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 418 421 422 423 424 425 426 428 429 431 451 500 501 502 503 504 505 506 507 508 510 511 /custom_error.html;
@@ -619,6 +698,18 @@ http {
         proxy_read_timeout 86400s;
 
         server_name cloud.${BASE_DOMAIN};
+
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
@@ -693,6 +784,18 @@ http {
         proxy_buffering off;                        # To disable buffering
         proxy_request_buffering off;                # <-
 
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
         error_page 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 418 421 422 423 424 425 426 428 429 431 451 500 501 502 503 504 505 506 507 508 510 511 /custom_error.html;
@@ -732,15 +835,15 @@ http {
     }
 
     server {
-         listen 443 ssl;
-         listen [::]:443 ssl;
-         http2 on;
+        listen 443 ssl;
+        listen [::]:443 ssl;
+        http2 on;
 
-         server_name s3api.${BASE_DOMAIN}; # or _ for any host
+        server_name s3api.${BASE_DOMAIN}; # or _ for any host
 
         # SSL certificates
-         ssl_certificate /etc/nginx/certs/s3api.fullchain.pem;
-         ssl_certificate_key /etc/nginx/certs/s3api.privkey.pem;
+        ssl_certificate /etc/nginx/certs/s3api.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/s3api.privkey.pem;
 
         # Basic SSL config (adapt cipher suites, etc. to your needs)
         ssl_protocols        TLSv1.2 TLSv1.3;
@@ -751,6 +854,18 @@ http {
         client_max_body_size 0;                     # Allow any size file to be uploaded.
         proxy_buffering off;                        # To disable buffering
         proxy_request_buffering off;                # <-
+
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
@@ -806,6 +921,18 @@ http {
         proxy_buffers 4 256k;
         proxy_busy_buffers_size 256k;
 
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
         error_page 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 418 421 422 423 424 425 426 428 429 431 451 500 501 502 503 504 505 506 507 508 510 511 /custom_error.html;
@@ -860,6 +987,18 @@ http {
         proxy_buffers 4 256k;
         proxy_busy_buffers_size 256k;
 
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
         error_page 400 401 402 403 404 405 406 407 408 409 410 411 412 413 414 415 416 417 418 421 422 423 424 425 426 428 429 431 451 500 501 502 503 504 505 506 507 508 510 511 /custom_error.html;
@@ -898,15 +1037,15 @@ http {
     }
 
     server {
-         listen 443 ssl;
-         listen [::]:443 ssl;
-         http2 on;
+        listen 443 ssl;
+        listen [::]:443 ssl;
+        http2 on;
 
-         server_name observe.${BASE_DOMAIN}; # or _ for any host
+        server_name observe.${BASE_DOMAIN}; # or _ for any host
 
         # SSL certificates
-         ssl_certificate /etc/nginx/certs/observe.fullchain.pem;
-         ssl_certificate_key /etc/nginx/certs/observe.privkey.pem;
+        ssl_certificate /etc/nginx/certs/observe.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/observe.privkey.pem;
 
         # Basic SSL config (adapt cipher suites, etc. to your needs)
         ssl_protocols        TLSv1.2 TLSv1.3;
@@ -918,6 +1057,18 @@ http {
         proxy_buffer_size 128k;
         proxy_buffers 64 512k;
         proxy_busy_buffers_size 512k;
+
+        # Security headers
+        # Enforce a Content Security Policy (adjust as needed)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'nonce-ABC123'; style-src 'self' 'nonce-ABC123'; object-src 'none'; base-uri 'self';" always;
+    
+        # Prevent clickjacking
+        proxy_hide_header X-Frame-Options;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+    
+        #  Other headers (e.g., X-Content-Type-Options, Strict-Transport-Security) can be added here
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
 
         # Enable error interception and define custom error page handling
         proxy_intercept_errors on;
