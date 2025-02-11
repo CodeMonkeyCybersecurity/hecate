@@ -196,20 +196,21 @@ http {
             internal;
         }
 
-         location / {
-             proxy_pass http://${backendIP}:8009;
-             proxy_set_header Host $host;
-             proxy_set_header X-Real-IP $remote_addr;
-             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-             proxy_set_header X-Forwarded-Proto $scheme;
-             client_max_body_size 0;
-             proxy_buffer_size 128k;
-             proxy_buffers 64 512k;
-             proxy_busy_buffers_size 512k;
+        location / {
+            proxy_pass http://${backendIP}:8009;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            client_max_body_size 0;
+            proxy_buffer_size 128k;
+            proxy_buffers 64 512k;
+            proxy_busy_buffers_size 512k;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
 
-             # Handle WebSocket connections
-             proxy_set_header Upgrade $http_upgrade;
-             proxy_set_header Connection "upgrade";
+            # Handle WebSocket connections
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
         }
     }
 
@@ -279,6 +280,7 @@ http {
             proxy_buffer_size 128k;
             proxy_buffers 64 512k;
             proxy_busy_buffers_size 512k;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
 
         }
     }
@@ -352,6 +354,7 @@ http {
             proxy_buffer_size 128k;
             proxy_buffers 64 512k;
             proxy_busy_buffers_size 512k;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
 
             # Handle WebSocket connections
             proxy_set_header Upgrade $http_upgrade;
@@ -427,6 +430,7 @@ http {
             proxy_buffer_size 128k;
             proxy_buffers 64 512k;
             proxy_busy_buffers_size 512k;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
 
             # Handle WebSocket connections
             proxy_set_header Upgrade $http_upgrade;
@@ -497,6 +501,7 @@ http {
             proxy_buffer_size 128k;
             proxy_buffers 64 512k;
             proxy_busy_buffers_size 512k;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
 
         }
     }
@@ -571,6 +576,7 @@ http {
             proxy_buffer_size                  16k;
             proxy_read_timeout                 600s;
             proxy_http_version                 1.1;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
 
         }
 
@@ -665,6 +671,7 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
             client_max_body_size 0;
             proxy_buffer_size 128k;
             proxy_buffers 64 512k;
@@ -728,6 +735,7 @@ http {
             proxy_set_header X-Forwarded-Port $server_port;
             proxy_set_header X-Forwarded-Scheme $scheme;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header Host $host;
             proxy_set_header Early-Data $ssl_early_data;
@@ -764,15 +772,15 @@ http {
     }
 
     server {
-         listen 443 ssl;
-         listen [::]:443 ssl;
-         http2 on;
+        listen 443 ssl;
+        listen [::]:443 ssl;
+        http2 on;
 
-         server_name s3.${BASE_DOMAIN}; # or _ for any host
+        server_name s3.${BASE_DOMAIN}; # or _ for any host
 
         # SSL certificates
-         ssl_certificate /etc/nginx/certs/s3.fullchain.pem;
-         ssl_certificate_key /etc/nginx/certs/s3.privkey.pem;
+        ssl_certificate /etc/nginx/certs/s3.fullchain.pem;
+        ssl_certificate_key /etc/nginx/certs/s3.privkey.pem;
 
         # Basic SSL config (adapt cipher suites, etc. to your needs)
         ssl_protocols        TLSv1.2 TLSv1.3;
@@ -806,17 +814,18 @@ http {
             internal;
         }
 
-         location / {
-             proxy_pass http://${backendIP}:8123;
-             proxy_set_header Host $host;
-             proxy_set_header X-Real-IP $remote_addr;
-             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-             proxy_set_header X-Forwarded-Proto $scheme;
-             client_max_body_size 0;
+        location / {
+            proxy_pass http://${backendIP}:8123;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            client_max_body_size 0;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
 
-             # Handle WebSocket connections
-             proxy_set_header Upgrade $http_upgrade;
-             proxy_set_header Connection "upgrade";
+            # Handle WebSocket connections
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
         }
     }
 
@@ -877,17 +886,18 @@ http {
             internal;
         }
 
-         location / {
-             proxy_pass http://${backendIP}:9123;
-             proxy_set_header Host $host;
-             proxy_set_header X-Real-IP $remote_addr;
-             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-             proxy_set_header X-Forwarded-Proto $scheme;
-             client_max_body_size 0;
+        location / {
+            proxy_pass http://${backendIP}:9123;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
+            client_max_body_size 0;
 
-             # Handle WebSocket connections
-             proxy_set_header Upgrade $http_upgrade;
-             proxy_set_header Connection "upgrade";
+            # Handle WebSocket connections
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
         }
     }
 
@@ -950,6 +960,7 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
 
             # Handle WebSocket connections
             proxy_set_header Upgrade $http_upgrade;
@@ -1016,6 +1027,7 @@ http {
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
 
             # Handle WebSocket connections
             proxy_set_header Upgrade $http_upgrade;
@@ -1080,16 +1092,17 @@ http {
             internal;
         }
 
-         location / {
-             proxy_pass http://${backendIP}:8069;
-             proxy_set_header Host $host;
-             proxy_set_header X-Real-IP $remote_addr;
-             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-             proxy_set_header X-Forwarded-Proto $scheme;
-             client_max_body_size 0;
-             proxy_buffer_size 128k;
-             proxy_buffers 64 512k;
-             proxy_busy_buffers_size 512k;
+        location / {
+            proxy_pass http://${backendIP}:8069;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            client_max_body_size 0;
+            proxy_buffer_size 128k;
+            proxy_buffers 64 512k;
+            proxy_busy_buffers_size 512k;
+            proxy_hide_header X-Frame-Options; # Ensure that any X-Frame-Options header from upstream is hidden
 
              # Handle WebSocket connections
              proxy_set_header Upgrade $http_upgrade;
