@@ -11,6 +11,7 @@ services:
       - ./error_pages:/usr/share/nginx/html:ro         # Your error pages (custom_error.html, etc.)
     environment:
       - BACKEND_IP=${BACKEND_IP}
+      - backend_ip=${BACKEND_IP}
       - BASE_DOMAIN=${BASE_DOMAIN}
       - INCLUDE_STREAM=${INCLUDE_STREAM}
     ports:
