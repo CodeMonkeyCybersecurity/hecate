@@ -1,6 +1,5 @@
 # Hecate
-
-# See out knowledge base, [Athena](https://wiki.cybermonkey.net.au), for more on how to use this
+See out knowledge base, [Athena](https://wiki.cybermonkey.net.au), for more on how to use this.
 
 # Other links
 See our website: [cybermonkey.net.au](https://cybermonkey.net.au/)
