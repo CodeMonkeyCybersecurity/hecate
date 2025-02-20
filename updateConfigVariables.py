@@ -3,9 +3,9 @@
 updateConfigVariables.py
 
 Description:
-    Prompts the user for BACKEND_IP and BASE_DOMAIN (using previously saved values if available),
+    Prompts the user for BACKEND_IP, PERS_BACKEND_IP and BASE_DOMAIN (using previously saved values if available),
     then recursively searches through all .conf files under the conf.d directory and replaces 
-    occurrences of ${BACKEND_IP} and ${BASE_DOMAIN} with the provided values. 
+    occurrences of ${BACKEND_IP}, ${PERS_BACKEND_IP} and ${BASE_DOMAIN} with the provided values. 
     A backup of any modified file is created before changes are saved.
 """
 
@@ -63,7 +63,7 @@ def backup_file(filepath):
         shutil.copy2(filepath, backup_path)
         print(f"Backup of '{filepath}' created as '{backup_path}'.")
 
-def update_file(filepath, BACKEND_IP, BASE_DOMAIN):
+def update_file(filepath, BACKEND_IP, PERS_BACKEND_IP, BASE_DOMAIN):
     """Replace the placeholders in a single file and update it if changes occur."""
     try:
         with open(filepath, "r") as f:
@@ -72,7 +72,7 @@ def update_file(filepath, BACKEND_IP, BASE_DOMAIN):
         print(f"Error reading {filepath}: {e}")
         return
 
-    new_content = content.replace("${BACKEND_IP}", BACKEND_IP).replace("${BASE_DOMAIN}", BASE_DOMAIN)
+    new_content = content.replace("${BACKEND_IP}", BACKEND_IP).replace("${PERS_BACKEND_IP}", PERS_BACKEND_IP).replace("${BASE_DOMAIN}", BASE_DOMAIN)
 
     if new_content != content:
         backup_file(filepath)
@@ -83,13 +83,13 @@ def update_file(filepath, BACKEND_IP, BASE_DOMAIN):
         except Exception as e:
             print(f"Error writing {filepath}: {e}")
 
-def process_conf_directory(directory, BACKEND_IP, BASE_DOMAIN):
+def process_conf_directory(directory, BACKEND_IP, PERS_BACKEND_IP, BASE_DOMAIN):
     """Recursively process all .conf files in the given directory."""
     for root, dirs, files in os.walk(directory):
         for file in files:
             if file.endswith(".conf"):
                 filepath = os.path.join(root, file)
-                update_file(filepath, BACKEND_IP, BASE_DOMAIN)
+                update_file(filepath, BACKEND_IP, PERS_BACKEND_IP, BASE_DOMAIN)
 
 def main():
     print("=== Recursive conf.d Variable Updater ===\n")
@@ -99,10 +99,11 @@ def main():
 
     # Prompt user for the backend IP and BASE_DOMAIN
     BACKEND_IP = prompt_input("BACKEND_IP", "Enter the backend IP address", last_values.get("BACKEND_IP"))
+    PERS_BACKEND_IP = prompt_input("PERS_BACKEND_IP", "Enter the backend IP address", last_values.get("PERS_BACKEND_IP"))
     BASE_DOMAIN = prompt_input("BASE_DOMAIN", "Enter the base domain for your services", last_values.get("BASE_DOMAIN"))
 
     # Save the values for future runs
-    new_values = {"BACKEND_IP": BACKEND_IP, "BASE_DOMAIN": BASE_DOMAIN}
+    new_values = {"BACKEND_IP": BACKEND_IP, "PERS_BACKEND_IP": PERS_BACKEND_IP, "BASE_DOMAIN": BASE_DOMAIN}
     save_last_values(new_values)
 
     # Check that the conf.d directory exists
@@ -111,7 +112,7 @@ def main():
         sys.exit(1)
 
     # Process all .conf files recursively in the conf.d directory
-    process_conf_directory(CONF_DIR, BACKEND_IP, BASE_DOMAIN)
+    process_conf_directory(CONF_DIR, BACKEND_IP, PERS_BACKEND_IP, BASE_DOMAIN)
 
     print("\nDone updating configuration files in the conf.d directory.")
 
