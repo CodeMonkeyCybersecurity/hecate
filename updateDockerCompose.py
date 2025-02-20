@@ -45,10 +45,11 @@ APP_OPTIONS = {
 }
 
 # The docker-compose file only supports uncommenting lines for these apps.
+# For each supported app, list the port markers you expect in the file.
 SUPPORTED_APPS = {
-    "wazuh": "Wazuh",
-    "mailcow": "Mailcow",
-    "nextcloud": "Nextcloud"
+    "wazuh": ["1515", "1514", "55000"],
+    "mailcow": ["25", "587", "465", "110", "995", "143", "993"],
+    "nextcloud": ["3478"]
 }
 
 def load_last_values():
@@ -154,8 +155,8 @@ def update_compose_file(selected_apps):
     # For each line, if it contains a marker for one of the selected apps, uncomment it.
     for line in lines:
         modified_line = line
-        for app, marker in SUPPORTED_APPS.items():
-            if app in selected_apps and marker in line:
+        for app, markers in SUPPORTED_APPS.items():
+            if app in selected_apps and any(marker in line for marker in markers):
                 # Remove the leading '#' before '-' while preserving whitespace.
                 modified_line = re.sub(r"^(\s*)#\s*(-)", r"\1\2", line)
                 break  # if a match is found, no need to test other apps
