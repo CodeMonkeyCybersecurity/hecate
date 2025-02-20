@@ -93,6 +93,7 @@ APPS_SELECTION = {
     "10": ("Wiki.js", "wiki.conf"),
     "11": ("ERPNext", "erp.conf"),
     "12": ("Jellyfin", "jellyfin.conf")
+    "13": ("Persephone", "persephone.conf")
 }
 
 def display_options():
