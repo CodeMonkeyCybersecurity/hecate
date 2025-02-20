@@ -173,7 +173,7 @@ def main():
     display_options()
     allowed_files, selection_str = get_user_selection(default_apps)
     # Always add http.conf and stream.conf to the allowed list
-    allowed_files.update({"http.conf", "stream.conf"})
+    allowed_files.update({"http.conf", "stream.conf", "fallback.conf"})
     print("\nYou have selected the following configuration files to keep:")
     for f in allowed_files:
         # Check if the file is one of the essential files
