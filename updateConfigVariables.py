@@ -99,7 +99,7 @@ def main():
 
     # Prompt user for the backend IP and BASE_DOMAIN
     BACKEND_IP = prompt_input("BACKEND_IP", "Enter the backend IP address", last_values.get("BACKEND_IP"))
-    PERS_BACKEND_IP = prompt_input("PERS_BACKEND_IP", "Enter the backend IP address", last_values.get("PERS_BACKEND_IP"))
+    PERS_BACKEND_IP = prompt_input("PERS_BACKEND_IP", "Enter the backend IP address for you Persephone backups", last_values.get("PERS_BACKEND_IP"))
     BASE_DOMAIN = prompt_input("BASE_DOMAIN", "Enter the base domain for your services", last_values.get("BASE_DOMAIN"))
 
     # Save the values for future runs
