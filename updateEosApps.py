@@ -187,7 +187,7 @@ def main():
     remove_unwanted_conf_files(allowed_files)
     
     # Save the selection back into .hecate.conf
-    last_values["APPS"] = selection_str
+    last_values["APPS_SELECTION"] = selection_str
     save_last_values(last_values)
 
 if __name__ == "__main__":
