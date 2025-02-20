@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-updatedConfigVariables.py
+updateConfigVariables.py
 
 Description:
     Prompts the user for backendIP and BASE_DOMAIN (using previously saved values if available),
