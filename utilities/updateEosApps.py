@@ -177,7 +177,7 @@ def main():
     print("\nYou have selected the following configuration files to keep:")
     for f in allowed_files:
         # Check if the file is one of the essential files
-        if f in {"http.conf", "stream.conf"}:
+        if f in {"http.conf", "stream.conf", "fallback.conf"}:
             print(f" - Essential file: {f}")
         else:
             for num, (app_name, conf_file) in APPS_SELECTION.items():
