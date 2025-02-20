@@ -60,6 +60,22 @@ def prompt_input(prompt_message, default_val=None):
                 return inp
             print("Input cannot be empty. Please try again.")
 
+def prompt_subdomain():
+    """
+    Prompts for subdomain. Allows a blank subdomain if the user confirms.
+    Returns the subdomain (which may be an empty string).
+    """
+    while True:
+        subdomain = input("Enter the subdomain to configure (e.g. sub). Leave blank if none: ").strip()
+        if subdomain == "":
+            confirm = input("You entered a blank subdomain. Do you wish to continue with no subdomain? (yes/no): ").strip().lower()
+            if confirm in ("yes", "y"):
+                return ""
+            else:
+                continue
+        else:
+            return subdomain
+
 def main():
     try:
         # 1. Check Docker processes and stop Hecate
@@ -81,8 +97,12 @@ def main():
         }
         save_last_values(new_values)
 
-        # 3. Combine to form the full domain for certificate
-        full_domain = f"{subdomain}.{base_domain}"
+        # 3. Combine to form the full domain for certificate.
+        # If subdomain is blank, use the base domain.
+        if subdomain:
+            full_domain = f"{subdomain}.{base_domain}"
+        else:
+            full_domain = base_domain
         print(f"\nThe full domain for certificate generation will be: {full_domain}")
 
         # 4. Run certbot to obtain certificate
