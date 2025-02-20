@@ -82,7 +82,10 @@ def main():
         print("Checking Docker processes...")
         run_command(["docker", "ps"])
         print("Stopping Hecate...")
-        run_command(["docker", "compose", "down"])
+        try:
+            run_command(["docker", "compose", "down"])
+        except subprocess.CalledProcessError as e:
+            print("Warning: Docker compose down failed (likely because there is no Hecate container up). Continuing...")
 
         # 2. Load previous values if available
         prev_values = load_last_values()
