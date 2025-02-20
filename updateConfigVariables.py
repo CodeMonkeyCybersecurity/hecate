@@ -14,7 +14,7 @@ import sys
 import shutil
 from datetime import datetime
 
-LAST_VALUES_FILE = ".last_nginx.conf"
+LAST_VALUES_FILE = ".hecate.conf"
 CONF_DIR = "conf.d"
 
 def load_last_values():
