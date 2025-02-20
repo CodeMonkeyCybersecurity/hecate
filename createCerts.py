@@ -5,7 +5,7 @@ createCerts.py
 This script performs the following:
   - Checks current Docker processes.
   - Stops the Hecate service.
-  - Loads previously entered values (base domain and email) from .last_certs.conf.
+  - Loads previously entered values (base domain and email) from .hecate.conf.
   - Prompts the user for:
       • Base domain (e.g. domain.com)
       • Subdomain to configure (e.g. sub) – can be left blank after confirmation.
@@ -123,8 +123,8 @@ def main():
         print(f"Verifying that the certificates are in '{cert_path}'...")
         run_command(["sudo", "ls", "-l", cert_path])
 
-        # 6. Change directory to $HOME/hecate and ensure certs/ exists
-        hecate_dir = os.path.join(os.environ["HOME"], "hecate")
+        # 6. Change directory to /opt/hecate and ensure certs/ exists
+        hecate_dir = "/opt/hecate"
         os.chdir(hecate_dir)
         os.makedirs("certs", exist_ok=True)
 
