@@ -22,7 +22,7 @@ import subprocess
 import os
 import sys
 
-LAST_VALUES_FILE = ".last_certs.conf"
+LAST_VALUES_FILE = ".last_hecate.conf"
 
 def run_command(command, shell=False):
     """Run a command and raise an exception if it fails."""
