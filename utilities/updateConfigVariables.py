@@ -72,7 +72,7 @@ def update_file(filepath, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_D
         print(f"Error reading {filepath}: {e}")
         return
 
-    new_content = content.replace("${BACKEND_IP}", BACKEND_IP).replace("${PERS_BACKEND_IP}", PERS_BACKEND_IP)replace("${DELPHI_BACKEND_IP}", DELPHI_BACKEND_IP).replace("${BASE_DOMAIN}", BASE_DOMAIN)
+    new_content = content.replace("${BACKEND_IP}", BACKEND_IP).replace("${PERS_BACKEND_IP}", PERS_BACKEND_IP).replace("${DELPHI_BACKEND_IP}", DELPHI_BACKEND_IP).replace("${BASE_DOMAIN}", BASE_DOMAIN)
 
     if new_content != content:
         backup_file(filepath)
