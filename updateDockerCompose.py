@@ -42,6 +42,7 @@ APP_OPTIONS = {
     "10": ("Wiki.js", "wiki.conf"),
     "11": ("ERPNext", "erp.conf"),
     "12": ("Jellyfin", "jellyfin.conf")
+    "13": ("Persephone", "persephone.conf")
 }
 
 # The docker-compose file only supports uncommenting lines for these apps.
