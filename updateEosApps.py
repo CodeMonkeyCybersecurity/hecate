@@ -80,7 +80,7 @@ def backup_file(filepath):
         print(f"Backup of '{filepath}' created as '{backup_path}'.")
 
 # Mapping of option number to (App Name, config filename)
-APP_OPTIONS = {
+APPS_SELECTION = {
     "1": ("Static website", "base.conf"),
     "2": ("Wazuh", "delphi.conf"),
     "3": ("Mattermost", "collaborate.conf"),
@@ -97,8 +97,8 @@ APP_OPTIONS = {
 
 def display_options():
     print("Available EOS backend web apps:")
-    for num in sorted(APP_OPTIONS, key=lambda x: int(x)):
-        app_name, conf_file = APP_OPTIONS[num]
+    for num in sorted(APPS_SELECTION, key=lambda x: int(x)):
+        app_name, conf_file = APPS_SELECTION[num]
         print(f"  {num}. {app_name}  -> {conf_file}")
 
 def get_user_selection(default_selection=None):
@@ -118,16 +118,16 @@ def get_user_selection(default_selection=None):
         selection = default_selection
     if selection.lower() == "all":
         # Return all app configuration files (user-selected ones)
-        return set(APP_OPTIONS[num][1] for num in APP_OPTIONS), "all"
+        return set(APPS_SELECTION[num][1] for num in APPS_SELECTION), "all"
     chosen = set()
     valid = True
     for token in selection.split(","):
         token = token.strip()
-        if token not in APP_OPTIONS:
+        if token not in APPS_SELECTION:
             print(f"Invalid option: {token}")
             valid = False
             break
-        chosen.add(APP_OPTIONS[token][1])
+        chosen.add(APPS_SELECTION[token][1])
     if valid and chosen:
         return chosen, selection
     print("Please enter a valid comma-separated list of options.")
@@ -177,7 +177,7 @@ def main():
         if f in {"http.conf", "stream.conf"}:
             print(f" - Essential file: {f}")
         else:
-            for num, (app_name, conf_file) in APP_OPTIONS.items():
+            for num, (app_name, conf_file) in APPS_SELECTION.items():
                 if conf_file == f:
                     print(f" - {app_name} ({conf_file})")
     print("\nNow scanning the conf.d directory and removing files not in your selection...")
