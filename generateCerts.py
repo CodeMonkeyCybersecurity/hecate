@@ -8,8 +8,8 @@ This script performs the following:
   - Loads previously entered values (base domain and email) from .last_certs.conf.
   - Prompts the user for:
       • Base domain (e.g. domain.com)
-      • Subdomain to configure (e.g. sub)
-      • Email address (eg. example@domain.com)
+      • Subdomain to configure (e.g. sub) – can be left blank after confirmation.
+      • Email address (e.g. example@domain.com)
   - Combines subdomain and base domain to form the full certificate domain.
   - Runs certbot in standalone mode to obtain the certificate.
   - Verifies that the certificate exists in /etc/letsencrypt/live/<full_domain>/.
@@ -87,7 +87,8 @@ def main():
         # 2. Load previous values if available
         prev_values = load_last_values()
         base_domain = prompt_input("Enter the base domain (e.g. domain.com)", prev_values.get("BASE_DOMAIN"))
-        subdomain = prompt_input("Enter the subdomain to configure (e.g. sub)")
+        # Use prompt_subdomain() to allow a blank subdomain with confirmation.
+        subdomain = prompt_subdomain()
         mail_cert = prompt_input("Enter the contact email (e.g. example@domain.com)", prev_values.get("EMAIL"))
 
         # Save the entered values for future runs
@@ -124,8 +125,9 @@ def main():
         os.chdir(hecate_dir)
         os.makedirs("certs", exist_ok=True)
 
-        # 7. Ask user to confirm certificate name
-        default_cert_name = subdomain  # default name is the subdomain
+        # 7. Ask user to confirm certificate name.
+        # If subdomain is blank, default to base_domain.
+        default_cert_name = subdomain if subdomain else base_domain
         while True:
             confirm = input(f"Use certificate name '{default_cert_name}'? (yes/no): ").strip().lower()
             if confirm in ("yes", "y"):
