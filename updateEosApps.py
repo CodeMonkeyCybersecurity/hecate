@@ -94,7 +94,7 @@ APPS_SELECTION = {
     "9": ("MinIO", "s3.conf"),
     "10": ("Wiki.js", "wiki.conf"),
     "11": ("ERPNext", "erp.conf"),
-    "12": ("Jellyfin", "jellyfin.conf")
+    "12": ("Jellyfin", "jellyfin.conf"),
     "13": ("Persephone", "persephone.conf")
 }
 
