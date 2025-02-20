@@ -5,13 +5,13 @@ import sys
 
 # Define the utilities and their corresponding script files
 UTILITIES = {
-    "1": ("Backup Config", "utilities/backupConfig.py"),
-    "2": ("Create Certificates", "utilities/createCerts.py"),
-    "3": ("Create http.conf", "utilities/createHttpConf.py"),
-    "4": ("Restore Config", "utilities/restoreConfig.py"),
-    "5": ("Update Config Variables", "utilities/updateConfigVariables.py"),
-    "6": ("Update Docker Compose", "utilities/updateDockerCompose.py"),
-    "7": ("Update EOS Apps", "utilities/updateEosApps.py"),
+    "1": ("Create Backup", "utilities/createBackup.py"),
+    "2": ("Create Config Variables", "utilities/creteConfigVariables.py"),
+    "3": ("Create EOS Apps", "utilities/createEosApps.py"),
+    "4": ("Create http.conf", "utilities/createHttpConf.py"),
+    "5": ("Create Docker Compose", "utilities/createDockerCompose.py"),
+    "6": ("Create Certificates", "utilities/createCerts.py"),
+    "7": ("Restore Config", "utilities/createRestore.py"),
     "q": ("Quit", None)
 }
 
