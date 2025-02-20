@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-generateCerts.py
+createCerts.py
 
 This script performs the following:
   - Checks current Docker processes.
