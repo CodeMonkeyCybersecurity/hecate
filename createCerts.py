@@ -163,7 +163,8 @@ def main():
 
         # Final message
         print(f"\nYou should now have the appropriate certificates for https://{full_domain}")
-        print("Next, run ./generateNginxConf.sh before restarting Hecate")
+        print("Next, run ./updateConfigVariables.py and ./updateEosApps.py before (re)starting Hecate")
+        print ("")
         print("finis")
 
     except subprocess.CalledProcessError as e:
