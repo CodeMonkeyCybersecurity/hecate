@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-generateNginxConf.py
+updatedConfigVariables.py
 
 Description:
-    Prompts the user for backendIP and BASE_DOMAIN, then replaces placeholders in
-    nginx.conf.template with these values. It also remembers the last-used values in
-    a file named .last_nginx.conf.
+    Prompts the user for backendIP and BASE_DOMAIN (using previously saved values if available),
+    then recursively searches through all .conf files under the conf.d directory and replaces 
+    occurrences of ${backendIP} and ${BASE_DOMAIN} with the provided values. 
+    A backup of any modified file is created before changes are saved.
 """
 
 import os
@@ -14,9 +15,7 @@ import shutil
 from datetime import datetime
 
 LAST_VALUES_FILE = ".last_nginx.conf"
-TEMPLATE_FILE = "nginx.conf.template"
-OUTPUT_FILE = "nginx.conf"
-
+CONF_DIR = "conf.d"
 
 def load_last_values():
     """Load saved values from LAST_VALUES_FILE, if it exists."""
@@ -24,15 +23,12 @@ def load_last_values():
     if os.path.isfile(LAST_VALUES_FILE):
         with open(LAST_VALUES_FILE, "r") as f:
             for line in f:
-                # Expecting lines in the format: key="value"
                 line = line.strip()
                 if not line or "=" not in line:
                     continue
                 key, value = line.split("=", 1)
-                # Remove any surrounding quotes
                 last_values[key.strip()] = value.strip().strip('"')
     return last_values
-
 
 def prompt_input(var_name, prompt_message, default_val=None):
     """
@@ -53,54 +49,55 @@ def prompt_input(var_name, prompt_message, default_val=None):
         else:
             print(f"Error: {var_name} cannot be empty. Please enter a valid value.")
 
-
 def save_last_values(values):
     """Save the provided values dictionary to LAST_VALUES_FILE."""
     with open(LAST_VALUES_FILE, "w") as f:
         for key, value in values.items():
             f.write(f'{key}="{value}"\n')
 
-
 def backup_file(filepath):
     """If a file exists, back it up by copying it with a timestamp."""
     if os.path.isfile(filepath):
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        backup_path = f"{timestamp}_{os.path.basename(filepath)}.bak"
+        backup_path = os.path.join(os.path.dirname(filepath), f"{timestamp}_{os.path.basename(filepath)}.bak")
         shutil.copy2(filepath, backup_path)
-        print(f"Backup of existing '{filepath}' created as '{backup_path}'.")
+        print(f"Backup of '{filepath}' created as '{backup_path}'.")
 
+def update_file(filepath, backendIP, BASE_DOMAIN):
+    """Replace the placeholders in a single file and update it if changes occur."""
+    try:
+        with open(filepath, "r") as f:
+            content = f.read()
+    except Exception as e:
+        print(f"Error reading {filepath}: {e}")
+        return
 
-def generate_nginx_conf(backendIP, BASE_DOMAIN):
-    """Replace placeholders in the template file and write to OUTPUT_FILE."""
-    if not os.path.isfile(TEMPLATE_FILE):
-        print(f"Error: Template file '{TEMPLATE_FILE}' not found in the current directory.")
-        sys.exit(1)
+    new_content = content.replace("${backendIP}", backendIP).replace("${BASE_DOMAIN}", BASE_DOMAIN)
 
-    # Read the template
-    with open(TEMPLATE_FILE, "r") as f:
-        template_content = f.read()
+    if new_content != content:
+        backup_file(filepath)
+        try:
+            with open(filepath, "w") as f:
+                f.write(new_content)
+            print(f"Updated {filepath}")
+        except Exception as e:
+            print(f"Error writing {filepath}: {e}")
 
-    # Replace placeholders
-    # We assume placeholders in the template look like ${backendIP} and ${BASE_DOMAIN}
-    output_content = template_content.replace("${backendIP}", backendIP).replace("${BASE_DOMAIN}", BASE_DOMAIN)
-
-    # Backup existing output file if it exists
-    backup_file(OUTPUT_FILE)
-
-    # Write the new configuration file
-    with open(OUTPUT_FILE, "w") as f:
-        f.write(output_content)
-
-    print(f"'{OUTPUT_FILE}' generated successfully using the provided values.")
-
+def process_conf_directory(directory, backendIP, BASE_DOMAIN):
+    """Recursively process all .conf files in the given directory."""
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith(".conf"):
+                filepath = os.path.join(root, file)
+                update_file(filepath, backendIP, BASE_DOMAIN)
 
 def main():
-    print("=== NGINX Configuration Generator ===\n")
+    print("=== Recursive conf.d Variable Updater ===\n")
 
-    # Load previous values, if any
+    # Load previous values if available
     last_values = load_last_values()
 
-    # Prompt for backendIP and BASE_DOMAIN, using defaults if available
+    # Prompt user for the backend IP and BASE_DOMAIN
     backendIP = prompt_input("backendIP", "Enter the backend IP address", last_values.get("backendIP"))
     BASE_DOMAIN = prompt_input("BASE_DOMAIN", "Enter the base domain for your services", last_values.get("BASE_DOMAIN"))
 
@@ -108,9 +105,15 @@ def main():
     new_values = {"backendIP": backendIP, "BASE_DOMAIN": BASE_DOMAIN}
     save_last_values(new_values)
 
-    # Generate the new nginx.conf file
-    generate_nginx_conf(backendIP, BASE_DOMAIN)
+    # Check that the conf.d directory exists
+    if not os.path.isdir(CONF_DIR):
+        print(f"Error: Directory '{CONF_DIR}' not found in the current directory.")
+        sys.exit(1)
 
+    # Process all .conf files recursively in the conf.d directory
+    process_conf_directory(CONF_DIR, backendIP, BASE_DOMAIN)
+
+    print("\nDone updating configuration files in the conf.d directory.")
 
 if __name__ == "__main__":
     main()
