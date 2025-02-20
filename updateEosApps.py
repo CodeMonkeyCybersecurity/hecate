@@ -166,7 +166,7 @@ def main():
     print("=== EOS Backend Web Apps Selector ===\n")
     last_values = load_last_values()
     # Use the previously saved APPS value (if any) as the default selection.
-    default_apps = last_values.get("APPS")
+    default_apps = last_values.get("APPS_SELECTION")
     display_options()
     allowed_files, selection_str = get_user_selection(default_apps)
     # Always add http.conf and stream.conf to the allowed list
