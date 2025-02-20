@@ -70,9 +70,9 @@ def main():
 
         # 2. Load previous values if available
         prev_values = load_last_values()
-        base_domain = prompt_input("Enter the base domain (e.g. cybermonkey.dev)", prev_values.get("BASE_DOMAIN"))
-        subdomain = prompt_input("Enter the subdomain to configure (e.g. cloud)")
-        mail_cert = prompt_input("Enter the contact email (e.g. you@youremail.com)", prev_values.get("EMAIL"))
+        base_domain = prompt_input("Enter the base domain (e.g. domain.com)", prev_values.get("BASE_DOMAIN"))
+        subdomain = prompt_input("Enter the subdomain to configure (e.g. sub)")
+        mail_cert = prompt_input("Enter the contact email (e.g. example@domain.com)", prev_values.get("EMAIL"))
 
         # Save the entered values for future runs
         new_values = {
