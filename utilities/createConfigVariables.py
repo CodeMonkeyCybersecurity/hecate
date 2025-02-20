@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-updateConfigVariables.py
+createConfigVariables.py
 
 Description:
     Prompts the user for BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP and BASE_DOMAIN (using previously saved values if available),
