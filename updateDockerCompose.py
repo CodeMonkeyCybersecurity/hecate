@@ -13,9 +13,9 @@ Usage:
     python updateDockerCompose.py
 
 Supported app keywords in the docker-compose file:
-  - Wazuh behind Hecate
-  - Mailcow behind Hecate
-  - Nextcloud Talk behind Hecate
+  - Wazuh
+  - Mailcow
+  - Nextcloud
 """
 
 import sys
@@ -46,9 +46,9 @@ APP_OPTIONS = {
 
 # The docker-compose file only supports uncommenting lines for these apps.
 SUPPORTED_APPS = {
-    "wazuh": "Wazuh behind Hecate",
-    "mailcow": "Mailcow behind Hecate",
-    "nextcloud": "Nextcloud Talk behind Hecate"
+    "wazuh": "Wazuh",
+    "mailcow": "Mailcow",
+    "nextcloud": "Nextcloud"
 }
 
 def load_last_values():
