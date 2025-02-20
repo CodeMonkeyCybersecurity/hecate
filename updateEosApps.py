@@ -7,6 +7,8 @@ Description:
     The user can select one or more (via comma-separated numbers).
     The script then recursively walks through the conf.d directory and deletes any .conf file 
     that is not associated with a selected app.
+    
+    Note: http.conf and stream.conf are always preserved because they are essential for the reverse proxy.
 
 Available options and their corresponding configuration files:
     1. Static website   -> base.conf
@@ -104,7 +106,7 @@ def get_user_selection(default_selection=None):
     Prompts the user to enter a comma-separated list of option numbers.
     If a default is provided and the user enters nothing, the default is used.
     Returns a tuple of:
-       - The set of allowed configuration filenames
+       - The set of allowed configuration filenames (user-selected)
        - The raw selection string (to save as the new default)
     """
     prompt_msg = "Enter the numbers (comma-separated) of the apps you want enabled (or type 'all' for all)"
@@ -115,6 +117,7 @@ def get_user_selection(default_selection=None):
     if not selection and default_selection:
         selection = default_selection
     if selection.lower() == "all":
+        # Return all app configuration files (user-selected ones)
         return set(APP_OPTIONS[num][1] for num in APP_OPTIONS), "all"
     chosen = set()
     valid = True
@@ -166,11 +169,17 @@ def main():
     default_apps = last_values.get("APPS")
     display_options()
     allowed_files, selection_str = get_user_selection(default_apps)
+    # Always add http.conf and stream.conf to the allowed list
+    allowed_files.update({"http.conf", "stream.conf"})
     print("\nYou have selected the following configuration files to keep:")
     for f in allowed_files:
-        for num, (app_name, conf_file) in APP_OPTIONS.items():
-            if conf_file == f:
-                print(f" - {app_name} ({conf_file})")
+        # Check if the file is one of the essential files
+        if f in {"http.conf", "stream.conf"}:
+            print(f" - Essential file: {f}")
+        else:
+            for num, (app_name, conf_file) in APP_OPTIONS.items():
+                if conf_file == f:
+                    print(f" - {app_name} ({conf_file})")
     print("\nNow scanning the conf.d directory and removing files not in your selection...")
     remove_unwanted_conf_files(allowed_files)
     
