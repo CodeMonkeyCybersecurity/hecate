@@ -25,4 +25,6 @@ services:
       #- "143:143"     # <-
       #- "993:993"     # <-
       ##############################################################
+      #- "3478:3478"   # <- uncomment if using Nextcloud Talk behind Hecate
+
     restart: always
