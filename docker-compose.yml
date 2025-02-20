@@ -13,9 +13,9 @@ services:
       - "80:80"
       - "443:443"
       ##############################################################
-      #- "1515:1515"   # <- uncomment if using Wazuh behind Hecate
-      #- "1514:1514"   # <-
-      #- "55000:55000" # <-
+      - "1515:1515"   # <- uncomment if using Wazuh behind Hecate
+      - "1514:1514"   # <-
+      - "55000:55000" # <-
       ##############################################################
       #- "25:25"       # <- uncomment if using Mailcow behind Hecate
       #- "587:587"     # <-
@@ -25,6 +25,6 @@ services:
       #- "143:143"     # <-
       #- "993:993"     # <-
       ##############################################################
-      #- "3478:3478"   # <- uncomment if using Nextcloud Talk behind Hecate
+      - "3478:3478"   # <- uncomment if using Nextcloud Talk behind Hecate
 
     restart: always
