@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import shutil
 
 def prompt_with_default(prompt, default, description):
     print(f"\n{description}")
@@ -7,6 +8,9 @@ def prompt_with_default(prompt, default, description):
     return user_input if user_input else default
 
 def main():
+    config_file = "http.conf"
+    backup_file = "http.conf.bak"
+
     print("Welcome to the HTTP block configuration updater for your http.conf file.")
     print("Below you'll see a description for each setting along with its current default value.")
     print("Press Enter to keep the default value or type a new one as desired.\n")
@@ -82,11 +86,18 @@ http {{
 }}
 """
 
-    # Write the configuration to a file (http.conf)
-    output_file = "http.conf"
-    with open(output_file, "w") as f:
+    # Check if http.conf exists and rename it to http.conf.bak
+    if os.path.exists(config_file):
+        # If a backup already exists, we can remove it or handle accordingly.
+        if os.path.exists(backup_file):
+            os.remove(backup_file)
+        shutil.move(config_file, backup_file)
+        print(f"\nExisting {config_file} has been backed up to {backup_file}")
+
+    # Write the new configuration to http.conf
+    with open(config_file, "w") as f:
         f.write(config_content)
-    print(f"\nConfiguration has been updated and written to {output_file}")
+    print(f"\nNew configuration has been written to {config_file}")
 
 if __name__ == '__main__':
     main()
