@@ -28,7 +28,24 @@ services:
       # - "3478:3478"   # <- uncomment if using Nextcloud Talk behind Hecate
     restart: always
     networks:
-      - hecate-network
+      - hecate-net
+      
+  coturn:
+    image: instrumentisto/coturn
+    restart: unless-stopped
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+    environment:
+      # Optional: set your coturn configuration via env vars (e.g., TURN_USER, TURN_PASS, etc.)
+    command: >
+      turnserver
+      --listening-port=3478
+      --listening-ip=${YOUR_PUBLIC_IP}
+      --fingerprint
+      --no-cli
+    networks:
+      - hecate-net
       
 networks:
-  hecate-network:
+  hecate-net:
