@@ -27,3 +27,8 @@ services:
       ##############################################################
       # - "3478:3478"   # <- uncomment if using Nextcloud Talk behind Hecate
     restart: always
+    networks:
+      - hecate-network
+      
+networks:
+  hecate-network:
