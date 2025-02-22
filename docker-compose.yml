@@ -30,19 +30,34 @@ services:
       - hecate-net
       
   coturn:
-    image: instrumentisto/coturn
+    image: coturn/coturn
     restart: unless-stopped
     ports:
+      - "3478:3478"
       - "3478:3478/udp"
-      - "3478:3478/tcp"
+      - "5349:5349"
+      - "5349:5349/udp"
+      - "49160-49200:49160-49200/udp"
     environment:
-      # Optional: set your coturn configuration via env vars (e.g., TURN_USER, TURN_PASS, etc.)
+      TURN_USER: "your_turn_user"
+      TURN_PASSWORD: "changeme"
+      DETECT_EXTERNAL_IP: "yes"
+      DETECT_RELAY_IP: "yes"
+      DETECT_EXTERNAL_IPV6: "yes"
+      DETECT_RELAY_IPV6: "yes"
+    volumes:
+      - ./certs:/etc/coturn/certs:ro
     command: >
       turnserver
       --listening-port=3478
-      --listening-ip=${YOUR_PUBLIC_IP}
+      --listening-ip=0.0.0.0
       --fingerprint
       --no-cli
+      --min-port=49160
+      --max-port=49200
+      --log-file=stdout
+      --cert=/etc/coturn/certs/hecate.fullchain.pem
+      --pkey=/etc/coturn/certs/hecate.privkey.pem
     networks:
       - hecate-net
       
