@@ -2,7 +2,7 @@
 services:
   nginx:
     image: nginx
-    container_name: hecate
+    container_name: hecate-nginx
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro          #  main NGINX configuration
       - ./conf.d:/etc/nginx/conf.d:ro                  # All  additional config files (http.conf, stream.conf, servers, etc.)
