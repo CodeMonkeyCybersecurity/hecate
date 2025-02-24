@@ -9,8 +9,8 @@ services:
       - ./snippets:/etc/nginx/snippets:ro              #  snippets (security-headers and error-pages)
       - ./certs:/etc/nginx/certs:ro                    #  SSL certificates
       - ./error_pages:/usr/share/nginx/html:ro         #  error pages (custom_error.html, etc.)
-      - ./logs:/var/log/nginx 
-      
+      - ./logs:/var/log/nginx
+
     ports:
       - "80:80"
       - "443:443"
@@ -30,7 +30,7 @@ services:
     restart: always
     networks:
       - hecate-net
-      
+
   coturn:
     image: coturn/coturn
     restart: unless-stopped
@@ -64,6 +64,6 @@ services:
 
     networks:
       - hecate-net
-      
+
 networks:
   hecate-net:
