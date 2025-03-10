@@ -1,6 +1,19 @@
 # Hecate
 See out knowledge base, [Athena](https://wiki.cybermonkey.net.au), for more on how to use this.
 
+
+# Quickstart
+```
+su
+```
+
+```
+cd /opt
+git clone https://github.com/CodeMonkeyCybersecurity/hecate.git
+cd hecate
+```
+
+
 # Other links
 See our website: [cybermonkey.net.au](https://cybermonkey.net.au/)
 
