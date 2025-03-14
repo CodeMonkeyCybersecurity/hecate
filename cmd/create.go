@@ -13,9 +13,8 @@ import (
 // createCmd represents the create command
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Short: "Create various resources",
+        Long:  `Create commands for backups, certs, configs, etc.`,
 
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
@@ -27,7 +26,7 @@ to quickly create a Cobra application.`,
 
 func init() {
 	rootCmd.AddCommand(createCmd)
-
+        createCmd.AddCommand(backupCmd)
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
