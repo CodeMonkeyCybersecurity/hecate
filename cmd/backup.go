@@ -7,9 +7,7 @@ package cmd
 
 import (
     "fmt"
-    "io"
     "os"
-    "path/filepath"
 
     "github.com/spf13/cobra"
     "github.com/CodeMonkeyCybersecurity/hecate/pkg/utils"
