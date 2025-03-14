@@ -36,11 +36,11 @@ var backupCmd = &cobra.Command{
             fmt.Printf("Error: Source directory '%s' does not exist.\n", SRC_CONF)
             os.Exit(1)
         }
-        if err := removeIfExists(BACKUP_CONF); err != nil {
+        if err := utils.RemoveIfExists(BACKUP_CONF); err != nil {
             fmt.Printf("Error removing backup directory '%s': %v\n", BACKUP_CONF, err)
             os.Exit(1)
         }
-        if err := copyDir(SRC_CONF, BACKUP_CONF); err != nil {
+        if err := utils.CopyDir(SRC_CONF, BACKUP_CONF); err != nil {
             fmt.Printf("Error during backup of %s: %v\n", SRC_CONF, err)
             os.Exit(1)
         }
@@ -52,11 +52,11 @@ var backupCmd = &cobra.Command{
             fmt.Printf("Error: Source directory '%s' does not exist.\n", SRC_CERTS)
             os.Exit(1)
         }
-        if err := removeIfExists(BACKUP_CERTS); err != nil {
+        if err := utils.RemoveIfExists(BACKUP_CERTS); err != nil {
             fmt.Printf("Error removing backup directory '%s': %v\n", BACKUP_CERTS, err)
             os.Exit(1)
         }
-        if err := copyDir(SRC_CERTS, BACKUP_CERTS); err != nil {
+        if err := utils.CopyDir(SRC_CERTS, BACKUP_CERTS); err != nil {
             fmt.Printf("Error during backup of %s: %v\n", SRC_CERTS, err)
             os.Exit(1)
         }
@@ -68,11 +68,11 @@ var backupCmd = &cobra.Command{
             fmt.Printf("Error: Source file '%s' does not exist.\n", SRC_COMPOSE)
             os.Exit(1)
         }
-        if err := removeIfExists(BACKUP_COMPOSE); err != nil {
+        if err := utils.RemoveIfExists(BACKUP_COMPOSE); err != nil {
             fmt.Printf("Error removing backup file '%s': %v\n", BACKUP_COMPOSE, err)
             os.Exit(1)
         }
-        if err := copyFile(SRC_COMPOSE, BACKUP_COMPOSE); err != nil {
+        if err := utils.CopyFile(SRC_COMPOSE, BACKUP_COMPOSE); err != nil {
             fmt.Printf("Error during backup of %s: %v\n", SRC_COMPOSE, err)
             os.Exit(1)
         }
