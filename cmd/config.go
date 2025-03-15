@@ -125,11 +125,13 @@ func runCerts() {
 
 	// 4. Run certbot to obtain certificate.
 	certbotCommand := []string{
-		"sudo", "certbot", "certonly", "--standalone",
+		"sudo", "certbot", "certonly", "--non-interactive", "--standalone",
 		"-d", fullDomain,
 		"--email", mailCert,
 		"--agree-tos",
+		"--renew-by-default",
 	}
+	
 	if err := utils.RunCommand(certbotCommand, false); err != nil {
 		fmt.Printf("Error running certbot: %v\n", err)
 		os.Exit(1)
