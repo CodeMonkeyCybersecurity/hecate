@@ -16,6 +16,7 @@ import (
 const (
     LastValuesFile = ".hecate.conf"
     ConfDir        = "conf.d"
+    DockerComposeFile = "docker-compose.yml"
 )
 
 // RestoreDir removes dstDir and copies backupDir -> dstDir.
