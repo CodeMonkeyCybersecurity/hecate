@@ -251,15 +251,19 @@ func PromptSubdomain() string {
 func ConfirmCertName(defaultName string) string {
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Printf("Use certificate name '%s'? (yes/no): ", defaultName)
-		confirm, _ := reader.ReadString('\n')
-		confirm = strings.ToLower(strings.TrimSpace(confirm))
-		if confirm == "yes" || confirm == "y" {
-			return defaultName
-		} else if confirm == "no" || confirm == "n" {
-			return PromptInput("CERT_NAME", "Enter the desired certificate name (for file naming)", "")
+		fmt.Printf("Use certificate name '%s'? (Y/n): ", defaultName)
+		subdomain, _ := reader.ReadString('\n')
+		subdomain = strings.TrimSpace(defaultName)
+		if subdomain == "" {
+			fmt.Print("You entered no name. Do you wish to continue with no certificate name? (Y/n): ")
+			confirm, _ := reader.ReadString('\n')
+			confirm = strings.TrimSpace(confirm)
+			if confirm == "" || strings.EqualFold(confirm, "y") || strings.EqualFold(confirm, "yes") {
+				return ""
+			}
+			continue
 		} else {
-			fmt.Println("Please answer yes or no.")
+			return subdomain
 		}
 	}
 }
