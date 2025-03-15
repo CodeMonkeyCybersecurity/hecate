@@ -253,9 +253,6 @@ func runEos() {
 // ------------------ HTTP FUNCTIONALITY ------------------
 //
 
-please help me with this syntax error
-
-
 func runHttp() {
 		configFile := "http.conf"
 		backupFile := "http.conf.bak"
