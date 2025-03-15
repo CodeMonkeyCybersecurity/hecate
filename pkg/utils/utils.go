@@ -24,6 +24,23 @@ const (
 
 // -------------------- Generic Functions --------------------
 
+// PromptWithDefault displays a prompt with a default value and returns the user's input or the default.
+func PromptWithDefault(prompt, def, description string) string {
+	fmt.Println()
+	fmt.Println(description)
+	fmt.Printf("%s [%s]: ", prompt, def)
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return def
+	}
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return def
+	}
+	return input
+}
+
 // CombineMarkers returns a new slice containing the provided defaultMarkers plus any additional markers.
 func CombineMarkers(defaultMarkers []string, additional ...string) []string {
 	markers := make([]string, len(defaultMarkers))
