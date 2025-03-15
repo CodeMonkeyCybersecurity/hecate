@@ -39,19 +39,23 @@ var APP_OPTIONS = map[string]AppOption{
 	"13": {"Persephone", "persephone.conf"},
 }
 
+// SUPPORTED_APPS maps app keywords (in lowercase) to a list of markers that, if found in a line,
+// should cause that line to be uncommented.
+// Note: For Nextcloud we include "coturn:" so that the coturn service header is also uncommented.
 var SUPPORTED_APPS = map[string][]string{
 	"static website": {"80", "443"},
+	"wazuh":          {"1515", "1514", "55000"},
+	"mailcow":        {"25", "587", "465", "110", "995", "143", "993"},
+	"nextcloud":      {"3478", "coturn:"},
 	"mattermost":     {"80", "443"},
 	"jenkins":        {"80", "443"},
 	"grafana":        {"80", "443"},
 	"umami":          {"80", "443"},
 	"minio":          {"80", "443"},
 	"wiki.js":        {"80", "443"},
+	"erpnext":        {"80", "443"},
 	"jellyfin":       {"80", "443"},
 	"persephone":     {"80", "443"},
-	"wazuh":          {"1515", "1514", "55000"},
-	"mailcow":        {"25", "587", "465", "110", "995", "143", "993"},
-	"nextcloud":      {"3478", "5349", "49160-49200"},
 }
 
 // displayOptions prints the available options.
@@ -117,35 +121,36 @@ func getUserSelection(defaultSelection string) (map[string]struct{}, string) {
 	return getUserSelection(defaultSelection)
 }
 
-// updateComposeFile reads the docker-compose file and, for each line containing a marker
-// corresponding to a selected app, removes the leading '#' before a dash.
+// updateComposeFile reads the docker-compose file and, for each line that contains a marker
+// corresponding to a selected app, removes the leading '#' so that the line becomes active.
 func updateComposeFile(selectedApps map[string]struct{}) error {
 	content, err := os.ReadFile(utils.DockerComposeFile)
 	if err != nil {
 		return fmt.Errorf("Error: %s not found", utils.DockerComposeFile)
 	}
 	lines := strings.Split(string(content), "\n")
-	var newLines []string
-	re := regexp.MustCompile(`^(\s*)#\s*(-)`)
-	for _, line := range lines {
-		modifiedLine := line
-		for app, markers := range SUPPORTED_APPS {
-			if _, selected := selectedApps[app]; selected {
-				for _, marker := range markers {
-					if strings.Contains(line, marker) {
-						modifiedLine = re.ReplaceAllString(line, "$1$2")
-						break
-					}
+	// Regex to remove leading comment markers (hash and following spaces)
+	uncommentRegex := regexp.MustCompile(`^(\s*)#\s*`)
+	// Process each line and check for markers from each selected app.
+	for i, line := range lines {
+		for app := range selectedApps {
+			markers := SUPPORTED_APPS[app]
+			for _, marker := range markers {
+				if strings.Contains(line, marker) {
+					// Uncomment the line.
+					lines[i] = uncommentRegex.ReplaceAllString(line, "$1")
+					// Once uncommented for one marker, move on to the next line.
+					goto NextLine
 				}
 			}
 		}
-		newLines = append(newLines, modifiedLine)
+	NextLine:
 	}
 	// Backup the original docker-compose file.
 	if err := utils.BackupFile(utils.DockerComposeFile); err != nil {
 		return err
 	}
-	outContent := strings.Join(newLines, "\n")
+	outContent := strings.Join(lines, "\n")
 	if err := os.WriteFile(utils.DockerComposeFile, []byte(outContent), 0644); err != nil {
 		return err
 	}
@@ -161,7 +166,7 @@ func updateComposeFile(selectedApps map[string]struct{}) error {
 var composeCmd = &cobra.Command{
 	Use:   "compose [app ...]",
 	Short: "Update the docker-compose file",
-	Long: `Update the docker-compose file by uncommenting port configuration lines 
+	Long: `Update the docker-compose file by uncommenting configuration lines 
 associated with selected applications.
 
 You can run this command in two modes:
@@ -180,7 +185,7 @@ Supported App Options:
   1. Static website    -> base.conf
   2. Wazuh             -> delphi.conf
   3. Mattermost        -> collaborate.conf
-  4. Nextcloud         -> cloud.conf
+  4. Nextcloud         -> cloud.conf   (uncomments coturn service for Nextcloud)
   5. Mailcow           -> mailcow.conf
   6. Jenkins           -> jenkins.conf
   7. Grafana           -> observe.conf
@@ -192,8 +197,8 @@ Supported App Options:
   13. Persephone       -> persephone.conf
 
 When a valid app option is selected, the command will update the docker-compose file 
-by removing the leading '#' on the associated port lines. If no valid app options are 
-provided, the command will exit with an error.`,
+by removing the leading '#' on lines that contain specific markers.
+If no valid app options are provided, the command will exit with an error.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runCompose(args)
 	},
