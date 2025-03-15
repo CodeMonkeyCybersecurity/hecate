@@ -8,16 +8,141 @@ import (
     "io/fs"
     "os"
     "path/filepath"
+    "sort"
+    "strconv"
     "strings"
     "time"
 )
 
 // Constants that define your config file and directory to process.
 const (
-    LastValuesFile = ".hecate.conf"
-    ConfDir        = "conf.d"
+    LastValuesFile    = ".hecate.conf"
+    ConfDir           = "conf.d"
     DockerComposeFile = "docker-compose.yml"
 )
+
+// AppOption holds an app's name and its corresponding configuration file.
+type AppOption struct {
+    AppName  string
+    ConfFile string
+}
+
+// APPS_SELECTION maps option numbers (as strings) to their app name and configuration file.
+var APPS_SELECTION = map[string]AppOption{
+    "1":  {"Static website", "base.conf"},
+    "2":  {"Wazuh", "delphi.conf"},
+    "3":  {"Mattermost", "collaborate.conf"},
+    "4":  {"Nextcloud", "cloud.conf"},
+    "5":  {"Mailcow", "mailcow.conf"},
+    "6":  {"Jenkins", "jenkins.conf"},
+    "7":  {"Grafana", "observe.conf"},
+    "8":  {"Umami", "analytics.conf"},
+    "9":  {"MinIO", "s3.conf"},
+    "10": {"Wiki.js", "wiki.conf"},
+    "11": {"ERPNext", "erp.conf"},
+    "12": {"Jellyfin", "jellyfin.conf"},
+    "13": {"Persephone", "persephone.conf"},
+}
+
+// DisplayOptions prints the available options from APPS_SELECTION.
+func DisplayOptions() {
+    fmt.Println("Available EOS backend web apps:")
+    // Sort option numbers numerically.
+    var keys []int
+    for k := range APPS_SELECTION {
+        if num, err := strconv.Atoi(k); err == nil {
+            keys = append(keys, num)
+        }
+    }
+    sort.Ints(keys)
+    for _, num := range keys {
+        k := strconv.Itoa(num)
+        option := APPS_SELECTION[k]
+        fmt.Printf("  %s. %s -> %s\n", k, option.AppName, option.ConfFile)
+    }
+}
+
+// GetUserSelection prompts the user for a comma-separated list of options.
+// Returns a set (map[string]bool) of allowed configuration filenames and the raw selection string.
+func GetUserSelection(defaultSelection string) (map[string]bool, string) {
+    reader := bufio.NewReader(os.Stdin)
+    promptMsg := "Enter the numbers (comma-separated) of the apps you want enabled (or type 'all' for all)"
+    if defaultSelection != "" {
+        promptMsg += fmt.Sprintf(" [default: %s]", defaultSelection)
+    }
+    promptMsg += ": "
+    fmt.Print(promptMsg)
+    selection, _ := reader.ReadString('\n')
+    selection = strings.TrimSpace(selection)
+    if selection == "" && defaultSelection != "" {
+        selection = defaultSelection
+    }
+    if strings.ToLower(selection) == "all" {
+        allowed := make(map[string]bool)
+        for _, option := range APPS_SELECTION {
+            allowed[option.ConfFile] = true
+        }
+        return allowed, "all"
+    }
+    allowed := make(map[string]bool)
+    valid := true
+    parts := strings.Split(selection, ",")
+    for _, token := range parts {
+        token = strings.TrimSpace(token)
+        option, exists := APPS_SELECTION[token]
+        if !exists {
+            fmt.Printf("Invalid option: %s\n", token)
+            valid = false
+            break
+        }
+        allowed[option.ConfFile] = true
+    }
+    if valid && len(allowed) > 0 {
+        return allowed, selection
+    }
+    fmt.Println("Please enter a valid comma-separated list of options.")
+    return GetUserSelection(defaultSelection)
+}
+
+// RemoveUnwantedConfFiles walks through ConfDir and deletes any .conf file whose base name is not in allowedFiles.
+func RemoveUnwantedConfFiles(allowedFiles map[string]bool) {
+    info, err := os.Stat(ConfDir)
+    if err != nil || !info.IsDir() {
+        fmt.Printf("Error: Directory '%s' not found.\n", ConfDir)
+        os.Exit(1)
+    }
+    var removedFiles []string
+    // Walk the directory recursively.
+    err = filepath.Walk(ConfDir, func(path string, info fs.FileInfo, err error) error {
+        if err != nil {
+            return err
+        }
+        if !info.IsDir() && strings.HasSuffix(info.Name(), ".conf") {
+            if !allowedFiles[info.Name()] {
+                err := os.Remove(path)
+                if err != nil {
+                    fmt.Printf("Error removing %s: %v\n", path, err)
+                } else {
+                    removedFiles = append(removedFiles, path)
+                    fmt.Printf("Removed: %s\n", path)
+                }
+            }
+        }
+        return nil
+    })
+    if err != nil {
+        fmt.Printf("Error walking through '%s': %v\n", ConfDir, err)
+        os.Exit(1)
+    }
+    if len(removedFiles) == 0 {
+        fmt.Println("No configuration files were removed.")
+    } else {
+        fmt.Println("\nCleanup complete. The following files were removed:")
+        for _, f := range removedFiles {
+            fmt.Printf(" - %s\n", f)
+        }
+    }
+}
 
 // RestoreDir removes dstDir and copies backupDir -> dstDir.
 func RestoreDir(backupDir, dstDir string) {
@@ -135,7 +260,7 @@ func UpdateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAI
     }
 }
 
-// ProcessConfDirectory walks through directory recursively, updating each .conf file.
+// ProcessConfDirectory walks through a directory recursively, updating each .conf file.
 func ProcessConfDirectory(directory, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN string) error {
     return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
         if err != nil {
