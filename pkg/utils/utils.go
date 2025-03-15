@@ -21,8 +21,15 @@ const (
     DockerComposeFile = "docker-compose.yml"
 )
 
-// -------------------- Configuration Persistence --------------------
+// -------------------- Generic Functions --------------------
 
+// CombineMarkers returns a new slice containing the default markers plus any additional markers.
+func CombineMarkers(defaultMarkers []string, additional ...string) []string {
+	markers := make([]string, len(defaultMarkers))
+	copy(markers, defaultMarkers)
+	markers = append(markers, additional...)
+	return markers
+}
 
 // UpdateComposeFile reads the docker-compose file and, for each line that contains any marker
 // from a selected app, removes the leading '#' so that the line becomes active.
