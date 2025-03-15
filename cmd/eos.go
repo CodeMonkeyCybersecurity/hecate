@@ -67,7 +67,7 @@ func runEos() {
 }
 
 var eosAppsCmd = &cobra.Command{
-	Use:   "eosApps",
+	Use:   "eos",
 	Short: "Select and clean up EOS backend web apps configuration",
 	Long: `Interactively choose which EOS backend web apps should remain active and 
 remove unwanted configuration files from the conf.d directory.
@@ -80,7 +80,7 @@ This command performs the following:
   - Scans the conf.d directory and removes .conf files not in the selected set.
 
 Examples:
-  hecate create eosApps       // Runs in interactive mode using previous selections if available.
+  hecate create eos       // Runs in interactive mode using previous selections if available.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		runEos()
@@ -89,5 +89,5 @@ Examples:
 
 func init() {
 	// Assumes createCmd is defined in your application under the "hecate create" command.
-	createCmd.AddCommand(eosAppsCmd)
+	createCmd.AddCommand(eosCmd)
 }
