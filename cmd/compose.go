@@ -39,23 +39,35 @@ var APP_OPTIONS = map[string]AppOption{
 	"13": {"Persephone", "persephone.conf"},
 }
 
-// SUPPORTED_APPS maps app keywords (in lowercase) to a list of markers that, if found in a line,
-// should cause that line to be uncommented.
-// Note: For Nextcloud we include "coturn:" so that the coturn service header is also uncommented.
+// defaultMarkers holds the default port markers that apply to all apps.
+var defaultMarkers = []string{"80", "443"}
+
+// combineMarkers returns a new slice containing the default markers
+// plus any additional markers passed in.
+func combineMarkers(additional ...string) []string {
+	markers := make([]string, len(defaultMarkers))
+	copy(markers, defaultMarkers)
+	markers = append(markers, additional...)
+	return markers
+}
+
+// SUPPORTED_APPS maps app keywords (in lowercase) to a list of markers.
+// For apps that need only the defaults, we just use defaultMarkers;
+// for apps that need extra markers, we combine them.
 var SUPPORTED_APPS = map[string][]string{
-	"static website": {"80", "443"},
-	"wazuh":          {"1515", "1514", "55000"},
-	"mailcow":        {"25", "587", "465", "110", "995", "143", "993"},
-	"nextcloud":      {"3478", "coturn:"},
-	"mattermost":     {"80", "443"},
-	"jenkins":        {"80", "443"},
-	"grafana":        {"80", "443"},
-	"umami":          {"80", "443"},
-	"minio":          {"80", "443"},
-	"wiki.js":        {"80", "443"},
-	"erpnext":        {"80", "443"},
-	"jellyfin":       {"80", "443"},
-	"persephone":     {"80", "443"},
+	"static website": defaultMarkers,
+	"wazuh":          combineMarkers("1515", "1514", "55000"),
+	"mailcow":        combineMarkers("25", "587", "465", "110", "995", "143", "993"),
+	"nextcloud":      combineMarkers("3478", "coturn:"), // includes defaults plus extra markers
+	"mattermost":     defaultMarkers,
+	"jenkins":        defaultMarkers,
+	"grafana":        defaultMarkers,
+	"umami":          defaultMarkers,
+	"minio":          defaultMarkers,
+	"wiki.js":        defaultMarkers,
+	"erpnext":        defaultMarkers,
+	"jellyfin":       defaultMarkers,
+	"persephone":     defaultMarkers,
 }
 
 // displayOptions prints the available options.
