@@ -149,16 +149,45 @@ func updateComposeFile(selectedApps map[string]struct{}) error {
 	return nil
 }
 
-// composeCmd represents the subcommand that runs under "hecate create ...".
+// composeCmd represents the "compose" subcommand.
 var composeCmd = &cobra.Command{
-	Use:   "compose",
-	Short: "Update docker-compose file",
-	Long: `Uncomments port lines in docker-compose.yml based on the selected apps.
+	Use:   "compose [app ...]",
+	Short: "Update the docker-compose file",
+	Long: `Update the docker-compose file by uncommenting port configuration lines 
+associated with selected applications.
 
-Usage: hecate create compose
-`,
+You can run this command in two modes:
+
+1. Non-interactive mode:
+   Supply one or more supported app keywords as arguments.
+   Example: 
+       hecate create compose nextcloud mailcow
+
+2. Interactive mode:
+   Run the command without valid app arguments, and you'll be prompted to choose.
+   Example: 
+       hecate create compose
+
+Supported App Options:
+  1. Static website    -> base.conf
+  2. Wazuh             -> delphi.conf
+  3. Mattermost        -> collaborate.conf
+  4. Nextcloud         -> cloud.conf
+  5. Mailcow           -> mailcow.conf
+  6. Jenkins           -> jenkins.conf
+  7. Grafana           -> observe.conf
+  8. Umami             -> analytics.conf
+  9. MinIO             -> s3.conf
+  10. Wiki.js          -> wiki.conf
+  11. ERPNext          -> erp.conf
+  12. Jellyfin         -> jellyfin.conf
+  13. Persephone       -> persephone.conf
+
+When a valid app option is selected, the command will update the docker-compose file 
+by removing the leading '#' on the associated port lines. If no valid app options are 
+provided, the command will exit with an error.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		runCompose()
+		runCompose(args)
 	},
 }
 
@@ -166,7 +195,7 @@ func init() {
 	createCmd.AddCommand(composeCmd)
 }
 
-func runCompose() {
+func runCompose(args []string) {
 	// Load previous values from configuration.
 	lastValues, err := utils.LoadLastValues()
 	if err != nil {
@@ -177,12 +206,10 @@ func runCompose() {
 	var selectedApps map[string]struct{}
 	var selectionStr string
 
-	// Check if command-line arguments are provided.
-	// Note: In Cobra, you should ideally use the 'args' parameter,
-	// but we'll follow your current pattern.
-	if len(os.Args) > 1 {
+	// Non-interactive mode: Use provided arguments.
+	if len(args) > 0 {
 		selectedApps = make(map[string]struct{})
-		for _, arg := range os.Args[1:] {
+		for _, arg := range args {
 			lowArg := strings.ToLower(arg)
 			if _, ok := SUPPORTED_APPS[lowArg]; ok {
 				selectedApps[lowArg] = struct{}{}
