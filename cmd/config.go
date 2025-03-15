@@ -363,5 +363,5 @@ http {
 		}
 
 		fmt.Printf("\nNew configuration has been written to %s\n", configFile)
-	},
+	}
 }
