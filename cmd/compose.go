@@ -103,4 +103,13 @@ func runCompose(args []string) {
 		fmt.Printf("Error updating docker-compose file: %v\n", err)
 		os.Exit(1)
 	}
+
+	// NEW: Output the updated docker-compose file for user confirmation.
+	data, err := os.ReadFile(utils.DockerComposeFile)
+	if err != nil {
+		fmt.Printf("Error reading %s: %v\n", utils.DockerComposeFile, err)
+	} else {
+		fmt.Println("\n---- Updated docker-compose.yml ----")
+		fmt.Println(string(data))
+	}
 }
