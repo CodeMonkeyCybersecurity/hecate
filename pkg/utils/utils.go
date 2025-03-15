@@ -18,64 +18,62 @@ const (
     ConfDir        = "conf.d"
 )
 
-// restoreDir removes dstDir and copies backupDir -> dstDir
+// RestoreDir removes dstDir and copies backupDir -> dstDir.
 func RestoreDir(backupDir, dstDir string) {
-	info, err := os.Stat(backupDir)
-	if err != nil || !info.IsDir() {
-		fmt.Printf("Error: Backup directory '%s' does not exist or is not a directory.\n", backupDir)
-		os.Exit(1)
-	}
-	if err := utils.RemoveIfExists(dstDir); err != nil {
-		fmt.Printf("Error removing %s: %v\n", dstDir, err)
-		os.Exit(1)
-	}
-	if err := utils.CopyDir(backupDir, dstDir); err != nil {
-		fmt.Printf("Error during restore of %s: %v\n", backupDir, err)
-		os.Exit(1)
-	}
-	fmt.Printf("Restore complete: '%s' has been restored to '%s'.\n", backupDir, dstDir)
+    info, err := os.Stat(backupDir)
+    if err != nil || !info.IsDir() {
+        fmt.Printf("Error: Backup directory '%s' does not exist or is not a directory.\n", backupDir)
+        os.Exit(1)
+    }
+    if err := RemoveIfExists(dstDir); err != nil {
+        fmt.Printf("Error removing %s: %v\n", dstDir, err)
+        os.Exit(1)
+    }
+    if err := CopyDir(backupDir, dstDir); err != nil {
+        fmt.Printf("Error during restore of %s: %v\n", backupDir, err)
+        os.Exit(1)
+    }
+    fmt.Printf("Restore complete: '%s' has been restored to '%s'.\n", backupDir, dstDir)
 }
 
-// restoreFile removes dstFile and copies backupFile -> dstFile
+// RestoreFile removes dstFile and copies backupFile -> dstFile.
 func RestoreFile(backupFile, dstFile string) {
-	info, err := os.Stat(backupFile)
-	if err != nil || info.IsDir() {
-		fmt.Printf("Error: Backup file '%s' does not exist or is a directory.\n", backupFile)
-		os.Exit(1)
-	}
-	if err := utils.RemoveIfExists(dstFile); err != nil {
-		fmt.Printf("Error removing %s: %v\n", dstFile, err)
-		os.Exit(1)
-	}
-	if err := utils.CopyFile(backupFile, dstFile); err != nil {
-		fmt.Printf("Error during restore of %s: %v\n", backupFile, err)
-		os.Exit(1)
-	}
-	fmt.Printf("Restore complete: '%s' has been restored to '%s'.\n", backupFile, dstFile)
+    info, err := os.Stat(backupFile)
+    if err != nil || info.IsDir() {
+        fmt.Printf("Error: Backup file '%s' does not exist or is a directory.\n", backupFile)
+        os.Exit(1)
+    }
+    if err := RemoveIfExists(dstFile); err != nil {
+        fmt.Printf("Error removing %s: %v\n", dstFile, err)
+        os.Exit(1)
+    }
+    if err := CopyFile(backupFile, dstFile); err != nil {
+        fmt.Printf("Error during restore of %s: %v\n", backupFile, err)
+        os.Exit(1)
+    }
+    fmt.Printf("Restore complete: '%s' has been restored to '%s'.\n", backupFile, dstFile)
 }
 
-// findLatestBackup finds the lexicographically greatest file whose name starts with `prefix` and ends with ".bak".
+// FindLatestBackup finds the lexicographically greatest file whose name starts with `prefix` and ends with ".bak".
 // For example, if prefix is "conf.d.", it might find "conf.d.20250325-101010.bak".
 func FindLatestBackup(prefix string) (string, error) {
-	entries, err := os.ReadDir(".")
-	if err != nil {
-		return "", err
-	}
-	var latest string
-	for _, e := range entries {
-		name := e.Name()
-		if strings.HasPrefix(name, prefix) && strings.HasSuffix(name, ".bak") {
-			// For purely numeric timestamps, a lexicographical comparison is enough to find the "largest" date/time.
-			// e.g. conf.d.20250325-101010.bak > conf.d.20250325-100000.bak
-			if name > latest {
-				latest = name
-			}
-		}
-	}
-	if latest == "" {
-		return "", fmt.Errorf("No .bak files found for prefix %q", prefix)
-	}
-	return latest, nil
+    entries, err := os.ReadDir(".")
+    if err != nil {
+        return "", err
+    }
+    var latest string
+    for _, e := range entries {
+        name := e.Name()
+        if strings.HasPrefix(name, prefix) && strings.HasSuffix(name, ".bak") {
+            if name > latest {
+                latest = name
+            }
+        }
+    }
+    if latest == "" {
+        return "", fmt.Errorf("No .bak files found for prefix %q", prefix)
+    }
+    return latest, nil
 }
 
 // BackupFile creates a backup of the given file by appending a timestamp.
@@ -123,12 +121,10 @@ func UpdateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAI
     newContent = strings.ReplaceAll(newContent, "${BASE_DOMAIN}", BASE_DOMAIN)
 
     if newContent != content {
-        // Create backup first.
         if err := BackupFile(path); err != nil {
             fmt.Printf("Error creating backup for %s: %v\n", path, err)
             return
         }
-        // Write new content.
         err = os.WriteFile(path, []byte(newContent), 0644)
         if err != nil {
             fmt.Printf("Error writing %s: %v\n", path, err)
@@ -138,7 +134,7 @@ func UpdateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAI
     }
 }
 
-// processConfDirectory walks through directory recursively, updating each .conf file.
+// ProcessConfDirectory walks through directory recursively, updating each .conf file.
 func ProcessConfDirectory(directory, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN string) error {
     return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
         if err != nil {
@@ -151,7 +147,7 @@ func ProcessConfDirectory(directory, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND
     })
 }
 
-// promptInput prompts the user with a message and returns the input or default value.
+// PromptInput prompts the user with a message and returns the input or default value.
 func PromptInput(varName, promptMessage, defaultVal string) string {
     reader := bufio.NewReader(os.Stdin)
     for {
@@ -171,7 +167,7 @@ func PromptInput(varName, promptMessage, defaultVal string) string {
     }
 }
 
-// saveLastValues writes key="value" lines to LastValuesFile.
+// SaveLastValues writes key="value" lines to LastValuesFile.
 func SaveLastValues(values map[string]string) error {
     file, err := os.Create(LastValuesFile)
     if err != nil {
@@ -188,12 +184,11 @@ func SaveLastValues(values map[string]string) error {
     return nil
 }
 
-// loadLastValues reads key="value" lines from LastValuesFile.
+// LoadLastValues reads key="value" lines from LastValuesFile.
 func LoadLastValues() (map[string]string, error) {
     values := make(map[string]string)
     file, err := os.Open(LastValuesFile)
     if err != nil {
-        // If file doesn't exist, return empty map.
         if os.IsNotExist(err) {
             return values, nil
         }
@@ -210,7 +205,6 @@ func LoadLastValues() (map[string]string, error) {
         parts := strings.SplitN(line, "=", 2)
         key := strings.TrimSpace(parts[0])
         value := strings.TrimSpace(parts[1])
-        // Remove surrounding quotes.
         value = strings.Trim(value, `"`)
         values[key] = value
     }
@@ -254,7 +248,6 @@ func CopyFile(src, dst string) error {
         return err
     }
 
-    // Ensure the copied file has the same permissions.
     if info, err := os.Stat(src); err == nil {
         return os.Chmod(dst, info.Mode())
     }
@@ -274,7 +267,6 @@ func CopyDir(src, dst string) error {
         return fmt.Errorf("source %s is not a directory", src)
     }
 
-    // Create destination directory.
     if err = os.MkdirAll(dst, srcInfo.Mode()); err != nil {
         return err
     }
