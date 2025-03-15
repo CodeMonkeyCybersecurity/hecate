@@ -6,7 +6,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/CodeMonkeyCybersecurity/hecate/pkg/config"
@@ -100,7 +99,7 @@ func runCompose(args []string) {
 		}
 	}
 
-	if err := updateComposeFile(selectedApps); err != nil {
+	if err := utils.UpdateComposeFile(selectedApps); err != nil {
 		fmt.Printf("Error updating docker-compose file: %v\n", err)
 		os.Exit(1)
 	}
