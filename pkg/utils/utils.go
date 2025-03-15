@@ -22,7 +22,25 @@ const (
 	DockerComposeFile = "docker-compose.yml"
 )
 
+//
 // -------------------- Generic Functions --------------------
+//
+
+func RunCommand(command []string, shell bool) error {
+	if shell {
+		fmt.Printf("Running command: %s\n", strings.Join(command, " "))
+		cmd := exec.Command("sh", "-c", strings.Join(command, " "))
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		return cmd.Run()
+	} else {
+		fmt.Printf("Running command: %s\n", strings.Join(command, " "))
+		cmd := exec.Command(command[0], command[1:]...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		return cmd.Run()
+	}
+}
 
 // PromptWithDefault displays a prompt with a default value and returns the user's input or the default.
 func PromptWithDefault(prompt, def, description string) string {
@@ -47,6 +65,83 @@ func CombineMarkers(defaultMarkers []string, additional ...string) []string {
 	copy(markers, defaultMarkers)
 	markers = append(markers, additional...)
 	return markers
+}
+
+// SaveLastValues writes key="value" pairs to LastValuesFile.
+func SaveLastValues(values map[string]string) error {
+    file, err := os.Create(LastValuesFile)
+    if err != nil {
+        return err
+    }
+    defer file.Close()
+
+    for key, value := range values {
+        _, err := file.WriteString(fmt.Sprintf("%s=\"%s\"\n", key, value))
+        if err != nil {
+            return err
+        }
+    }
+    return nil
+}
+
+// LoadLastValues reads key="value" pairs from LastValuesFile.
+func LoadLastValues() (map[string]string, error) {
+    values := make(map[string]string)
+    file, err := os.Open(LastValuesFile)
+    if err != nil {
+        if os.IsNotExist(err) {
+            return values, nil
+        }
+        return nil, err
+    }
+    defer file.Close()
+
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        line := strings.TrimSpace(scanner.Text())
+        if line == "" || !strings.Contains(line, "=") {
+            continue
+        }
+        parts := strings.SplitN(line, "=", 2)
+        key := strings.TrimSpace(parts[0])
+        value := strings.Trim(strings.TrimSpace(parts[1]), `"`)
+        values[key] = value
+    }
+    return values, scanner.Err()
+}
+
+//
+// -------------------- Docker Compose Functions --------------------
+//
+
+// RunComposeInteractive updates the docker-compose file interactively.
+func RunComposeInteractive() {
+	fmt.Println("\n=== Docker Compose Update ===")
+	const LAST_VALUES_FILE = ".hecate.conf"
+	lastValues, err := loadLastValues(LAST_VALUES_FILE)
+	if err != nil {
+		fmt.Printf("Error loading configuration: %v\n", err)
+		os.Exit(1)
+	}
+	defaultSelection := lastValues["APPS_SELECTION"]
+	selectedApps, selectionStr := GetUserSelection(defaultSelection)
+	lastValues["APPS_SELECTION"] = selectionStr
+	if err := saveLastValues(LAST_VALUES_FILE, lastValues); err != nil {
+		fmt.Printf("Error saving configuration: %v\n", err)
+	}
+	if err := updateComposeFile(selectedApps); err != nil {
+		fmt.Printf("Error updating docker-compose file: %v\n", err)
+		os.Exit(1)
+	}
+	// Output updated docker-compose file.
+	composeFile := "docker-compose.yml" // adjust as needed
+	data, err := os.ReadFile(composeFile)
+	if err != nil {
+		fmt.Printf("Error reading %s: %v\n", composeFile, err)
+	} else {
+		fmt.Println("\n---- Updated docker-compose.yml ----")
+		fmt.Println(string(data))
+	}
 }
 
 // UpdateComposeFile reads the docker-compose file and, for each line that contains any marker
@@ -124,48 +219,45 @@ func UpdateComposeFile(selectedApps map[string]config.App) error {
 	return nil
 }
 
-// SaveLastValues writes key="value" pairs to LastValuesFile.
-func SaveLastValues(values map[string]string) error {
-    file, err := os.Create(LastValuesFile)
-    if err != nil {
-        return err
-    }
-    defer file.Close()
 
-    for key, value := range values {
-        _, err := file.WriteString(fmt.Sprintf("%s=\"%s\"\n", key, value))
-        if err != nil {
-            return err
-        }
-    }
-    return nil
+// -------------------- Certificate Functions --------------------
+
+func PromptSubdomain() string {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("Enter the subdomain to configure (e.g. sub). Leave blank if none: ")
+		subdomain, _ := reader.ReadString('\n')
+		subdomain = strings.TrimSpace(subdomain)
+		if subdomain == "" {
+			fmt.Print("You entered a blank subdomain. Do you wish to continue with no subdomain? (yes/no): ")
+			confirm, _ := reader.ReadString('\n')
+			confirm = strings.ToLower(strings.TrimSpace(confirm))
+			if confirm == "yes" || confirm == "y" {
+				return ""
+			}
+			continue
+		} else {
+			return subdomain
+		}
+	}
 }
 
-// LoadLastValues reads key="value" pairs from LastValuesFile.
-func LoadLastValues() (map[string]string, error) {
-    values := make(map[string]string)
-    file, err := os.Open(LastValuesFile)
-    if err != nil {
-        if os.IsNotExist(err) {
-            return values, nil
-        }
-        return nil, err
-    }
-    defer file.Close()
-
-    scanner := bufio.NewScanner(file)
-    for scanner.Scan() {
-        line := strings.TrimSpace(scanner.Text())
-        if line == "" || !strings.Contains(line, "=") {
-            continue
-        }
-        parts := strings.SplitN(line, "=", 2)
-        key := strings.TrimSpace(parts[0])
-        value := strings.Trim(strings.TrimSpace(parts[1]), `"`)
-        values[key] = value
-    }
-    return values, scanner.Err()
+func ConfirmCertName(defaultName string) string {
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Printf("Use certificate name '%s'? (yes/no): ", defaultName)
+		confirm, _ := reader.ReadString('\n')
+		confirm = strings.ToLower(strings.TrimSpace(confirm))
+		if confirm == "yes" || confirm == "y" {
+			return defaultName
+		} else if confirm == "no" || confirm == "n" {
+			return promptInput("Enter the desired certificate name (for file naming)", "")
+		} else {
+			fmt.Println("Please answer yes or no.")
+		}
+	}
 }
+
 
 // -------------------- File Backup and Copy Functions --------------------
 
@@ -418,6 +510,10 @@ func ProcessConfDirectory(directory, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND
         return nil
     })
 }
+
+//
+// ------------------ USER INTERACTION ------------------
+//
 
 // PromptInput prompts the user with a message and returns the input or default value.
 func PromptInput(varName, promptMessage, defaultVal string) string {
