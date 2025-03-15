@@ -1,29 +1,32 @@
-// pkg/utils/go
+// pkg/utils/utils.go
 package utils
 
 import (
-    "bufio"
-    "fmt"
-    "io"
-    "io/fs"
-    "os"
-    "path/filepath"
-    "sort"
-    "strconv"
-    "strings"
-    "time"
+	"bufio"
+	"fmt"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/CodeMonkeyCybersecurity/hecate/pkg/config"
 )
 
 // Constants for file and directory names.
 const (
-    LastValuesFile    = ".hecate.conf"
-    ConfDir           = "conf.d"
-    DockerComposeFile = "docker-compose.yml"
+	LastValuesFile    = ".hecate.conf"
+	ConfDir           = "conf.d"
+	DockerComposeFile = "docker-compose.yml"
 )
 
 // -------------------- Generic Functions --------------------
 
-// CombineMarkers returns a new slice containing the default markers plus any additional markers.
+// CombineMarkers returns a new slice containing the provided defaultMarkers plus any additional markers.
 func CombineMarkers(defaultMarkers []string, additional ...string) []string {
 	markers := make([]string, len(defaultMarkers))
 	copy(markers, defaultMarkers)
