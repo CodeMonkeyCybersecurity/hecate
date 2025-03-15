@@ -18,7 +18,7 @@ const (
     ConfDir        = "conf.d"
 )
 
-// backupFile creates a backup of the given file by appending a timestamp.
+// BackupFile creates a backup of the given file by appending a timestamp.
 func BackupFile(path string) error {
     info, err := os.Stat(path)
     if err != nil || info.IsDir() {
@@ -49,7 +49,7 @@ func BackupFile(path string) error {
     return nil
 }
 
-// updateFile reads a file, replaces placeholders, creates a backup if changes occur, then writes the new content.
+// UpdateFile reads a file, replaces placeholders, creates a backup if changes occur, then writes the new content.
 func UpdateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN string) {
     original, err := os.ReadFile(path)
     if err != nil {
@@ -64,7 +64,7 @@ func UpdateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAI
 
     if newContent != content {
         // Create backup first.
-        if err := backupFile(path); err != nil {
+        if err := BackupFile(path); err != nil {
             fmt.Printf("Error creating backup for %s: %v\n", path, err)
             return
         }
@@ -85,7 +85,7 @@ func ProcessConfDirectory(directory, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND
             return err
         }
         if !d.IsDir() && strings.HasSuffix(d.Name(), ".conf") {
-            updateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN)
+            UpdateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN)
         }
         return nil
     })
