@@ -198,7 +198,6 @@ func runCerts() {
 	}
 
 	fmt.Printf("\nCertificates created successfully for https://%s\n", fullDomain)
-	fmt.Println("Next, run ./updateConfigVariables.py and ./updateEosApps.py before (re)starting Hecate")
 }
 
 //
