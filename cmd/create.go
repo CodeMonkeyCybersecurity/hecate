@@ -24,6 +24,4 @@ var createCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(createCmd)
         createCmd.AddCommand(backupCmd)
-	createCmd.AddCommand(certsCmd)
-
 }
