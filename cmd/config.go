@@ -102,7 +102,7 @@ func runCerts() {
 
 	baseDomain := utils.PromptInput("BASE_DOMAIN", "Enter the base domain (e.g. domain.com)", prevValues["BASE_DOMAIN"])
 	subdomain := utils.PromptSubdomain()
-	mailCert := utils.PromptInput("Enter the contact email (e.g. example@domain.com)", prevValues["EMAIL"])
+	mailCert := utils.PromptInput("EMAIL", "Enter the contact email (e.g. example@domain.com)", prevValues["EMAIL"])
 
 	// Save the entered values for future runs.
 	newValues := map[string]string{
@@ -206,7 +206,7 @@ func runCerts() {
 func runEos() {
 	fmt.Println("\n=== EOS Backend Web Apps Selector ===")
 	const LAST_VALUES_FILE = ".hecate.conf"
-	lastValues, err := utils.LoadLastValues(LAST_VALUES_FILE)
+	lastValues, err := utils.LoadLastValues()
 	if err != nil {
 		fmt.Printf("Error loading configuration: %v\n", err)
 		os.Exit(1)
@@ -242,7 +242,7 @@ func runEos() {
 		os.Exit(1)
 	}
 	lastValues["APPS_SELECTION"] = selectionStr
-	if err := utils.SaveLastValues(LAST_VALUES_FILE, lastValues); err != nil {
+	if err := utils.SaveLastValues(lastValues); err != nil {
 		fmt.Printf("Error saving configuration: %v\n", err)
 	}
 }
