@@ -23,6 +23,45 @@ const (
 
 // -------------------- Configuration Persistence --------------------
 
+
+// UpdateComposeFile reads the docker-compose file and, for each line that contains any marker
+// from a selected app, removes the leading '#' so that the line becomes active.
+func UpdateComposeFile(selectedApps map[string]config.App) error {
+	content, err := os.ReadFile(utils.DockerComposeFile)
+	if err != nil {
+		return fmt.Errorf("Error: %s not found", utils.DockerComposeFile)
+	}
+	lines := strings.Split(string(content), "\n")
+	// Regex to remove leading '#' and any spaces following it.
+	uncommentRegex := regexp.MustCompile(`^(\s*)#\s*`)
+	for i, line := range lines {
+		for _, app := range selectedApps {
+			for _, marker := range app.Markers {
+				if strings.Contains(line, marker) {
+					lines[i] = uncommentRegex.ReplaceAllString(line, "$1")
+					goto NextLine
+				}
+			}
+		}
+	NextLine:
+	}
+	// Backup the original docker-compose file.
+	if err := utils.BackupFile(utils.DockerComposeFile); err != nil {
+		return err
+	}
+	outContent := strings.Join(lines, "\n")
+	if err := os.WriteFile(utils.DockerComposeFile, []byte(outContent), 0644); err != nil {
+		return err
+	}
+	var selApps []string
+	for _, app := range selectedApps {
+		selApps = append(selApps, app.Name)
+	}
+	fmt.Printf("Updated %s for apps: %s\n", utils.DockerComposeFile, strings.Join(selApps, ", "))
+	return nil
+}
+
+
 // SaveLastValues writes key="value" pairs to LastValuesFile.
 func SaveLastValues(values map[string]string) error {
     file, err := os.Create(LastValuesFile)
