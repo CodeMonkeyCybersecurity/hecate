@@ -22,49 +22,49 @@ var httpCmd = &cobra.Command{
 		fmt.Println("Below you'll see a description for each setting along with its current default value.")
 		fmt.Println("Press Enter to keep the default value or type a new one as desired.\n")
 
-		serverTokens := utils.PromptWithDefault(
+		serverTokens := PromptWithDefault(
 			"Hide NGINX version (server_tokens)",
 			"off",
 			"server_tokens: When set to 'off', NGINX will not display its version in error pages and headers.",
 		)
 
-		includeMime := utils.PromptWithDefault(
+		includeMime := PromptWithDefault(
 			"Path to MIME types file (include)",
 			"mime.types",
 			"include: This file defines MIME types for various file extensions.",
 		)
 
-		defaultType := utils.PromptWithDefault(
+		defaultType := PromptWithDefault(
 			"Default MIME type (default_type)",
 			"application/octet-stream",
 			"default_type: The default MIME type for files with unknown extensions.",
 		)
 
-		errorLogPath := utils.PromptWithDefault(
+		errorLogPath := PromptWithDefault(
 			"Error log path",
 			"/var/log/nginx/error.log",
 			"error_log: The file path where NGINX will log error messages.",
 		)
 
-		errorLogLevel := utils.PromptWithDefault(
+		errorLogLevel := PromptWithDefault(
 			"Error log level (e.g., warn, debug)",
 			"warn",
 			"Error log level: Determines the minimum severity of messages to be logged (e.g., 'warn' or 'debug').",
 		)
 
-		accessLogPath := utils.PromptWithDefault(
+		accessLogPath := PromptWithDefault(
 			"Access log path",
 			"/var/log/nginx/access.log",
 			"access_log: The file path where NGINX will log access details for incoming requests.",
 		)
 
-		sendfile := utils.PromptWithDefault(
+		sendfile := PromptWithDefault(
 			"Sendfile (on/off)",
 			"on",
 			"sendfile: When 'on', NGINX uses the sendfile system call to transfer files efficiently.",
 		)
 
-		includeServers := utils.PromptWithDefault(
+		includeServers := PromptWithDefault(
 			"Include server blocks directory/pattern",
 			"/etc/nginx/conf.d/servers/*.conf",
 			"include: Specifies the path or pattern for including server block configuration files.",
