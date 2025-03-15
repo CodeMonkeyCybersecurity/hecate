@@ -16,7 +16,7 @@ services:
       ##############################################################
       # - "1515:1515"   # <- uncomment if using Wazuh behind Hecate
       # - "1514:1514"   # <-
-      # - "55000:55000" # <-
+      # - "55000:55000" # <- finish
       ##############################################################
       #- "25:25"       # <- uncomment if using Mailcow behind Hecate
       #- "587:587"     # <-
@@ -24,46 +24,46 @@ services:
       #- "110:110"     # <-
       #- "995:995"     # <-
       #- "143:143"     # <-
-      #- "993:993"     # <-
+      #- "993:993"     # <- finish
       ##############################################################
     restart: always
     networks:
       - hecate-net
       
   ##############################################################
-  # coturn:                            # <- uncomment if using Nextcloud behind Hecate
-  #   image: coturn/coturn
-  #   restart: unless-stopped
-  #   container_name: hecate-coturn
-  #   ports:
-  #     - "3478:3478"
-  #     - "3478:3478/udp"
-  #     - "5349:5349"
-  #     - "5349:5349/udp"
-  #     - "49160-49200:49160-49200/udp"
-  #   environment:
-  #     DETECT_EXTERNAL_IP: "yes"
-  #     DETECT_RELAY_IP: "yes"
-  #     DETECT_EXTERNAL_IPV6: "yes"
-  #     DETECT_RELAY_IPV6: "yes"
-  #   volumes:
-  #     - ./certs:/etc/coturn/certs:ro
-  #   command: >
-  #     turnserver
-  #     --listening-port=3478
-  #     --listening-ip=0.0.0.0
-  #     --fingerprint
-  #     --no-cli
-  #     --min-port=49160
-  #     --max-port=49200
-  #     --log-file=/var/log/coturn.log # log volume bind mount
-  #     --cert=/etc/coturn/certs/hecate.fullchain.pem
-  #     --pkey=/etc/coturn/certs/hecate.privkey.pem
-  #     --static-auth-secret=change_me
-  #     --verbose # enable this for debug/verbose logging
-
-  #   networks:
-  #     - hecate-net
+  # coturn:                                                         # <- uncomment if using Nextcloud behind Hecate
+  #   image: coturn/coturn                                          # <-
+  #   restart: unless-stopped                                       # <-
+  #   container_name: hecate-coturn                                 # <-
+  #   ports:                                                        # <-
+  #     - "3478:3478"                                               # <-
+  #     - "3478:3478/udp"                                           # <-
+  #     - "5349:5349"                                               # <-
+  #     - "5349:5349/udp"                                           # <-
+  #     - "49160-49200:49160-49200/udp"                             # <-
+  #   environment:                                                  # <-
+  #     DETECT_EXTERNAL_IP: "yes"                                   # <-
+  #     DETECT_RELAY_IP: "yes"                                      # <-
+  #     DETECT_EXTERNAL_IPV6: "yes"                                 # <-
+  #     DETECT_RELAY_IPV6: "yes"                                    # <-
+  #   volumes:                                                      # <-
+  #     - ./certs:/etc/coturn/certs:ro                              # <-
+  #   command: >                                                    # <-
+  #     turnserver                                                  # <-
+  #     --listening-port=3478                                       # <-
+  #     --listening-ip=0.0.0.0                                      # <-
+  #     --fingerprint                                               # <-
+  #     --no-cli                                                    # <-
+  #     --min-port=49160                                            # <-
+  #     --max-port=49200                                            # <-
+  #     --log-file=/var/log/coturn.log # log volume bind mount      # <-
+  #     --cert=/etc/coturn/certs/hecate.fullchain.pem               # <-
+  #     --pkey=/etc/coturn/certs/hecate.privkey.pem                 # <-
+  #     --static-auth-secret=change_me                              # <-
+  #     --verbose # enable this for debug/verbose logging           # <-
+  #                                                                 # <-
+  #   networks:                                                     # <-
+  #     - hecate-net                                                # <- finish
   ##############################################################
 
 networks:
