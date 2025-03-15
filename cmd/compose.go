@@ -19,11 +19,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// File constants used by the compose command.
-const (
-	LastValuesFile    = ".hecate.conf"
-	DockerComposeFile = "docker-compose.yml"
-)
 
 // AppOption maps an option number to an app name and its configuration file.
 type AppOption struct {
