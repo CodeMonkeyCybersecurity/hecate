@@ -8,17 +8,14 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/CodeMonkeyCybersecurity/hecate/pkg/utils"
 	"github.com/spf13/cobra"
 )
-
 
 // AppOption maps an option number to an app name and its configuration file.
 type AppOption struct {
@@ -116,9 +113,9 @@ func getUserSelection(defaultSelection string) (map[string]struct{}, string) {
 // updateComposeFile reads the docker-compose file and, for each line containing a marker
 // corresponding to a selected app, removes the leading '#' before a dash.
 func updateComposeFile(selectedApps map[string]struct{}) error {
-	content, err := os.ReadFile(DockerComposeFile)
+	content, err := os.ReadFile(utils.DockerComposeFile)
 	if err != nil {
-		return fmt.Errorf("Error: %s not found", DockerComposeFile)
+		return fmt.Errorf("Error: %s not found", utils.DockerComposeFile)
 	}
 	lines := strings.Split(string(content), "\n")
 	var newLines []string
@@ -138,18 +135,18 @@ func updateComposeFile(selectedApps map[string]struct{}) error {
 		newLines = append(newLines, modifiedLine)
 	}
 	// Backup the original docker-compose file.
-	if err := utils.BackupFile(DockerComposeFile); err != nil {
+	if err := utils.BackupFile(utils.DockerComposeFile); err != nil {
 		return err
 	}
 	outContent := strings.Join(newLines, "\n")
-	if err := os.WriteFile(DockerComposeFile, []byte(outContent), 0644); err != nil {
+	if err := os.WriteFile(utils.DockerComposeFile, []byte(outContent), 0644); err != nil {
 		return err
 	}
 	var selApps []string
 	for app := range selectedApps {
 		selApps = append(selApps, app)
 	}
-	fmt.Printf("Updated %s for apps: %s\n", DockerComposeFile, strings.Join(selApps, ", "))
+	fmt.Printf("Updated %s for apps: %s\n", utils.DockerComposeFile, strings.Join(selApps, ", "))
 	return nil
 }
 
@@ -182,6 +179,8 @@ func runCompose() {
 	var selectionStr string
 
 	// Check if command-line arguments are provided.
+	// Note: In Cobra, you should ideally use the 'args' parameter,
+	// but we'll follow your current pattern.
 	if len(os.Args) > 1 {
 		selectedApps = make(map[string]struct{})
 		for _, arg := range os.Args[1:] {
