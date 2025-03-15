@@ -41,9 +41,10 @@ var APP_OPTIONS = map[string]AppOption{
 
 // SUPPORTED_APPS maps app keywords (in lowercase) to a list of port markers.
 var SUPPORTED_APPS = map[string][]string{
-	"wazuh":     {"1515", "1514", "55000"},
-	"mailcow":   {"25", "587", "465", "110", "995", "143", "993"},
-	"nextcloud": {"3478"},
+	"static website": {"80"},
+	"wazuh":     	  {"1515", "1514", "55000"},
+	"mailcow":        {"25", "587", "465", "110", "995", "143", "993"},
+	"nextcloud":      {"3478"},
 }
 
 // displayOptions prints the available options.
