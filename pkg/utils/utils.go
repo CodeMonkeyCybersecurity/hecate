@@ -1,4 +1,4 @@
-// pkg/utils/utils.go
+// pkg/utils/go
 package utils
 
 import (
@@ -27,9 +27,9 @@ const (
 // UpdateComposeFile reads the docker-compose file and, for each line that contains any marker
 // from a selected app, removes the leading '#' so that the line becomes active.
 func UpdateComposeFile(selectedApps map[string]config.App) error {
-	content, err := os.ReadFile(utils.DockerComposeFile)
+	content, err := os.ReadFile(DockerComposeFile)
 	if err != nil {
-		return fmt.Errorf("Error: %s not found", utils.DockerComposeFile)
+		return fmt.Errorf("Error: %s not found", DockerComposeFile)
 	}
 	lines := strings.Split(string(content), "\n")
 	// Regex to remove leading '#' and any spaces following it.
@@ -46,18 +46,18 @@ func UpdateComposeFile(selectedApps map[string]config.App) error {
 	NextLine:
 	}
 	// Backup the original docker-compose file.
-	if err := utils.BackupFile(utils.DockerComposeFile); err != nil {
+	if err := BackupFile(DockerComposeFile); err != nil {
 		return err
 	}
 	outContent := strings.Join(lines, "\n")
-	if err := os.WriteFile(utils.DockerComposeFile, []byte(outContent), 0644); err != nil {
+	if err := os.WriteFile(DockerComposeFile, []byte(outContent), 0644); err != nil {
 		return err
 	}
 	var selApps []string
 	for _, app := range selectedApps {
 		selApps = append(selApps, app.Name)
 	}
-	fmt.Printf("Updated %s for apps: %s\n", utils.DockerComposeFile, strings.Join(selApps, ", "))
+	fmt.Printf("Updated %s for apps: %s\n", DockerComposeFile, strings.Join(selApps, ", "))
 	return nil
 }
 
