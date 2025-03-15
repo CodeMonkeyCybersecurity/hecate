@@ -34,14 +34,17 @@ func CombineMarkers(defaultMarkers []string, additional ...string) []string {
 
 // UpdateComposeFile reads the docker-compose file and, for each line that contains any marker
 // from a selected app, removes the leading '#' so that the line becomes active.
+// Additionally, for certain apps (Nextcloud, Mailcow, and Wazuh), it will process entire blocks
+// delimited by a designated start marker and finish marker.
 func UpdateComposeFile(selectedApps map[string]config.App) error {
 	content, err := os.ReadFile(DockerComposeFile)
 	if err != nil {
 		return fmt.Errorf("Error: %s not found", DockerComposeFile)
 	}
 	lines := strings.Split(string(content), "\n")
-	// Regex to remove leading '#' and any spaces following it.
 	uncommentRegex := regexp.MustCompile(`^(\s*)#\s*`)
+
+	// First pass: Uncomment individual lines that contain any marker from any selected app.
 	for i, line := range lines {
 		for _, app := range selectedApps {
 			for _, marker := range app.Markers {
@@ -53,6 +56,41 @@ func UpdateComposeFile(selectedApps map[string]config.App) error {
 		}
 	NextLine:
 	}
+
+	// Define block markers for services that need full block uncommenting.
+	blockMarkers := map[string]struct {
+		start  string
+		finish string
+	}{
+		"wazuh":     {start: "# <- uncomment if using Wazuh behind Hecate", finish: "# <- finish"},
+		"mailcow":   {start: "# <- uncomment if using Mailcow behind Hecate", finish: "# <- finish"},
+		"nextcloud": {start: "# <- uncomment if using Nextcloud behind Hecate", finish: "# <- finish"},
+	}
+
+	// Second pass: Process block uncommenting for each selected app that has block markers.
+	for appName, markers := range blockMarkers {
+		// Check if this service is selected.
+		if _, ok := selectedApps[strings.ToLower(appName)]; !ok {
+			continue
+		}
+		inBlock := false
+		for i, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if strings.Contains(trimmed, markers.start) {
+				inBlock = true
+				// Uncomment the start marker line.
+				lines[i] = uncommentRegex.ReplaceAllString(line, "$1")
+				continue
+			}
+			if inBlock {
+				lines[i] = uncommentRegex.ReplaceAllString(line, "$1")
+				if strings.Contains(trimmed, markers.finish) {
+					inBlock = false
+				}
+			}
+		}
+	}
+
 	// Backup the original docker-compose file.
 	if err := BackupFile(DockerComposeFile); err != nil {
 		return err
