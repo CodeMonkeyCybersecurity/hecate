@@ -313,6 +313,44 @@ func UpdateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAI
     }
 }
 
+// RemoveUnwantedConfFiles walks through ConfDir and deletes any .conf file whose base name is not in allowedFiles.
+func RemoveUnwantedConfFiles(allowedFiles map[string]bool) {
+	info, err := os.Stat(ConfDir)
+	if err != nil || !info.IsDir() {
+		fmt.Printf("Error: Directory '%s' not found.\n", ConfDir)
+		os.Exit(1)
+	}
+	var removedFiles []string
+	err = filepath.Walk(ConfDir, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".conf") {
+			if !allowedFiles[info.Name()] {
+				if err := os.Remove(path); err != nil {
+					fmt.Printf("Error removing %s: %v\n", path, err)
+				} else {
+					removedFiles = append(removedFiles, path)
+					fmt.Printf("Removed: %s\n", path)
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		fmt.Printf("Error walking through '%s': %v\n", ConfDir, err)
+		os.Exit(1)
+	}
+	if len(removedFiles) == 0 {
+		fmt.Println("No configuration files were removed.")
+	} else {
+		fmt.Println("\nCleanup complete. The following files were removed:")
+		for _, f := range removedFiles {
+			fmt.Printf(" - %s\n", f)
+		}
+	}
+}
+
 // ProcessConfDirectory walks through a directory recursively, updating each .conf file.
 func ProcessConfDirectory(directory, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN string) error {
     return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
