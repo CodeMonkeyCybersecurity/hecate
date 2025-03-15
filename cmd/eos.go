@@ -7,7 +7,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/CodeMonkeyCybersecurity/hecate/pkg/config"
 	"github.com/CodeMonkeyCybersecurity/hecate/pkg/utils"
