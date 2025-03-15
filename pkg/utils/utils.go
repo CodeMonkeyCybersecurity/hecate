@@ -69,7 +69,6 @@ func UpdateComposeFile(selectedApps map[string]config.App) error {
 	return nil
 }
 
-
 // SaveLastValues writes key="value" pairs to LastValuesFile.
 func SaveLastValues(values map[string]string) error {
     file, err := os.Create(LastValuesFile)
