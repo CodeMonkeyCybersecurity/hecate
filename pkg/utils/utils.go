@@ -21,10 +21,24 @@ const (
     DockerComposeFile = "docker-compose.yml"
 )
 
-// AppOption holds an app's name and its corresponding configuration file.
-type AppOption struct {
-    AppName  string
-    ConfFile string
+// App represents an application option.
+type App struct {
+	Option   string // the option number as a string
+	Name     string
+	ConfFile string
+	Markers  []string
+}
+
+// defaultMarkers holds the default port markers that apply to all apps.
+var DefaultMarkers = []string{"80", "443"}
+
+// combineMarkers returns a new slice containing the default markers
+// plus any additional markers passed in.
+func CombineMarkers(additional ...string) []string {
+	markers := make([]string, len(defaultMarkers))
+	copy(markers, defaultMarkers)
+	markers = append(markers, additional...)
+	return markers
 }
 
 // APPS_SELECTION maps option numbers (as strings) to their app name and configuration file.
@@ -42,6 +56,43 @@ var APPS_SELECTION = map[string]AppOption{
     "11": {"ERPNext", "erp.conf"},
     "12": {"Jellyfin", "jellyfin.conf"},
     "13": {"Persephone", "persephone.conf"},
+}
+
+// updateComposeFile reads the docker-compose file and, for each line that contains any marker
+// from a selected app, removes the leading '#' so that the line becomes active.
+func UpdateComposeFile(selectedApps map[string]App) error {
+	content, err := os.ReadFile(DockerComposeFile)
+	if err != nil {
+		return fmt.Errorf("Error: %s not found", DockerComposeFile)
+	}
+	lines := strings.Split(string(content), "\n")
+	// Regex to remove leading '#' and any spaces following it.
+	uncommentRegex := regexp.MustCompile(`^(\s*)#\s*`)
+	for i, line := range lines {
+		for _, app := range selectedApps {
+			for _, marker := range app.Markers {
+				if strings.Contains(line, marker) {
+					lines[i] = uncommentRegex.ReplaceAllString(line, "$1")
+					goto NextLine
+				}
+			}
+		}
+	NextLine:
+	}
+	// Backup the original docker-compose file.
+	if err := BackupFile(DockerComposeFile); err != nil {
+		return err
+	}
+	outContent := strings.Join(lines, "\n")
+	if err := os.WriteFile(DockerComposeFile, []byte(outContent), 0644); err != nil {
+		return err
+	}
+	var selApps []string
+	for _, app := range selectedApps {
+		selApps = append(selApps, app.Name)
+	}
+	fmt.Printf("Updated %s for apps: %s\n", DockerComposeFile, strings.Join(selApps, ", "))
+	return nil
 }
 
 // DisplayOptions prints the available options from APPS_SELECTION.
