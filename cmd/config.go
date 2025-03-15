@@ -95,7 +95,7 @@ func runCerts() {
 	}
 
 	// 2. Load previous values.
-	prevValues, err := utils.LoadLastValues(LAST_VALUES_FILE)
+	prevValues, err := utils.LoadLastValues()
 	if err != nil {
 		fmt.Printf("Error loading previous values: %v\n", err)
 		os.Exit(1)
@@ -110,7 +110,7 @@ func runCerts() {
 		"BASE_DOMAIN": baseDomain,
 		"EMAIL":       mailCert,
 	}
-	if err := utils.SaveLastValues(LAST_VALUES_FILE, newValues); err != nil {
+	if err := utils.SaveLastValues(newValues); err != nil {
 		fmt.Printf("Error saving values: %v\n", err)
 		os.Exit(1)
 	}
