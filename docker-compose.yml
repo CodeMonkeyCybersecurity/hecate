@@ -29,7 +29,7 @@ services:
     restart: always
     networks:
       - hecate-net
-      
+
   ##############################################################
   # coturn:                                                         # <- uncomment if using Nextcloud behind Hecate
   #   image: coturn/coturn                                          # <-
