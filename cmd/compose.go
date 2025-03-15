@@ -6,7 +6,6 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"io/fs"
 	"os"
 	"regexp"
 	"sort"
