@@ -19,7 +19,7 @@ const (
 )
 
 // backupFile creates a backup of the given file by appending a timestamp.
-func backupFile(path string) error {
+func BackupFile(path string) error {
     info, err := os.Stat(path)
     if err != nil || info.IsDir() {
         return nil
@@ -50,7 +50,7 @@ func backupFile(path string) error {
 }
 
 // updateFile reads a file, replaces placeholders, creates a backup if changes occur, then writes the new content.
-func updateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN string) {
+func UpdateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN string) {
     original, err := os.ReadFile(path)
     if err != nil {
         fmt.Printf("Error reading %s: %v\n", path, err)
@@ -79,7 +79,7 @@ func updateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAI
 }
 
 // processConfDirectory walks through directory recursively, updating each .conf file.
-func processConfDirectory(directory, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN string) error {
+func ProcessConfDirectory(directory, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN string) error {
     return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
         if err != nil {
             return err
@@ -92,7 +92,7 @@ func processConfDirectory(directory, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND
 }
 
 // promptInput prompts the user with a message and returns the input or default value.
-func promptInput(varName, promptMessage, defaultVal string) string {
+func PromptInput(varName, promptMessage, defaultVal string) string {
     reader := bufio.NewReader(os.Stdin)
     for {
         if defaultVal != "" {
@@ -112,7 +112,7 @@ func promptInput(varName, promptMessage, defaultVal string) string {
 }
 
 // saveLastValues writes key="value" lines to LastValuesFile.
-func saveLastValues(values map[string]string) error {
+func SaveLastValues(values map[string]string) error {
     file, err := os.Create(LastValuesFile)
     if err != nil {
         return err
@@ -129,7 +129,7 @@ func saveLastValues(values map[string]string) error {
 }
 
 // loadLastValues reads key="value" lines from LastValuesFile.
-func loadLastValues() (map[string]string, error) {
+func LoadLastValues() (map[string]string, error) {
     values := make(map[string]string)
     file, err := os.Open(LastValuesFile)
     if err != nil {
