@@ -6,58 +6,67 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
-	"time"
 
+	"github.com/CodeMonkeyCybersecurity/hecate/pkg/config"
+	"github.com/CodeMonkeyCybersecurity/hecate/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
-// runEos performs the main logic for selecting EOS backend web apps and cleaning up config files.
 func runEos() {
 	fmt.Println("=== EOS Backend Web Apps Selector ===\n")
-	lastValues, err := loadLastValues()
+	// Load the previous configuration from .hecate.conf.
+	lastValues, err := utils.LoadLastValues()
 	if err != nil {
 		fmt.Printf("Error loading configuration: %v\n", err)
 		os.Exit(1)
 	}
 	// Use previously saved selection if available.
 	defaultApps := lastValues["APPS_SELECTION"]
-	displayOptions()
-	allowedFiles, selectionStr := getUserSelection(defaultApps)
+
+	// Display available app options using the config package.
+	config.DisplayOptions()
+	// Get user selection from the config package.
+	selectedApps, selectionStr := config.GetUserSelection(defaultApps)
+
+	// Build a map of allowed configuration filenames.
+	allowedFiles := make(map[string]bool)
 	// Always preserve essential files.
 	essential := []string{"http.conf", "stream.conf", "fallback.conf"}
 	for _, fname := range essential {
 		allowedFiles[fname] = true
 	}
+	// For each selected app, mark its configuration file as allowed.
+	for _, app := range selectedApps {
+		allowedFiles[app.ConfFile] = true
+	}
+
 	fmt.Println("\nYou have selected the following configuration files to keep:")
 	for file := range allowedFiles {
 		if file == "http.conf" || file == "stream.conf" || file == "fallback.conf" {
 			fmt.Printf(" - Essential file: %s\n", file)
 		} else {
-			// Look up the app name.
-			for _, opt := range APPS_SELECTION {
+			// Look up the app name from config.Apps.
+			for _, opt := range config.Apps {
 				if opt.ConfFile == file {
-					fmt.Printf(" - %s (%s)\n", opt.AppName, file)
+					fmt.Printf(" - %s (%s)\n", opt.Name, file)
 					break
 				}
 			}
 		}
 	}
+
 	fmt.Println("\nNow scanning the conf.d directory and removing files not in your selection...")
-	removeUnwantedConfFiles(allowedFiles)
-	// Save the new selection.
+	utils.RemoveUnwantedConfFiles(allowedFiles)
+
+	// Save the new selection back to the configuration.
 	lastValues["APPS_SELECTION"] = selectionStr
-	if err := saveLastValues(lastValues); err != nil {
+	if err := utils.SaveLastValues(lastValues); err != nil {
 		fmt.Printf("Error saving configuration: %v\n", err)
 	}
 }
 
-// eosAppsCmd represents the "eosApps" subcommand under "hecate create".
 var eosAppsCmd = &cobra.Command{
 	Use:   "eosApps",
 	Short: "Select and clean up EOS backend web apps configuration",
