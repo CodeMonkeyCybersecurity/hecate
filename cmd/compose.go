@@ -51,7 +51,7 @@ var SUPPORTED_APPS = map[string][]string{
 	"persephone":     {"80", "443"},
 	"wazuh":          {"1515", "1514", "55000"},
 	"mailcow":        {"25", "587", "465", "110", "995", "143", "993"},
-	"nextcloud":      {"3478"},
+	"nextcloud":      {"3478", "5349", "49160-49200"},
 }
 
 // displayOptions prints the available options.
