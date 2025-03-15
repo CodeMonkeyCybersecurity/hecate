@@ -28,7 +28,7 @@ var inspectConfigCmd = &cobra.Command{
 You can choose from:
   1) Inspect Certificates  
   2) Inspect docker-compose file  
-  3) Inspect EOS backend web apps configuration  
+  3) Inspect Eos backend web apps configuration  
   4) Inspect Nginx defaults  
   5) Inspect all configurations`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -50,7 +50,7 @@ func runInspectConfig() {
 	fmt.Println("Select the resource you want to inspect:")
 	fmt.Println("1) Inspect Certificates")
 	fmt.Println("2) Inspect docker-compose file")
-	fmt.Println("3) Inspect EOS backend web apps configuration")
+	fmt.Println("3) Inspect Eos backend web apps configuration")
 	fmt.Println("4) Inspect Nginx defaults")
 	fmt.Println("5) Inspect all configurations")
 	fmt.Print("Enter choice (1-5): ")
@@ -107,10 +107,10 @@ func inspectDockerCompose() {
 	fmt.Println(string(data))
 }
 
-// inspectEosConfig lists the EOS backend configuration files (from the conf.d directory).
+// inspectEosConfig lists the Eos backend configuration files (from the conf.d directory).
 func inspectEosConfig() {
 	confDir := "conf.d"
-	fmt.Printf("\n--- Inspecting EOS backend web apps configuration in '%s' ---\n", confDir)
+	fmt.Printf("\n--- Inspecting Eos backend web apps configuration in '%s' ---\n", confDir)
 	files, err := os.ReadDir(confDir)
 	if err != nil {
 		fmt.Printf("Error reading %s: %v\n", confDir, err)
@@ -124,7 +124,7 @@ func inspectEosConfig() {
 		}
 	}
 	if !found {
-		fmt.Println("No EOS configuration files found.")
+		fmt.Println("No Eos configuration files found.")
 	}
 }
 
