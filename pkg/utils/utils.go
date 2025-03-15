@@ -117,33 +117,38 @@ func LoadLastValues() (map[string]string, error) {
 
 // RunComposeInteractive updates the docker-compose file interactively.
 func RunComposeInteractive() {
-	fmt.Println("\n=== Docker Compose Update ===")
-	const LAST_VALUES_FILE = ".hecate.conf"
-	lastValues, err := LoadLastValues()
-	if err != nil {
-		fmt.Printf("Error loading configuration: %v\n", err)
-		os.Exit(1)
-	}
-	defaultSelection := lastValues["APPS_SELECTION"]
-	selectedApps, selectionStr := config.GetUserSelection(defaultSelection)
-	lastValues["APPS_SELECTION"] = selectionStr
-	if err := SaveLastValues(lastValues); err != nil {
-		fmt.Printf("Error saving configuration: %v\n", err)
-	}
-	if err := UpdateComposeFile(selectedApps); err != nil {
-		fmt.Printf("Error updating docker-compose file: %v\n", err)
-		os.Exit(1)
-	}
-	// Output updated docker-compose file.
-	composeFile := "docker-compose.yml" // adjust as needed
-	data, err := os.ReadFile(composeFile)
-	if err != nil {
-		fmt.Printf("Error reading %s: %v\n", composeFile, err)
-	} else {
-		fmt.Println("\n---- Updated docker-compose.yml ----")
-		fmt.Println(string(data))
-	}
+    fmt.Println("\n=== Docker Compose Update ===")
+    const LAST_VALUES_FILE = ".hecate.conf"
+    lastValues, err := LoadLastValues()
+    if err != nil {
+        fmt.Printf("Error loading configuration: %v\n", err)
+        os.Exit(1)
+    }
+    defaultSelection := lastValues["APPS_SELECTION"]
+
+    // Display the options before prompting for selection.
+    config.DisplayOptions()
+    
+    selectedApps, selectionStr := config.GetUserSelection(defaultSelection)
+    lastValues["APPS_SELECTION"] = selectionStr
+    if err := SaveLastValues(lastValues); err != nil {
+        fmt.Printf("Error saving configuration: %v\n", err)
+    }
+    if err := UpdateComposeFile(selectedApps); err != nil {
+        fmt.Printf("Error updating docker-compose file: %v\n", err)
+        os.Exit(1)
+    }
+    // Output updated docker-compose file.
+    composeFile := "docker-compose.yml" // adjust as needed
+    data, err := os.ReadFile(composeFile)
+    if err != nil {
+        fmt.Printf("Error reading %s: %v\n", composeFile, err)
+    } else {
+        fmt.Println("\n---- Updated docker-compose.yml ----")
+        fmt.Println(string(data))
+    }
 }
+
 
 // UpdateComposeFile reads the docker-compose file and, for each line that contains any marker
 // from a selected app, removes the leading '#' so that the line becomes active.
