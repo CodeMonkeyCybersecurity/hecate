@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/CodeMonkeyCybersecurity/hecate/pkg/config"
-    "github.com/CodeMonkeyCybersecurity/hecate/pkg/utils"
+        "github.com/CodeMonkeyCybersecurity/hecate/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +27,7 @@ var configCmd = &cobra.Command{
   2) Update the docker-compose file
   3) Configure EOS backend web apps 
   4) Configure Nginx defaults
+  5) Run all tasks
 
 You can choose to run one or all of these tasks interactively.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -47,7 +48,7 @@ func runUnifiedConfig() {
 	fmt.Println("1) Create Certificates")
 	fmt.Println("2) Update docker-compose file")
 	fmt.Println("3) Configure Eos backend web apps")
-    fmt.Println("4) Configure Nginx defaults")
+        fmt.Println("4) Configure Nginx defaults")
 	fmt.Println("5) Run all tasks")
 	fmt.Print("Enter choice (1-5): ")
 	choice, _ := reader.ReadString('\n')
@@ -61,12 +62,12 @@ func runUnifiedConfig() {
 	case "3":
 		runEos()
 	case "4":
-        runHttp()
+        	runHttp()
 	case "5":
 		runCerts()
 		utils.RunComposeInteractive()
 		runEos()
-        runHttp()
+        	runHttp()
 	default:
 		fmt.Println("Invalid choice. Exiting.")
 		os.Exit(1)
