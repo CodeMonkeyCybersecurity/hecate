@@ -16,29 +16,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// AppOption maps an option number to an app name and its configuration file.
-type AppOption struct {
-	AppName  string
-	ConfFile string
-}
-
-// APP_OPTIONS holds the mapping from option numbers to app options.
-var APP_OPTIONS = map[string]AppOption{
-	"1":  {"Static website", "base.conf"},
-	"2":  {"Wazuh", "delphi.conf"},
-	"3":  {"Mattermost", "collaborate.conf"},
-	"4":  {"Nextcloud", "cloud.conf"},
-	"5":  {"Mailcow", "mailcow.conf"},
-	"6":  {"Jenkins", "jenkins.conf"},
-	"7":  {"Grafana", "observe.conf"},
-	"8":  {"Umami", "analytics.conf"},
-	"9":  {"MinIO", "s3.conf"},
-	"10": {"Wiki.js", "wiki.conf"},
-	"11": {"ERPNext", "erp.conf"},
-	"12": {"Jellyfin", "jellyfin.conf"},
-	"13": {"Persephone", "persephone.conf"},
-}
-
 // defaultMarkers holds the default port markers that apply to all apps.
 var defaultMarkers = []string{"80", "443"}
 
@@ -51,45 +28,58 @@ func combineMarkers(additional ...string) []string {
 	return markers
 }
 
-// SUPPORTED_APPS maps app keywords (in lowercase) to a list of markers.
-// For apps that need only the defaults, we just use defaultMarkers;
-// for apps that need extra markers, we combine them.
-var SUPPORTED_APPS = map[string][]string{
-	"static website": defaultMarkers,
-	"wazuh":          combineMarkers("1515", "1514", "55000"),
-	"mailcow":        combineMarkers("25", "587", "465", "110", "995", "143", "993"),
-	"nextcloud":      combineMarkers("3478", "coturn:"), // includes defaults plus extra markers
-	"mattermost":     defaultMarkers,
-	"jenkins":        defaultMarkers,
-	"grafana":        defaultMarkers,
-	"umami":          defaultMarkers,
-	"minio":          defaultMarkers,
-	"wiki.js":        defaultMarkers,
-	"erpnext":        defaultMarkers,
-	"jellyfin":       defaultMarkers,
-	"persephone":     defaultMarkers,
+// App represents an application option.
+type App struct {
+	Option   string // the option number as a string
+	Name     string
+	ConfFile string
+	Markers  []string
 }
 
-// displayOptions prints the available options.
+// Apps holds all available app options.
+var Apps = []App{
+	{Option: "1", Name: "Static website", ConfFile: "base.conf", Markers: defaultMarkers},
+	{Option: "2", Name: "Wazuh", ConfFile: "delphi.conf", Markers: combineMarkers("1515", "1514", "55000")},
+	{Option: "3", Name: "Mattermost", ConfFile: "collaborate.conf", Markers: defaultMarkers},
+	{Option: "4", Name: "Nextcloud", ConfFile: "cloud.conf", Markers: combineMarkers("3478", "coturn:")},
+	{Option: "5", Name: "Mailcow", ConfFile: "mailcow.conf", Markers: combineMarkers("25", "587", "465", "110", "995", "143", "993")},
+	{Option: "6", Name: "Jenkins", ConfFile: "jenkins.conf", Markers: defaultMarkers},
+	{Option: "7", Name: "Grafana", ConfFile: "observe.conf", Markers: defaultMarkers},
+	{Option: "8", Name: "Umami", ConfFile: "analytics.conf", Markers: defaultMarkers},
+	{Option: "9", Name: "MinIO", ConfFile: "s3.conf", Markers: defaultMarkers},
+	{Option: "10", Name: "Wiki.js", ConfFile: "wiki.conf", Markers: defaultMarkers},
+	{Option: "11", Name: "ERPNext", ConfFile: "erp.conf", Markers: defaultMarkers},
+	{Option: "12", Name: "Jellyfin", ConfFile: "jellyfin.conf", Markers: defaultMarkers},
+	{Option: "13", Name: "Persephone", ConfFile: "persephone.conf", Markers: defaultMarkers},
+}
+
+// displayOptions prints the available app options.
 func displayOptions() {
 	fmt.Println("Available EOS backend web apps:")
-	var keys []int
-	for k := range APP_OPTIONS {
-		if num, err := strconv.Atoi(k); err == nil {
-			keys = append(keys, num)
+	// Sort apps by Option
+	sort.Slice(Apps, func(i, j int) bool {
+		a, _ := strconv.Atoi(Apps[i].Option)
+		b, _ := strconv.Atoi(Apps[j].Option)
+		return a < b
+	})
+	for _, app := range Apps {
+		fmt.Printf("  %s. %s -> %s\n", app.Option, app.Name, app.ConfFile)
+	}
+}
+
+// getAppByOption returns the App corresponding to a given option string.
+func getAppByOption(option string) (App, bool) {
+	for _, app := range Apps {
+		if app.Option == option {
+			return app, true
 		}
 	}
-	sort.Ints(keys)
-	for _, num := range keys {
-		k := strconv.Itoa(num)
-		option := APP_OPTIONS[k]
-		fmt.Printf("  %s. %s  -> %s\n", k, option.AppName, option.ConfFile)
-	}
+	return App{}, false
 }
 
 // getUserSelection prompts the user for a comma-separated list of option numbers.
-// It returns a set of supported app keywords and the raw selection string.
-func getUserSelection(defaultSelection string) (map[string]struct{}, string) {
+// It returns a map (keyed by lowercase app name) of the selected Apps and the raw selection.
+func getUserSelection(defaultSelection string) (map[string]App, string) {
 	reader := bufio.NewReader(os.Stdin)
 	promptMsg := "Enter the numbers (comma-separated) of the apps you want enabled (or type 'all' for all supported)"
 	if defaultSelection != "" {
@@ -102,56 +92,47 @@ func getUserSelection(defaultSelection string) (map[string]struct{}, string) {
 	if selection == "" && defaultSelection != "" {
 		selection = defaultSelection
 	}
+
+	selectedApps := make(map[string]App)
 	if strings.ToLower(selection) == "all" {
-		all := make(map[string]struct{})
-		for k := range SUPPORTED_APPS {
-			all[k] = struct{}{}
+		for _, app := range Apps {
+			selectedApps[strings.ToLower(app.Name)] = app
 		}
-		return all, "all"
+		return selectedApps, "all"
 	}
-	chosenKeywords := make(map[string]struct{})
-	valid := true
+
 	parts := strings.Split(selection, ",")
 	for _, token := range parts {
 		token = strings.TrimSpace(token)
-		option, exists := APP_OPTIONS[token]
-		if !exists {
+		app, ok := getAppByOption(token)
+		if !ok {
 			fmt.Printf("Invalid option: %s\n", token)
-			valid = false
-			break
+			return getUserSelection(defaultSelection)
 		}
-		// Map the app name (lowercase) to a supported keyword.
-		key := strings.ToLower(option.AppName)
-		if _, ok := SUPPORTED_APPS[key]; ok {
-			chosenKeywords[key] = struct{}{}
-		}
+		selectedApps[strings.ToLower(app.Name)] = app
 	}
-	if valid && len(chosenKeywords) > 0 {
-		return chosenKeywords, selection
+	if len(selectedApps) == 0 {
+		fmt.Println("No valid options selected.")
+		return getUserSelection(defaultSelection)
 	}
-	fmt.Println("Please enter a valid comma-separated list of options corresponding to supported apps.")
-	return getUserSelection(defaultSelection)
+	return selectedApps, selection
 }
 
-// updateComposeFile reads the docker-compose file and, for each line that contains a marker
-// corresponding to a selected app, removes the leading '#' so that the line becomes active.
-func updateComposeFile(selectedApps map[string]struct{}) error {
+// updateComposeFile reads the docker-compose file and, for each line that contains any marker
+// from a selected app, removes the leading '#' so that the line becomes active.
+func updateComposeFile(selectedApps map[string]App) error {
 	content, err := os.ReadFile(utils.DockerComposeFile)
 	if err != nil {
 		return fmt.Errorf("Error: %s not found", utils.DockerComposeFile)
 	}
 	lines := strings.Split(string(content), "\n")
-	// Regex to remove leading comment markers (hash and following spaces)
+	// Regex to remove leading '#' and any spaces following it.
 	uncommentRegex := regexp.MustCompile(`^(\s*)#\s*`)
-	// Process each line and check for markers from each selected app.
 	for i, line := range lines {
-		for app := range selectedApps {
-			markers := SUPPORTED_APPS[app]
-			for _, marker := range markers {
+		for _, app := range selectedApps {
+			for _, marker := range app.Markers {
 				if strings.Contains(line, marker) {
-					// Uncomment the line.
 					lines[i] = uncommentRegex.ReplaceAllString(line, "$1")
-					// Once uncommented for one marker, move on to the next line.
 					goto NextLine
 				}
 			}
@@ -167,8 +148,8 @@ func updateComposeFile(selectedApps map[string]struct{}) error {
 		return err
 	}
 	var selApps []string
-	for app := range selectedApps {
-		selApps = append(selApps, app)
+	for _, app := range selectedApps {
+		selApps = append(selApps, app.Name)
 	}
 	fmt.Printf("Updated %s for apps: %s\n", utils.DockerComposeFile, strings.Join(selApps, ", "))
 	return nil
@@ -184,9 +165,9 @@ associated with selected applications.
 You can run this command in two modes:
 
 1. Non-interactive mode:
-   Supply one or more supported app keywords as arguments.
+   Supply one or more supported app option numbers as arguments.
    Example: 
-       hecate create compose nextcloud mailcow
+       hecate create compose 4 5
 
 2. Interactive mode:
    Run the command without valid app arguments, and you'll be prompted to choose.
@@ -221,23 +202,22 @@ func init() {
 }
 
 func runCompose(args []string) {
-	// Load previous values from configuration.
 	lastValues, err := utils.LoadLastValues()
 	if err != nil {
 		fmt.Printf("Error loading configuration: %v\n", err)
 		os.Exit(1)
 	}
 
-	var selectedApps map[string]struct{}
+	var selectedApps map[string]App
 	var selectionStr string
 
 	// Non-interactive mode: Use provided arguments.
 	if len(args) > 0 {
-		selectedApps = make(map[string]struct{})
+		selectedApps = make(map[string]App)
 		for _, arg := range args {
-			lowArg := strings.ToLower(arg)
-			if _, ok := SUPPORTED_APPS[lowArg]; ok {
-				selectedApps[lowArg] = struct{}{}
+			app, ok := getAppByOption(arg)
+			if ok {
+				selectedApps[strings.ToLower(app.Name)] = app
 			}
 		}
 		if len(selectedApps) == 0 {
@@ -245,8 +225,8 @@ func runCompose(args []string) {
 			os.Exit(1)
 		}
 		var appsList []string
-		for app := range selectedApps {
-			appsList = append(appsList, app)
+		for _, app := range selectedApps {
+			appsList = append(appsList, app.Name)
 		}
 		selectionStr = strings.Join(appsList, ", ")
 	} else {
@@ -254,7 +234,6 @@ func runCompose(args []string) {
 		displayOptions()
 		defaultSelection := lastValues["APPS_SELECTION"]
 		selectedApps, selectionStr = getUserSelection(defaultSelection)
-		// Save the selection as the new default.
 		lastValues["APPS_SELECTION"] = selectionStr
 		if err := utils.SaveLastValues(lastValues); err != nil {
 			fmt.Printf("Error saving configuration: %v\n", err)
