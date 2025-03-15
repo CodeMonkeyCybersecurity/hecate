@@ -22,7 +22,7 @@ var restoreCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(restoreCmd)
+	createCmd.AddCommand(restoreCmd)
 }
 
 func runRestore() {
