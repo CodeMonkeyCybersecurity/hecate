@@ -18,6 +18,66 @@ const (
     ConfDir        = "conf.d"
 )
 
+// restoreDir removes dstDir and copies backupDir -> dstDir
+func RestoreDir(backupDir, dstDir string) {
+	info, err := os.Stat(backupDir)
+	if err != nil || !info.IsDir() {
+		fmt.Printf("Error: Backup directory '%s' does not exist or is not a directory.\n", backupDir)
+		os.Exit(1)
+	}
+	if err := utils.RemoveIfExists(dstDir); err != nil {
+		fmt.Printf("Error removing %s: %v\n", dstDir, err)
+		os.Exit(1)
+	}
+	if err := utils.CopyDir(backupDir, dstDir); err != nil {
+		fmt.Printf("Error during restore of %s: %v\n", backupDir, err)
+		os.Exit(1)
+	}
+	fmt.Printf("Restore complete: '%s' has been restored to '%s'.\n", backupDir, dstDir)
+}
+
+// restoreFile removes dstFile and copies backupFile -> dstFile
+func RestoreFile(backupFile, dstFile string) {
+	info, err := os.Stat(backupFile)
+	if err != nil || info.IsDir() {
+		fmt.Printf("Error: Backup file '%s' does not exist or is a directory.\n", backupFile)
+		os.Exit(1)
+	}
+	if err := utils.RemoveIfExists(dstFile); err != nil {
+		fmt.Printf("Error removing %s: %v\n", dstFile, err)
+		os.Exit(1)
+	}
+	if err := utils.CopyFile(backupFile, dstFile); err != nil {
+		fmt.Printf("Error during restore of %s: %v\n", backupFile, err)
+		os.Exit(1)
+	}
+	fmt.Printf("Restore complete: '%s' has been restored to '%s'.\n", backupFile, dstFile)
+}
+
+// findLatestBackup finds the lexicographically greatest file whose name starts with `prefix` and ends with ".bak".
+// For example, if prefix is "conf.d.", it might find "conf.d.20250325-101010.bak".
+func FindLatestBackup(prefix string) (string, error) {
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		return "", err
+	}
+	var latest string
+	for _, e := range entries {
+		name := e.Name()
+		if strings.HasPrefix(name, prefix) && strings.HasSuffix(name, ".bak") {
+			// For purely numeric timestamps, a lexicographical comparison is enough to find the "largest" date/time.
+			// e.g. conf.d.20250325-101010.bak > conf.d.20250325-100000.bak
+			if name > latest {
+				latest = name
+			}
+		}
+	}
+	if latest == "" {
+		return "", fmt.Errorf("No .bak files found for prefix %q", prefix)
+	}
+	return latest, nil
+}
+
 // BackupFile creates a backup of the given file by appending a timestamp.
 func BackupFile(path string) error {
     info, err := os.Stat(path)
