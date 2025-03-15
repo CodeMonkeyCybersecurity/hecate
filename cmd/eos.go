@@ -66,7 +66,7 @@ func runEos() {
 	}
 }
 
-var eosAppsCmd = &cobra.Command{
+var eosCmd = &cobra.Command{
 	Use:   "eos",
 	Short: "Select and clean up EOS backend web apps configuration",
 	Long: `Interactively choose which EOS backend web apps should remain active and 
