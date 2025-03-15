@@ -119,7 +119,7 @@ func LoadLastValues() (map[string]string, error) {
 func RunComposeInteractive() {
 	fmt.Println("\n=== Docker Compose Update ===")
 	const LAST_VALUES_FILE = ".hecate.conf"
-	lastValues, err := LoadLastValues(LAST_VALUES_FILE)
+	lastValues, err := LoadLastValues()
 	if err != nil {
 		fmt.Printf("Error loading configuration: %v\n", err)
 		os.Exit(1)
@@ -127,7 +127,7 @@ func RunComposeInteractive() {
 	defaultSelection := lastValues["APPS_SELECTION"]
 	selectedApps, selectionStr := config.GetUserSelection(defaultSelection)
 	lastValues["APPS_SELECTION"] = selectionStr
-	if err := SaveLastValues(LAST_VALUES_FILE, lastValues); err != nil {
+	if err := SaveLastValues(lastValues); err != nil {
 		fmt.Printf("Error saving configuration: %v\n", err)
 	}
 	if err := UpdateComposeFile(selectedApps); err != nil {
@@ -252,7 +252,7 @@ func ConfirmCertName(defaultName string) string {
 		if confirm == "yes" || confirm == "y" {
 			return defaultName
 		} else if confirm == "no" || confirm == "n" {
-			return PromptInput("Enter the desired certificate name (for file naming)", "")
+			return PromptInput("CERT_NAME", "Enter the desired certificate name (for file naming)", "")
 		} else {
 			fmt.Println("Please answer yes or no.")
 		}
