@@ -230,7 +230,7 @@ func PromptSubdomain() string {
 		subdomain, _ := reader.ReadString('\n')
 		subdomain = strings.TrimSpace(subdomain)
 		if subdomain == "" {
-			fmt.Print("You entered a blank subdomain. Do you wish to continue with no subdomain? (yes/no): ")
+			fmt.Print("You entered a blank subdomain. Do you wish to continue with no subdomain? (Y/n): ")
 			confirm, _ := reader.ReadString('\n')
 			confirm = strings.TrimSpace(confirm)
 			if confirm == "" || strings.EqualFold(confirm, "y") || strings.EqualFold(confirm, "yes") {
