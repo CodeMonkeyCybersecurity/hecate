@@ -24,7 +24,7 @@ var configCmd = &cobra.Command{
   
   1) Create certificates
   2) Update the docker-compose file
-  3) Configure EOS backend web apps 
+  3) Configure Eos backend web apps 
   4) Configure Nginx defaults
   5) Run all tasks
 
@@ -201,11 +201,11 @@ func runCerts() {
 }
 
 //
-// ------------------ EOS FUNCTIONALITY ------------------
+// ------------------ Eos FUNCTIONALITY ------------------
 //
 
 func runEos() {
-	fmt.Println("\n=== EOS Backend Web Apps Selector ===")
+	fmt.Println("\n=== Eos Backend Web Apps Selector ===")
 	const LAST_VALUES_FILE = ".hecate.conf"
 	lastValues, err := utils.LoadLastValues()
 	if err != nil {
