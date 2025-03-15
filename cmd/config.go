@@ -237,10 +237,8 @@ func runEos() {
 		}
 	}
 	fmt.Println("\nNow scanning the conf.d directory and removing files not in your selection...")
-	if err :=utils.RemoveUnwantedConfFiles(allowedFiles); err != nil {
-		fmt.Printf("Error removing unwanted conf files: %v\n", err)
-		os.Exit(1)
-	}
+	utils.RemoveUnwantedConfFiles(allowedFiles)
+	
 	lastValues["APPS_SELECTION"] = selectionStr
 	if err := utils.SaveLastValues(lastValues); err != nil {
 		fmt.Printf("Error saving configuration: %v\n", err)
