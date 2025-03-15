@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/CodeMonkeyCybersecurity/hecate/pkg/utils"
+        "github.com/CodeMonkeyCybersecurity/hecate/pkg/config"
 	"github.com/spf13/cobra"
 )
 
