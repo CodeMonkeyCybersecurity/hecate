@@ -28,7 +28,7 @@ services:
       ##############################################################
     restart: always
     networks:
-      - hecate-net
+      - arachne-net
 
   ##############################################################
   # coturn:                                                         # <- uncomment if using Nextcloud behind Hecate
@@ -63,7 +63,7 @@ services:
   #     --verbose # enable this for debug/verbose logging           # <-
   #                                                                 # <-
   #   networks:                                                     # <-
-  #     - hecate-net                                                # <- finish
+  #     - arachne-net                                               # <- finish
   ##############################################################
 
 networks:
