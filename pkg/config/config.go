@@ -13,8 +13,10 @@ import (
 // Constants for file and directory names.
 const (
 	LastValuesFile    = ".hecate.conf"
-	ConfDir           = "conf.d"
 	DockerComposeFile = "docker-compose.yml"
+	assetsPath := "assets"
+	nginxConfPath := "/etc/nginx/conf.d/"
+	nginxStreamPath := "/etc/nginx/stream.d/"
 )
 
 // DefaultMarkers holds the default port markers that apply to all apps.
