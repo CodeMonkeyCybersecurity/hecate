@@ -4,7 +4,6 @@ package logger
 import (
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"go.uber.org/zap"
 )
@@ -58,41 +57,33 @@ func EnsureLogPermissions(logFilePath string) error {
 	return nil
 }
 
-// stringToInt converts a string to an integer. Panics if conversion fails.
-func stringToInt(s string) int {
-	value, err := strconv.Atoi(s)
-	if err != nil {
-		panic("failed to convert string to int: " + err.Error())
-	}
-	return value
-}
-
-// InitializeWithConfig initializes the logger with a custom zap.Config.
 func InitializeWithConfig(cfg zap.Config) {
-	// Ensure permissions for each log output path
+	if Log != nil {
+		return // Prevent re-initialization
+	}
+
+	// Ensure permissions for each log output path BEFORE initializing logger
 	for _, path := range cfg.OutputPaths {
 		if path != "stdout" && path != "stderr" {
 			if err := EnsureLogPermissions(path); err != nil {
-				// Log the error to stdout before panicking
 				println("Permission error:", err.Error())
-				panic("failed to ensure permissions for log file: " + err.Error())
+				panic("Failed to ensure permissions for log file: " + err.Error())
 			}
 		}
 	}
 
+	// Now safely build logger
 	var err error
 	Log, err = cfg.Build()
 	if err != nil {
-		// Fallback to console-only logging if file logging fails
-		cfg.OutputPaths = []string{"stdout"}
+		cfg.OutputPaths = []string{"stdout"} // Fallback to stdout
 		Log, err = cfg.Build()
 		if err != nil {
-			panic("failed to initialize logger with fallback config: " + err.Error())
+			panic("Failed to initialize logger with fallback config: " + err.Error())
 		}
 	}
 }
 
-// Initialize initializes the logger with the default configuration.
 func Initialize() {
 	InitializeWithConfig(DefaultConfig())
 }
@@ -107,16 +98,17 @@ func GetLogger() *zap.Logger {
 
 // LogCommandExecution logs when a command is executed
 func LogCommandExecution(cmdName string, args []string) {
-	Log := GetLogger()
 	Log.Info("Command executed", zap.String("command", cmdName), zap.Strings("args", args))
 }
 
-// Sync flushes any buffered log entries. Should be called before the application exits.
+// Sync flushes any buffered log entries.
 func Sync() {
 	if Log != nil {
 		err := Log.Sync()
-		if err != nil && err.Error() != "sync /dev/stdout: invalid argument" { // failed to sync logger kept getting logged for no reason and its sometthing to do with the stout function itself , no this code, so i just said ignore it
-			Log.Error("Failed to sync logger", zap.Error(err))
+		if err != nil {
+			if _, ok := err.(*os.PathError); !ok {
+				Log.Error("Failed to sync logger", zap.Error(err))
+			}
 		}
 	}
 }
