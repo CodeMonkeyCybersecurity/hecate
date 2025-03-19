@@ -10,7 +10,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/CodeMonkeyCybersecurity/hecate/pkg/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +18,7 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update various resources",
 	Long: `This command updates various configurations for Hecate:
-  
+
   1) Update Certificates
   2) Update docker-compose file
   3) Update Eos backend web apps configuration

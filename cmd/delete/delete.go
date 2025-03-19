@@ -19,7 +19,7 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete various resources",
 	Long: `This command deletes various resources for Hecate:
-  
+
   1) Delete Certificates
   2) Delete docker-compose modifications/backups
   3) Delete Eos backend web apps configuration files

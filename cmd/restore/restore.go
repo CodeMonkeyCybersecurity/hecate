@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/CodeMonkeyCybersecurity/hecate/pkg/utils"
 	"github.com/spf13/cobra"
 )
 

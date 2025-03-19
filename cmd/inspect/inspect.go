@@ -26,10 +26,10 @@ var inspectConfigCmd = &cobra.Command{
 	Short: "Inspect configurations",
 	Long: `This command lets you inspect various configuration resources for Hecate.
 You can choose from:
-  1) Inspect Certificates  
-  2) Inspect docker-compose file  
-  3) Inspect Eos backend web apps configuration  
-  4) Inspect Nginx defaults  
+  1) Inspect Certificates
+  2) Inspect docker-compose file
+  3) Inspect Eos backend web apps configuration
+  4) Inspect Nginx defaults
   5) Inspect all configurations`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runInspectConfig()
