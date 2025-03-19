@@ -2,7 +2,7 @@
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 */
 // delete.go
-package cmd
+package delete
 
 import (
 	"bufio"
@@ -134,4 +134,9 @@ func deleteNginxDefaults() {
 			fmt.Printf("Deleted %s.\n", configFile)
 		}
 	}
+}
+
+
+func init() {
+	rootCmd.AddCommand(deleteCmd)
 }
