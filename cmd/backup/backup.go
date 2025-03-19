@@ -6,12 +6,14 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package backup
 
 import (
-    "fmt"
-    "os"
-    "time"
+    	"fmt"
+    	"os"
+    	"time"
 
-    "hecate/pkg/utils"
-    "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
+	
+    	"hecate/pkg/utils"
+	"hecate/pkg/docker"
 )
 
 // backupCmd represents the backup command.
@@ -25,7 +27,7 @@ var backupCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(backupCmd)
+	RootCmd.AddCommand(backupCmd)
 }
 
 // runBackup is called when the user runs "hecate create backup".
