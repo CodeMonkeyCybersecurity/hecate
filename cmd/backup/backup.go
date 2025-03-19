@@ -25,8 +25,7 @@ var backupCmd = &cobra.Command{
 }
 
 func init() {
-    // Add backupCmd as a subcommand of createCmd
-    createCmd.AddCommand(backupCmd)
+	rootCmd.AddCommand(createCmd)
 }
 
 // runBackup is called when the user runs "hecate create backup".
