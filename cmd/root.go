@@ -17,47 +17,81 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
+	"hecate/cmd/create"
+	"hecate/cmd/delete"
+	"hecate/cmd/inspect"
+	"hecate/cmd/update"
+	"hecate/cmd/deploy"
+	
 	"os"
 
+	"path/filepath"
+
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
+var log *zap.Logger // Global logger instance
 
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "hecate",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Short: Hecate CLI: Manage and configure your reverse proxy",
+	Long: `Hecate is a command-line tool designed to simplify the management and configuration 
+of your reverse proxy setup. It provides a unified interface for tasks such as deploying, 
+updating, and monitoring your proxy environment.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+Examples:
+	# Display the help information for Hecate
+  	hecate --help
+
+  	# Deploy a new reverse proxy configuration for a specific application
+  	hecate deploy jenkins
+   	hecate deploy nextcloud
+    	hecate deploy delphi
+
+ 	# Check the status of your reverse proxy services
+  	hecate status
+
+Use Hecate to quickly generate configuration files, manage certificates, and streamline 
+the deployment process for your reverse proxy setup.`,
+
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Info("Eos CLI started successfully.")
+
+		if !utils.CheckSudo() {
+			log.Error("Sudo privileges are required to create a backup.")
+			return
+		}
+
+		// Example: Process the config path
+		configPath := filepath.Join(".", "config", "default.yaml")
+		log.Info("Loaded configuration", zap.String("path", configPath))
+	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+
+// Register all subcommands in the init function
+func init() {
+	rootCmd.AddCommand(create.CreateCmd)
+	rootCmd.AddCommand(inspect.InspectCmd)
+	rootCmd.AddCommand(update.UpdateCmd)
+	rootCmd.AddCommand(delete.DeleteCmd)
+}
+
+// Execute starts the CLI
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
+	// Initialize the logger once globally
+	logger.Initialize()
+	defer logger.Sync()
+
+	// Assign the logger instance globally for reuse
+	log = logger.GetLogger()
+
+	// Execute the root command
+	if err := rootCmd.Execute(); err != nil {
+		log.Error("CLI execution error", zap.Error(err))
 		os.Exit(1)
 	}
 }
-
-func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.hecate.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-
