@@ -1,4 +1,4 @@
-module github.com/CodeMonkeyCybersecurity/hecate
+module hecate
 
 go 1.22.2
 
