@@ -24,6 +24,7 @@ const (
 	DockerNetworkName  = "arachne-net"
 	DockerIPv4Subnet   = "10.1.0.0/16"
 	DockerIPv6Subnet   = "fd42:1a2b:3c4d:5e6f::/64"
+	DefaultConfigPath = "./config/default.yaml"
 )
 
 // DefaultMarkers holds the default port markers that apply to all apps.
