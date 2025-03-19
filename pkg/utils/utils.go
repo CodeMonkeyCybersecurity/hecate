@@ -27,56 +27,6 @@ import (
 //---------------------------- HECATE FUNCTIONS ---------------------------- //
 //
 
-// DeployApp deploys an application by copying necessary configs and restarting services
-func DeployApp(app string, cmd *cobra.Command) error {
-	logger.Info("Starting deployment", zap.String("app", app))  // ✅ Use logger.Info directly
-
-	// Check if the required HTTP config exists
-	httpConfig := filepath.Join(assetsPath, "servers", app+".conf")
-	if !FileExists(httpConfig) {
-		logger.Error("Missing HTTP config file", zap.String("file", httpConfig))
-		return fmt.Errorf("missing Nginx HTTP config for %s", app)
-	}
-
-	// Copy HTTP config
-	if err := CopyFile(httpConfig, filepath.Join(nginxConfPath, app+".conf")); err != nil {
-		return fmt.Errorf("failed to copy HTTP config: %w", err)
-	}
-
-	// Copy Stream config if available
-	streamConfig := filepath.Join(assetsPath, "stream", app+".conf")
-	if FileExists(streamConfig) {
-		if err := CopyFile(streamConfig, filepath.Join(nginxStreamPath, app+".conf")); err != nil {
-			return fmt.Errorf("failed to copy Stream config: %w", err)
-		}
-	}
-
-	// Handle NextCloud Coturn deployment
-	if app == "nextcloud" {
-		noTalk, _ := cmd.Flags().GetBool("without-talk")
-		if !noTalk {
-			logger.Info("Deploying Coturn for NextCloud Talk")
-			if err := RunDockerComposeService(dockerComposeFile, "coturn"); err != nil {
-				return fmt.Errorf("failed to deploy Coturn: %w", err)
-			}
-		} else {
-			logger.Info("Skipping Coturn deployment")
-		}
-	}
-
-	// Validate and restart Nginx
-	if err := ValidateNginx(); err != nil {
-		return fmt.Errorf("invalid Nginx configuration: %w", err)
-	}
-
-	if err := RestartNginx(); err != nil {
-		return fmt.Errorf("failed to restart Nginx: %w", err)
-	}
-
-	logger.Info("Deployment successful", zap.String("app", app))
-	fmt.Printf("Successfully deployed %s!\n", app)
-	return nil
-}
 
 // FileExists checks if a file exists
 func FileExists(filename string) bool {
@@ -93,77 +43,7 @@ func CopyFile(src, dst string) error {
 	return os.WriteFile(dst, input, 0644)
 }
 
-// ValidateNginx runs `nginx -t` to check configuration validity
-func ValidateNginx() error {
-	logger.Info("Validating Nginx configuration...")
-	cmd := exec.Command("nginx", "-t")
-	err := cmd.Run()
-	if err != nil {
-		logger.Error("Nginx configuration validation failed", zap.Error(err))
-	}
-	return err
-}
 
-// RestartNginx reloads the Nginx service
-func RestartNginx() error {
-	logger.Info("Restarting Nginx...")
-	cmd := exec.Command("systemctl", "reload", "nginx")
-	err := cmd.Run()
-	if err != nil {
-		logger.Error("Failed to restart Nginx", zap.Error(err))
-	}
-	return err
-}
-
-
-//
-//---------------------------- COMMAND EXECUTION ---------------------------- //
-//
-
-// Execute runs a command with separate arguments.
-func Execute(command string, args ...string) error {
-	logger.Debug("Executing command", zap.String("command", command), zap.Strings("args", args))
-	cmd := exec.Command(command, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		logger.Error("Command execution failed", zap.String("command", command), zap.Strings("args", args), zap.Error(err))
-	} else {
-		logger.Info("Command executed successfully", zap.String("command", command))
-	}
-	return err
-}
-
-// ExecuteShell runs a shell command with pipes (`| grep`).
-func ExecuteShell(command string) error {
-	logger.Debug("Executing shell command", zap.String("command", command))
-	cmd := exec.Command("bash", "-c", command) // Runs in shell mode
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	err := cmd.Run()
-	if err != nil {
-		logger.Error("Shell command execution failed", zap.String("command", command), zap.Error(err))
-	} else {
-		logger.Info("Shell command executed successfully", zap.String("command", command))
-	}
-	return err
-}
-
-func ExecuteInDir(dir, command string, args ...string) error {
-	logger.Debug("Executing command in directory", zap.String("directory", dir), zap.String("command", command), zap.Strings("args", args))
-	cmd := exec.Command(command, args...)
-	cmd.Dir = dir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		logger.Error("Command execution failed in directory", zap.String("directory", dir), zap.String("command", command), zap.Strings("args", args), zap.Error(err))
-	} else {
-		logger.Info("Command executed successfully in directory", zap.String("directory", dir), zap.String("command", command))
-	}
-	return err
-}
 
 //
 //---------------------------- CRYPTO, HASHING, SECRETS ---------------------------- //
