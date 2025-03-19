@@ -13,7 +13,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/CodeMonkeyCybersecurity/hecate/pkg/config"
+	"hecate/pkg/config"
+	"hecate/pkg/logging"
 )
 
 // Constants for file and directory names.
