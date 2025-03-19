@@ -10,25 +10,30 @@ import (
 	"strings"
 )
 
+//
+// ---------------------------- CONSTANTS ---------------------------- //
+//
+
 // Constants for file and directory names.
 const (
 	LastValuesFile    = ".hecate.conf"
 	DockerComposeFile = "docker-compose.yml"
-	assetsPath := "assets"
-	nginxConfPath := "/etc/nginx/conf.d/"
-	nginxStreamPath := "/etc/nginx/stream.d/"
+	AssetsPath 	  = "assets"
+	NginxConfPath 	  = "/etc/nginx/conf.d/"
+	NginxStreamPath   = "/etc/nginx/stream.d/"
 )
 
 // DefaultMarkers holds the default port markers that apply to all apps.
 var DefaultMarkers = []string{"80", "443"}
 
-// CombineMarkers returns a new slice containing the default markers plus any additional markers.
+// CombineMarkers merges DefaultMarkers with additional markers.
 func CombineMarkers(additional ...string) []string {
-	markers := make([]string, len(DefaultMarkers))
-	copy(markers, DefaultMarkers)
-	markers = append(markers, additional...)
-	return markers
+	return append(DefaultMarkers, additional...)
 }
+
+//
+// ---------------------------- APPLICATION CONFIGURATION ---------------------------- //
+//
 
 // App represents an application option.
 type App struct {
@@ -40,33 +45,37 @@ type App struct {
 
 // Apps holds all available application options.
 var Apps = []App{
-	{Option: "1", Name: "Static website", ConfFile: "base.conf", Markers: DefaultMarkers},
-	{Option: "2", Name: "Wazuh", ConfFile: "delphi.conf", Markers: CombineMarkers("1515", "1514", "55000")},
-	{Option: "3", Name: "Mattermost", ConfFile: "collaborate.conf", Markers: DefaultMarkers},
-	{Option: "4", Name: "Nextcloud", ConfFile: "cloud.conf", Markers: CombineMarkers("3478", "coturn:")},
-	{Option: "5", Name: "Mailcow", ConfFile: "mailcow.conf", Markers: CombineMarkers("25", "587", "465", "110", "995", "143", "993")},
-	{Option: "6", Name: "Jenkins", ConfFile: "jenkins.conf", Markers: DefaultMarkers},
-	{Option: "7", Name: "Grafana", ConfFile: "observe.conf", Markers: DefaultMarkers},
-	{Option: "8", Name: "Umami", ConfFile: "analytics.conf", Markers: DefaultMarkers},
-	{Option: "9", Name: "MinIO", ConfFile: "s3.conf", Markers: DefaultMarkers},
-	{Option: "10", Name: "Wiki.js", ConfFile: "wiki.conf", Markers: DefaultMarkers},
-	{Option: "11", Name: "ERPNext", ConfFile: "erp.conf", Markers: DefaultMarkers},
-	{Option: "12", Name: "Jellyfin", ConfFile: "jellyfin.conf", Markers: DefaultMarkers},
-	{Option: "13", Name: "Persephone", ConfFile: "persephone.conf", Markers: DefaultMarkers},
+	{"1", "Static website", "base.conf", DefaultMarkers},
+	{"2", "Wazuh", "delphi.conf", CombineMarkers("1515", "1514", "55000")},
+	{"3", "Mattermost", "collaborate.conf", DefaultMarkers},
+	{"4", "Nextcloud", "cloud.conf", CombineMarkers("3478", "coturn:")},
+	{"5", "Mailcow", "mailcow.conf", CombineMarkers("25", "587", "465", "110", "995", "143", "993")},
+	{"6", "Jenkins", "jenkins.conf", DefaultMarkers},
+	{"7", "Grafana", "observe.conf", DefaultMarkers},
+	{"8", "Umami", "analytics.conf", DefaultMarkers},
+	{"9", "MinIO", "s3.conf", DefaultMarkers},
+	{"10", "Wiki.js", "wiki.conf", DefaultMarkers},
+	{"11", "ERPNext", "erp.conf", DefaultMarkers},
+	{"12", "Jellyfin", "jellyfin.conf", DefaultMarkers},
+	{"13", "Persephone", "persephone.conf", DefaultMarkers},
 }
+
+//
+// ---------------------------- FUNCTIONS ---------------------------- //
+//
+
 
 // DisplayOptions prints the available application options.
 func DisplayOptions() {
-	fmt.Println("Available EOS backend web apps:")
-	// Sort by Option number.
-	var keys []int
+	fmt.Println("Available Hecate backend web apps:")
+	var sortedApps []int
 	for _, app := range Apps {
 		if num, err := strconv.Atoi(app.Option); err == nil {
-			keys = append(keys, num)
+			sortedApps = append(sortedApps, num)
 		}
 	}
-	sort.Ints(keys)
-	for _, num := range keys {
+	sort.Ints(sortedApps)
+	for _, num := range sortedApps {
 		for _, app := range Apps {
 			if app.Option == strconv.Itoa(num) {
 				fmt.Printf("  %s. %s -> %s\n", app.Option, app.Name, app.ConfFile)
