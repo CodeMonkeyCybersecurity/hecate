@@ -95,7 +95,7 @@ func InitializeWithConfig(cfg zap.Config) {
 func Initialize() {
 	InitializeWithConfig(DefaultConfig())
 	zap.ReplaceGlobals(Log) // Ensures zap.L() always uses this logger
-	Log.Info("Logger successfully initialized", zap.String("log_level", level.String()))
+	Log.Info("Logger successfully initialized", zap.String("log_level", DefaultConfig().Level.String()))
 }
 
 // GetLogger returns the global logger instance.
