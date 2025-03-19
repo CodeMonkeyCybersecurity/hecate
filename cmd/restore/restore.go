@@ -1,7 +1,7 @@
 /*
 Copyright © 2025 NAME HERE
 */
-package cmd
+package restore
 
 import (
 	"bufio"
@@ -126,4 +126,9 @@ func restoreCompose() {
 	}
 	fmt.Printf("Restoring docker-compose file from backup: %s\n", backupCompose)
 	utils.RestoreFile(backupCompose, SRC_COMPOSE)
+}
+
+
+func init() {
+	rootCmd.AddCommand(restoreCmd)
 }
