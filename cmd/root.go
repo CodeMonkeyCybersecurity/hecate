@@ -1,3 +1,5 @@
+// cmd/root.go
+
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 
@@ -16,7 +18,12 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 package cmd
 
-import (
+import (	
+	"os"
+
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+
 	"hecate/cmd/create"
 	"hecate/cmd/delete"
 	"hecate/cmd/inspect"
@@ -25,12 +32,9 @@ import (
 	"hecate/cmd/backup"
 	"hecate/cmd/restore"
 	
-	"os"
-
-	"path/filepath"
-
-	"github.com/spf13/cobra"
-	"go.uber.org/zap"
+	"hecate/pkg/utils"
+	"hecate/pkg/logger"
+	"hecate/pkg/config"
 )
 
 var log *zap.Logger // Global logger instance
@@ -39,7 +43,7 @@ var log *zap.Logger // Global logger instance
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "hecate",
-	Short: Hecate CLI: Manage and configure your reverse proxy",
+	Short: "Manage and configure your reverse proxy with Hecate CLI.",
 	Long: `Hecate is a command-line tool designed to simplify the management and configuration 
 of your reverse proxy setup. It provides a unified interface for tasks such as deploying, 
 updating, and monitoring your proxy environment.
@@ -54,22 +58,13 @@ Examples:
     	hecate deploy delphi
 
  	# Check the status of your reverse proxy services
-  	hecate status
+  	hecate inspect
 
 Use Hecate to quickly generate configuration files, manage certificates, and streamline 
 the deployment process for your reverse proxy setup.`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		log.Info("Eos CLI started successfully.")
-
-		if !utils.CheckSudo() {
-			log.Error("Sudo privileges are required to create a backup.")
-			return
-		}
-
-		// Example: Process the config path
-		configPath := filepath.Join(".", "config", "default.yaml")
-		log.Info("Loaded configuration", zap.String("path", configPath))
+		cmd.Println("Using configuration:", config.DefaultConfigPath)
 	},
 }
 
@@ -89,14 +84,30 @@ func init() {
 func Execute() {
 	// Initialize the logger once globally
 	logger.Initialize()
-	defer logger.Sync()
+	log = logger.GetLogger() // Ensure log is assigned before use
 
-	// Assign the logger instance globally for reuse
-	log = logger.GetLogger()
+	// ✅ Prevent nil logger issue before logging starts
+	if log == nil {
+		println("Warning: Logger is nil, falling back to default output.")
+	}
+
+	// ✅ Log CLI startup here (not in Run:)
+	log.Info("Hecate CLI started successfully.")
+	
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			// Prevent panic if logging fails
+			println("Logger sync failed:", err.Error())
+		}
+	}()
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
-		log.Error("CLI execution error", zap.Error(err))
+		if log != nil {
+			log.Error("CLI execution error", zap.Error(err))
+		} else {
+			println("CLI execution error:", err.Error()) // Fallback if logger is nil
+		}
 		os.Exit(1)
 	}
 }
