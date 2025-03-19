@@ -14,13 +14,18 @@ import (
 	"strings"
 	"time"
 	"io"
-	"io/ioutil"
 
 	"gopkg.in/yaml.v2"
 	"go.uber.org/zap"
+	"github.com/spf13/cobra"
 
-	"eos/pkg/logger"
+	"hecate/pkg/logger"
 )
+
+// GetLogger returns a global logger instance
+func GetLogger() *zap.Logger {
+	return zap.L()
+}
 
 // Constants for file and directory names.
 const (
@@ -28,6 +33,101 @@ const (
 	ConfDir           = "conf.d"
 	DockerComposeFile = "docker-compose.yml"
 )
+
+
+
+//
+//---------------------------- HECATE FUNCTIONS ---------------------------- //
+//
+
+// DeployApp deploys an application by copying necessary configs and restarting services
+func DeployApp(app string, cmd *cobra.Command) error {
+	logger := GetLogger()
+
+	assetsPath := "assets"
+	nginxConfPath := "/etc/nginx/conf.d/"
+	nginxStreamPath := "/etc/nginx/stream.d/"
+	dockerComposeFile := "docker-compose.yml"
+
+	// Check if the required HTTP config exists
+	httpConfig := filepath.Join(assetsPath, "servers", app+".conf")
+	if !FileExists(httpConfig) {
+		logger.Error("Missing HTTP config file", zap.String("file", httpConfig))
+		return fmt.Errorf("missing Nginx HTTP config for %s", app)
+	}
+
+	// Copy HTTP config
+	if err := CopyFile(httpConfig, filepath.Join(nginxConfPath, app+".conf")); err != nil {
+		return fmt.Errorf("failed to copy HTTP config: %w", err)
+	}
+
+	// Copy Stream config if available
+	streamConfig := filepath.Join(assetsPath, "stream", app+".conf")
+	if FileExists(streamConfig) {
+		if err := CopyFile(streamConfig, filepath.Join(nginxStreamPath, app+".conf")); err != nil {
+			return fmt.Errorf("failed to copy Stream config: %w", err)
+		}
+	}
+
+	// Handle NextCloud Coturn deployment
+	if app == "nextcloud" {
+		noTalk, _ := cmd.Flags().GetBool("without-talk")
+		if !noTalk {
+			logger.Info("Deploying Coturn for NextCloud Talk")
+			if err := RunDockerComposeService(dockerComposeFile, "coturn"); err != nil {
+				return fmt.Errorf("failed to deploy Coturn: %w", err)
+			}
+		} else {
+			logger.Info("Skipping Coturn deployment")
+		}
+	}
+
+	// Validate and restart Nginx
+	if err := ValidateNginx(); err != nil {
+		return fmt.Errorf("invalid Nginx configuration: %w", err)
+	}
+
+	if err := RestartNginx(); err != nil {
+		return fmt.Errorf("failed to restart Nginx: %w", err)
+	}
+
+	logger.Info("Deployment successful", zap.String("app", app))
+	fmt.Printf("Successfully deployed %s!\n", app)
+	return nil
+}
+
+// FileExists checks if a file exists
+func FileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	return !os.IsNotExist(err)
+}
+
+// CopyFile copies a file from src to dst
+func CopyFile(src, dst string) error {
+	input, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(dst, input, 0644)
+}
+
+// ValidateNginx runs `nginx -t` to check configuration validity
+func ValidateNginx() error {
+	cmd := exec.Command("nginx", "-t")
+	return cmd.Run()
+}
+
+// RestartNginx reloads the Nginx service
+func RestartNginx() error {
+	cmd := exec.Command("systemctl", "reload", "nginx")
+	return cmd.Run()
+}
+
+// RunDockerComposeService starts a specific service from a docker-compose file
+func RunDockerComposeService(composeFile, service string) error {
+	cmd := exec.Command("docker-compose", "-f", composeFile, "up", "-d", service)
+	return cmd.Run()
+}
 
 //
 //---------------------------- CONTAINER FUNCTIONS ---------------------------- //
@@ -144,7 +244,7 @@ type Service struct {
 
 // ParseComposeFile reads a docker-compose file and returns container names, images, and volumes.
 func ParseComposeFile(composePath string) (containers []string, images []string, volumes []string, err error) {
-	data, err := ioutil.ReadFile(composePath)
+	data, err := os.ReadFile(composePath)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to read compose file: %w", err)
 	}
@@ -229,15 +329,16 @@ func CheckDockerContainers() error {
 
 // Execute runs a command with separate arguments.
 func Execute(command string, args ...string) error {
-	log.Debug("Executing command", zap.String("command", command), zap.Strings("args", args))
+	logger := GetLogger() // ✅ FIX: Ensure logger is defined
+	logger.Debug("Executing command", zap.String("command", command), zap.Strings("args", args))
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Error("Command execution failed", zap.String("command", command), zap.Strings("args", args), zap.Error(err))
+		logger.Error("Command execution failed", zap.String("command", command), zap.Strings("args", args), zap.Error(err))
 	} else {
-		log.Info("Command executed successfully", zap.String("command", command))
+		logger.Info("Command executed successfully", zap.String("command", command))
 	}
 	return err
 }
