@@ -10,17 +10,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 	"io"
 
-	"gopkg.in/yaml.v2"
 	"go.uber.org/zap"
-	"github.com/spf13/cobra"
 
 	"hecate/pkg/logger"
-	"hecate/pkg/config"
 )
 
 //
