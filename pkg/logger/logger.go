@@ -13,10 +13,21 @@ var Log *zap.Logger
 // DefaultConfig returns a standard zap.Config object with custom settings.
 func DefaultConfig() zap.Config {
 	level := zap.InfoLevel
-	if os.Getenv("LOG_LEVEL") == "debug" {
+	switch os.Getenv("LOG_LEVEL") {
+	case "trace":
+		level = zap.DebugLevel 
+	case "debug":
 		level = zap.DebugLevel
+	case "dpanic":
+		level = zap.DPanicLevel
+	case "warn":
+		level = zap.WarnLevel
+	case "error":
+		level = zap.ErrorLevel
+	case "fatal":
+		level = zap.FatalLevel
 	}
-	
+
 	return zap.Config{
 		Level:            zap.NewAtomicLevelAt(level),                	      // Default log level: Info
 		Development:      true,                                               // Development mode by default
@@ -33,6 +44,11 @@ func EnsureLogPermissions(logFilePath string) error {
 
 	// Ensure the directory exists
 	if err := os.MkdirAll(dir, 0700); err != nil {
+		return err
+	}
+
+	// Set strict file permissions first
+	if err := os.Chmod(dir, 0700); err != nil {
 		return err
 	}
 
@@ -78,6 +94,8 @@ func InitializeWithConfig(cfg zap.Config) {
 
 func Initialize() {
 	InitializeWithConfig(DefaultConfig())
+	zap.ReplaceGlobals(Log) // Ensures zap.L() always uses this logger
+	Log.Info("Logger successfully initialized", zap.String("log_level", level.String()))
 }
 
 // GetLogger returns the global logger instance.
@@ -88,14 +106,47 @@ func GetLogger() *zap.Logger {
 	return Log
 }
 
-// Sync flushes any buffered log entries.
-func Sync() {
+// -------------------------- HELPER FUNCTIONS FOR CLEANER LOGGING --------------------------
+
+// Info logs an informational message.
+func Info(msg string, fields ...zap.Field) {
+	GetLogger().Info(msg, fields...)
+}
+
+// Warn logs a warning message.
+func Warn(msg string, fields ...zap.Field) {
+	GetLogger().Warn(msg, fields...)
+}
+
+// Error logs an error message.
+func Error(msg string, fields ...zap.Field) {
+	GetLogger().Error(msg, fields...)
+}
+
+// Debug logs a debug message.
+func Debug(msg string, fields ...zap.Field) {
+	GetLogger().Debug(msg, fields...)
+}
+
+// Fatal logs a fatal error and exits.
+func Fatal(msg string, fields ...zap.Field) {
+	GetLogger().Fatal(msg, fields...)
+}
+
+// Panic logs a message & panics the application
+func Panic(msg string, fields ...zap.Field) {
+	GetLogger().Panic(msg, fields...)
+}
+
+// Sync flushes any buffered log entries & returns error if it fails.
+func Sync() error {
 	if Log != nil {
-		err := Log.Sync()
-		if err != nil {
+		if err := Log.Sync(); err != nil {
 			if _, ok := err.(*os.PathError); !ok {
 				Log.Error("Failed to sync logger", zap.Error(err))
 			}
+			return err
 		}
 	}
+	return nil
 }
