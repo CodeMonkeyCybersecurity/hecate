@@ -1,8 +1,8 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 */
-// update.go
-package cmd
+// cmd/update/update.go
+package update
 
 import (
 	"bufio"
@@ -99,4 +99,8 @@ func updateNginxDefaults() {
 	// Here we call runHttp() as a placeholder.
 	runHttp()
 	fmt.Println("Nginx defaults updated.")
+}
+
+func init() {
+	rootCmd.AddCommand(updateCmd)
 }
