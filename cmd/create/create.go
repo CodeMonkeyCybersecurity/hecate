@@ -4,8 +4,6 @@ package create
 
 import (
 	"github.com/spf13/cobra"
-
-	"hecate/cmd/root"
 )
 
 // CreateCmd represents the create command
@@ -17,8 +15,4 @@ needed for your Hecate deployment, such as certificates, proxy configurations, e
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Println("Create command executed!")
 	},
-}
-
-func init() {
-	root.RootCmd.AddCommand(CreateCmd) // ✅ Attach CreateCmd to rootCmd
 }
