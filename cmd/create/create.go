@@ -4,6 +4,8 @@ package create
 
 import (
 	"github.com/spf13/cobra"
+
+	"hecate/cmd/root"
 )
 
 // CreateCmd represents the create command
