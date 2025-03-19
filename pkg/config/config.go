@@ -21,6 +21,9 @@ const (
 	AssetsPath 	  = "assets"
 	NginxConfPath 	  = "/etc/nginx/conf.d/"
 	NginxStreamPath   = "/etc/nginx/stream.d/"
+	DockerNetworkName  = "arachne-net"
+	DockerIPv4Subnet   = "10.1.0.0/16"
+	DockerIPv6Subnet   = "fd42:1a2b:3c4d:5e6f::/64"
 )
 
 // DefaultMarkers holds the default port markers that apply to all apps.
