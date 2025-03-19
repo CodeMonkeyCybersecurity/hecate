@@ -8,7 +8,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+)
 
+// Constants for file and directory names.
+const (
+	LastValuesFile    = ".hecate.conf"
+	ConfDir           = "conf.d"
+	DockerComposeFile = "docker-compose.yml"
 )
 
 // DefaultMarkers holds the default port markers that apply to all apps.
