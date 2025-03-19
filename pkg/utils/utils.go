@@ -20,7 +20,7 @@ import (
 )
 
 //
-//---------------------------- HECATE FUNCTIONS ---------------------------- //
+//---------------------------- FILE CRUD ---------------------------- //
 //
 
 
@@ -39,6 +39,44 @@ func CopyFile(src, dst string) error {
 	return os.WriteFile(dst, input, 0644)
 }
 
+
+// RemoveIfExists removes a file or directory if it exists.
+func RemoveIfExists(path string) error {
+    if _, err := os.Stat(path); err == nil {
+        return os.RemoveAll(path)
+    }
+    return nil
+}
+
+// CopyDir copies the contents of a directory from src to dst.
+func CopyDir(src string, dst string) error {
+    // This is a simple example; production code may need more robust error handling.
+    entries, err := os.ReadDir(src)
+    if err != nil {
+        return err
+    }
+    if err := os.MkdirAll(dst, 0755); err != nil {
+        return err
+    }
+    for _, entry := range entries {
+        srcPath := filepath.Join(src, entry.Name())
+        dstPath := filepath.Join(dst, entry.Name())
+        if entry.IsDir() {
+            if err := CopyDir(srcPath, dstPath); err != nil {
+                return err
+            }
+        } else {
+            input, err := os.ReadFile(srcPath)
+            if err != nil {
+                return err
+            }
+            if err := os.WriteFile(dstPath, input, 0644); err != nil {
+                return err
+            }
+        }
+    }
+    return nil
+}
 
 
 //
