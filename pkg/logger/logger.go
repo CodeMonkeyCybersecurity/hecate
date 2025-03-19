@@ -12,49 +12,41 @@ var Log *zap.Logger
 
 // DefaultConfig returns a standard zap.Config object with custom settings.
 func DefaultConfig() zap.Config {
+	level := zap.InfoLevel
+	if os.Getenv("LOG_LEVEL") == "debug" {
+		level = zap.DebugLevel
+	}
+	
 	return zap.Config{
-		Level:            zap.NewAtomicLevelAt(zap.InfoLevel),                // Default log level: Info
+		Level:            zap.NewAtomicLevelAt(level),                	      // Default log level: Info
 		Development:      true,                                               // Development mode by default
 		Encoding:         "json",                                             // JSON log format
 		OutputPaths:      []string{"stdout", "/var/log/cyberMonkey/eos.log"}, // Log to console and file
 		ErrorOutputPaths: []string{"stderr"},                                 // Log errors to stderr
 		EncoderConfig:    zap.NewDevelopmentEncoderConfig(),                  // Use pre-configured development encoder
-
 	}
 }
 
-// EnsureLogPermissions ensures the correct permissions for the log directory and file.
+// EnsureLogPermissions ensures correct permissions for log directory & file.
 func EnsureLogPermissions(logFilePath string) error {
 	dir := filepath.Dir(logFilePath)
 
 	// Ensure the directory exists
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := os.MkdirAll(dir, 0700); err != nil {
-			return err // Return the error if directory creation fails
-		}
-	} else {
-		// Set stricter permissions for the directory
-		if err := os.Chmod(dir, 0700); err != nil {
-			return err // Return the error if permission setting fails
-		}
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return err
 	}
-
 
 	// Ensure the log file exists
 	if _, err := os.Stat(logFilePath); os.IsNotExist(err) {
 		file, err := os.Create(logFilePath)
 		if err != nil {
-			return err // Return the error if file creation fails
+			return err
 		}
 		file.Close()
 	}
 
-	// Set permissions for the log file (read/write for owner only)
-	if err := os.Chmod(logFilePath, 0600); err != nil {
-		return err // Return the error if permission setting fails
-	}
-
-	return nil
+	// Set strict file permissions
+	return os.Chmod(logFilePath, 0600)
 }
 
 func InitializeWithConfig(cfg zap.Config) {
@@ -94,11 +86,6 @@ func GetLogger() *zap.Logger {
 		Initialize()
 	}
 	return Log
-}
-
-// LogCommandExecution logs when a command is executed
-func LogCommandExecution(cmdName string, args []string) {
-	Log.Info("Command executed", zap.String("command", cmdName), zap.Strings("args", args))
 }
 
 // Sync flushes any buffered log entries.
