@@ -1,26 +1,22 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
+// cmd/create/create.go
 
-*/
-package cmd
+package create
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
-// createCmd represents the create command
-var createCmd = &cobra.Command{
+// CreateCmd represents the create command
+var CreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create various resources",
-        Long:  `Create commands for backups, certs, configs, etc.`,
-
+	Short: "Create resources for Hecate",
+	Long: `The create command allows you to create specific resources
+needed for your Hecate deployment, such as certificates, proxy configurations, etc.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("create called")
+		cmd.Println("Create command executed!")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(createCmd)
+	cmd.RootCmd.AddCommand(CreateCmd) // ✅ Attach CreateCmd to rootCmd
 }
