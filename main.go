@@ -16,8 +16,14 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 package main
 
-import "github.com/CodeMonkeyCybersecurity/hecate/cmd"
-
+import (
+	"hecate/cmd"
+	"hecate/pkg/logger"
+)
 func main() {
+	logger.Initialize()
+	defer logger.Sync()
+	logger.GetLogger().Info("Hecate CLI initialized and ready.")
+
 	cmd.Execute()
 }
