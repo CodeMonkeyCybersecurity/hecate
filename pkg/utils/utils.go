@@ -20,21 +20,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"hecate/pkg/logger"
+	"hecate/pkg/config"
 )
-
-// GetLogger returns a global logger instance
-func GetLogger() *zap.Logger {
-	return zap.L()
-}
-
-// Constants for file and directory names.
-const (
-	LastValuesFile    = ".hecate.conf"
-	ConfDir           = "conf.d"
-	DockerComposeFile = "docker-compose.yml"
-)
-
-
 
 //
 //---------------------------- HECATE FUNCTIONS ---------------------------- //
@@ -42,12 +29,7 @@ const (
 
 // DeployApp deploys an application by copying necessary configs and restarting services
 func DeployApp(app string, cmd *cobra.Command) error {
-	logger := GetLogger()
-
-	assetsPath := "assets"
-	nginxConfPath := "/etc/nginx/conf.d/"
-	nginxStreamPath := "/etc/nginx/stream.d/"
-	dockerComposeFile := "docker-compose.yml"
+	logger.Info("Starting deployment", zap.String("app", app))  // ✅ Use logger.Info directly
 
 	// Check if the required HTTP config exists
 	httpConfig := filepath.Join(assetsPath, "servers", app+".conf")
@@ -113,20 +95,37 @@ func CopyFile(src, dst string) error {
 
 // ValidateNginx runs `nginx -t` to check configuration validity
 func ValidateNginx() error {
+	logger.Info("Validating Nginx configuration...")
 	cmd := exec.Command("nginx", "-t")
-	return cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		logger.Error("Nginx configuration validation failed", zap.Error(err))
+	}
+	return err
 }
 
 // RestartNginx reloads the Nginx service
 func RestartNginx() error {
+	logger.Info("Restarting Nginx...")
 	cmd := exec.Command("systemctl", "reload", "nginx")
-	return cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		logger.Error("Failed to restart Nginx", zap.Error(err))
+	}
+	return err
 }
 
 // RunDockerComposeService starts a specific service from a docker-compose file
 func RunDockerComposeService(composeFile, service string) error {
+	logger.Info("Starting Docker service", zap.String("service", service), zap.String("composeFile", composeFile))
 	cmd := exec.Command("docker-compose", "-f", composeFile, "up", "-d", service)
-	return cmd.Run()
+	err := cmd.Run()
+	if err != nil {
+		logger.Error("Failed to start Docker service", zap.String("service", service), zap.Error(err))
+		return err
+	}
+	logger.Info("Docker service started successfully", zap.String("service", service))
+	return nil
 }
 
 //
@@ -138,9 +137,9 @@ func RemoveVolumes(volumes []string) error {
     for _, volume := range volumes {
         // Execute the docker volume rm command.
         if err := Execute("docker", "volume", "rm", volume); err != nil {
-            log.Warn("failed to remove volume", zap.String("volume", volume), zap.Error(err))
+            logger.Warn("failed to remove volume", zap.String("volume", volume), zap.Error(err))
         } else {
-            log.Info("Volume removed successfully", zap.String("volume", volume))
+            logger.Info("Volume removed successfully", zap.String("volume", volume))
         }
     }
     return nil
@@ -157,7 +156,7 @@ func StopContainers(containers []string) error {
 	}
 	
 	// Log the successful stopping of containers.
-	log.Info("Containers stopped successfully", zap.Any("containers", containers))
+	logger.Info("Containers stopped successfully", zap.Any("containers", containers))
 	return nil
 }
 
@@ -167,7 +166,7 @@ func RemoveContainers(containers []string) error {
 	if err := Execute("docker", args...); err != nil {
 		return fmt.Errorf("failed to remove containers %v: %w", containers, err)
 	}
-	log.Info("Containers removed successfully", zap.Any("containers", containers))
+	logger.Info("Containers removed successfully", zap.Any("containers", containers))
 	return nil
 }
 
@@ -176,10 +175,10 @@ func RemoveContainers(containers []string) error {
 func RemoveImages(images []string) error {
 	for _, image := range images {
 		if err := Execute("docker", "rmi", image); err != nil {
-			log.Warn("failed to remove image (it might be used elsewhere)",
+			logger.Warn("failed to remove image (it might be used elsewhere)",
 				zap.String("image", image), zap.Error(err))
 		} else {
-			log.Info("Image removed successfully", zap.String("image", image))
+			logger.Info("Image removed successfully", zap.String("image", image))
 		}
 	}
 	return nil
@@ -217,29 +216,17 @@ func BackupVolumes(volumes []string, backupDir string) (map[string]string, error
 
 	// Loop through each volume and back it up.
 	for _, vol := range volumes {
-		log.Info("Backing up volume", zap.String("volume", vol))
+		logger.Info("Backing up volume", zap.String("volume", vol))
 		backupFile, err := BackupVolume(vol, backupDir)
 		if err != nil {
-			log.Error("Error backing up volume", zap.String("volume", vol), zap.Error(err))
+			logger.Error("Error backing up volume", zap.String("volume", vol), zap.Error(err))
 			// Continue processing other volumes even if one fails.
 		} else {
-			log.Info("Volume backup completed", zap.String("volume", vol), zap.String("backupFile", backupFile))
+			logger.Info("Volume backup completed", zap.String("volume", vol), zap.String("backupFile", backupFile))
 			backupResults[vol] = backupFile
 		}
 	}
 	return backupResults, nil
-}
-
-// ComposeFile represents the minimal structure of your docker-compose file.
-type ComposeFile struct {
-	Services map[string]Service `yaml:"services"`
-	Volumes  map[string]interface{} `yaml:"volumes"`
-}
-
-// Service holds the details we care about for each service.
-type Service struct {
-	Image         string `yaml:"image"`
-	ContainerName string `yaml:"container_name"`
 }
 
 // ParseComposeFile reads a docker-compose file and returns container names, images, and volumes.
@@ -272,7 +259,7 @@ func ParseComposeFile(composePath string) (containers []string, images []string,
 		volumes = append(volumes, volName)
 	}
 
-	log.Info("Parsed compose file successfully", zap.String("path", composePath),
+	logger.Info("Parsed compose file successfully", zap.String("path", composePath),
 		zap.Any("containers", containers), zap.Any("images", images), zap.Any("volumes", volumes))
 
 	return containers, images, volumes, nil
@@ -319,7 +306,7 @@ func CheckDockerContainers() error {
 	if err != nil {
 		return fmt.Errorf("failed to run docker ps: %v, output: %s", err, output)
 	}
-	log.Info("Docker ps output", zap.String("output", string(output)))
+	logger.Info("Docker ps output", zap.String("output", string(output)))
 	return nil
 }
 
@@ -329,7 +316,6 @@ func CheckDockerContainers() error {
 
 // Execute runs a command with separate arguments.
 func Execute(command string, args ...string) error {
-	logger := GetLogger() // ✅ FIX: Ensure logger is defined
 	logger.Debug("Executing command", zap.String("command", command), zap.Strings("args", args))
 	cmd := exec.Command(command, args...)
 	cmd.Stdout = os.Stdout
@@ -345,30 +331,30 @@ func Execute(command string, args ...string) error {
 
 // ExecuteShell runs a shell command with pipes (`| grep`).
 func ExecuteShell(command string) error {
-	log.Debug("Executing shell command", zap.String("command", command))
+	logger.Debug("Executing shell command", zap.String("command", command))
 	cmd := exec.Command("bash", "-c", command) // Runs in shell mode
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 	err := cmd.Run()
 	if err != nil {
-		log.Error("Shell command execution failed", zap.String("command", command), zap.Error(err))
+		logger.Error("Shell command execution failed", zap.String("command", command), zap.Error(err))
 	} else {
-		log.Info("Shell command executed successfully", zap.String("command", command))
+		logger.Info("Shell command executed successfully", zap.String("command", command))
 	}
 	return err
 }
 
 func ExecuteInDir(dir, command string, args ...string) error {
-	log.Debug("Executing command in directory", zap.String("directory", dir), zap.String("command", command), zap.Strings("args", args))
+	logger.Debug("Executing command in directory", zap.String("directory", dir), zap.String("command", command), zap.Strings("args", args))
 	cmd := exec.Command(command, args...)
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Error("Command execution failed in directory", zap.String("directory", dir), zap.String("command", command), zap.Strings("args", args), zap.Error(err))
+		logger.Error("Command execution failed in directory", zap.String("directory", dir), zap.String("command", command), zap.Strings("args", args), zap.Error(err))
 	} else {
-		log.Info("Command executed successfully in directory", zap.String("directory", dir), zap.String("command", command))
+		logger.Info("Command executed successfully in directory", zap.String("directory", dir), zap.String("command", command))
 	}
 	return err
 }
@@ -379,10 +365,10 @@ func ExecuteInDir(dir, command string, args ...string) error {
 
 // HashString computes and returns the SHA256 hash of the provided string.
 func HashString(s string) string {
-	log.Debug("Computing SHA256 hash", zap.String("input", s))
+	logger.Debug("Computing SHA256 hash", zap.String("input", s))
 	hash := sha256.Sum256([]byte(s))
 	hashStr := hex.EncodeToString(hash[:])
-	log.Debug("Computed SHA256 hash", zap.String("hash", hashStr))
+	logger.Debug("Computed SHA256 hash", zap.String("hash", hashStr))
 	return hashStr
 }
 
@@ -408,7 +394,7 @@ func GeneratePassword(length int) (string, error) {
 func MonitorVaultLogs(ctx context.Context, logFilePath, marker string) error {
 	file, err := os.Open(logFilePath)
 	if err != nil {
-		log.Error("Failed to open log file for monitoring", zap.String("logFilePath", logFilePath), zap.Error(err))
+		logger.Error("Failed to open log file for monitoring", zap.String("logFilePath", logFilePath), zap.Error(err))
 		return fmt.Errorf("failed to open log file for monitoring: %w", err)
 	}
 	defer file.Close()
@@ -416,7 +402,7 @@ func MonitorVaultLogs(ctx context.Context, logFilePath, marker string) error {
 	// Seek to the end of the file so we only see new log lines.
 	_, err = file.Seek(0, io.SeekEnd)
 	if err != nil {
-		log.Error("Failed to seek log file", zap.String("logFilePath", logFilePath), zap.Error(err))
+		logger.Error("Failed to seek log file", zap.String("logFilePath", logFilePath), zap.Error(err))
 		return fmt.Errorf("failed to seek log file: %w", err)
 	}
 
@@ -424,15 +410,15 @@ func MonitorVaultLogs(ctx context.Context, logFilePath, marker string) error {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Warn("Timeout reached while waiting for Vault to start")
+			logger.Warn("Timeout reached while waiting for Vault to start")
 			return fmt.Errorf("timeout reached while waiting for Vault to start")
 		default:
 			if scanner.Scan() {
 				line := scanner.Text()
 				fmt.Println(line) // Print the log line to terminal
-				log.Debug("Vault Log Line", zap.String("logLine", line))
+				logger.Debug("Vault Log Line", zap.String("logLine", line))
 				if strings.Contains(line, marker) {
-					log.Info("Vault marker found, exiting log monitor", zap.String("marker", marker))
+					logger.Info("Vault marker found, exiting log monitor", zap.String("marker", marker))
 					return nil
 				}
 			} else {
@@ -449,13 +435,13 @@ func MonitorVaultLogs(ctx context.Context, logFilePath, marker string) error {
 // GetInternalHostname returns the machine's hostname.
 // If os.Hostname() fails, it logs the error and returns "localhost".
 func GetInternalHostname() string {
-	log.Info("Retrieving internal hostname")
+	logger.Info("Retrieving internal hostname")
 	hostname, err := os.Hostname()
 	if err != nil {
-		log.Error("Unable to retrieve hostname, defaulting to localhost", zap.Error(err))
+		logger.Error("Unable to retrieve hostname, defaulting to localhost", zap.Error(err))
 		return "localhost"
 	}
-	log.Info("Retrieved hostname", zap.String("hostname", hostname))
+	logger.Info("Retrieved hostname", zap.String("hostname", hostname))
 	return hostname
 }
 
@@ -467,9 +453,9 @@ func GetInternalHostname() string {
 // HandleError logs an error and optionally exits the program
 func HandleError(err error, message string, exit bool) {
 	if err != nil {
-		log.Error(message, zap.Error(err))
+		logger.Error(message, zap.Error(err))
 		if exit {
-			log.Fatal("Exiting program due to error", zap.String("message", message))
+			logger.Fatal("Exiting program due to error", zap.String("message", message))
 		}
 	}
 }
@@ -489,14 +475,11 @@ func WithErrorHandling(fn func() error) {
 
 // CheckSudo checks if the current user has sudo privileges
 func CheckSudo() bool {
-	log.Info("Checking if user has sudo privileges")
 	cmd := exec.Command("sudo", "-n", "true") // Non-interactive sudo check
-	err := cmd.Run()
-	if err != nil {
-		log.Warn("User does not have sudo privileges", zap.Error(err))
+	if err := cmd.Run(); err != nil {
+		logger.Warn("User does not have sudo privileges", zap.Error(err))
 		return false
 	}
-	log.Info("User has sudo privileges")
 	return true
 }
 
@@ -508,7 +491,7 @@ func CheckSudo() bool {
 
 // Recursive function to process and print nested YAML structures
 func ProcessMap(data map[string]interface{}, indent string) {
-	log.Debug("Processing YAML map")
+	logger.Debug("Processing YAML map")
 	for key, value := range data {
 		switch v := value.(type) {
 		case map[string]interface{}:
@@ -527,5 +510,5 @@ func ProcessMap(data map[string]interface{}, indent string) {
 			fmt.Printf("%s%s: %v\n", indent, key, v)
 		}
 	}
-	log.Debug("Completed processing YAML map")
+	logger.Debug("Completed processing YAML map")
 }
