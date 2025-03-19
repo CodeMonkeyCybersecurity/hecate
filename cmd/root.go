@@ -22,6 +22,8 @@ import (
 	"hecate/cmd/inspect"
 	"hecate/cmd/update"
 	"hecate/cmd/deploy"
+	"hecate/cmd/backup"
+	"hecate/cmd/restore"
 	
 	"os"
 
@@ -78,6 +80,9 @@ func init() {
 	rootCmd.AddCommand(inspect.InspectCmd)
 	rootCmd.AddCommand(update.UpdateCmd)
 	rootCmd.AddCommand(delete.DeleteCmd)
+	rootCmd.AddCommand(restore.RestoreCmd)
+	rootCmd.AddCommand(deploy.DeployCmd)
+	rootCmd.AddCommand(backup.BackupCmd)
 }
 
 // Execute starts the CLI
