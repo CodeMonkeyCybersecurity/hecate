@@ -3,7 +3,7 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 
 */
 
-package cmd
+package backup
 
 import (
     "fmt"
@@ -25,7 +25,7 @@ var backupCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(createCmd)
+	rootCmd.AddCommand(backupCmd)
 }
 
 // runBackup is called when the user runs "hecate create backup".
