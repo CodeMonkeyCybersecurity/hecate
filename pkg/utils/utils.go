@@ -3,18 +3,23 @@ package utils
 
 import (
 	"bufio"
+	"context"
+	"crypto/sha256"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
-	"io"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
+	"io"
+	"io/ioutil"
 
-	"hecate/pkg/config"
-	"hecate/pkg/logging"
+	"gopkg.in/yaml.v2"
+	"go.uber.org/zap"
+
+	"eos/pkg/logger"
 )
 
 // Constants for file and directory names.
@@ -25,523 +30,401 @@ const (
 )
 
 //
-// -------------------- Generic Functions --------------------
+//---------------------------- CONTAINER FUNCTIONS ---------------------------- //
 //
 
-func RunCommand(command []string, shell bool) error {
-	if shell {
-		fmt.Printf("Running command: %s\n", strings.Join(command, " "))
-		cmd := exec.Command("sh", "-c", strings.Join(command, " "))
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		return cmd.Run()
-	} else {
-		fmt.Printf("Running command: %s\n", strings.Join(command, " "))
-		cmd := exec.Command(command[0], command[1:]...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		return cmd.Run()
-	}
-}
-
-// PromptWithDefault displays a prompt with a default value and returns the user's input or the default.
-func PromptWithDefault(prompt, def, description string) string {
-	fmt.Println()
-	fmt.Println(description)
-	fmt.Printf("%s [%s]: ", prompt, def)
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return def
-	}
-	input = strings.TrimSpace(input)
-	if input == "" {
-		return def
-	}
-	return input
-}
-
-// CombineMarkers returns a new slice containing the provided defaultMarkers plus any additional markers.
-func CombineMarkers(defaultMarkers []string, additional ...string) []string {
-	markers := make([]string, len(defaultMarkers))
-	copy(markers, defaultMarkers)
-	markers = append(markers, additional...)
-	return markers
-}
-
-// SaveLastValues writes key="value" pairs to LastValuesFile.
-func SaveLastValues(values map[string]string) error {
-    file, err := os.Create(LastValuesFile)
-    if err != nil {
-        return err
-    }
-    defer file.Close()
-
-    for key, value := range values {
-        _, err := file.WriteString(fmt.Sprintf("%s=\"%s\"\n", key, value))
-        if err != nil {
-            return err
+// RemoveVolumes removes the specified Docker volumes.
+func RemoveVolumes(volumes []string) error {
+    for _, volume := range volumes {
+        // Execute the docker volume rm command.
+        if err := Execute("docker", "volume", "rm", volume); err != nil {
+            log.Warn("failed to remove volume", zap.String("volume", volume), zap.Error(err))
+        } else {
+            log.Info("Volume removed successfully", zap.String("volume", volume))
         }
     }
     return nil
 }
 
-// LoadLastValues reads key="value" pairs from LastValuesFile.
-func LoadLastValues() (map[string]string, error) {
-    values := make(map[string]string)
-    file, err := os.Open(LastValuesFile)
-    if err != nil {
-        if os.IsNotExist(err) {
-            return values, nil
-        }
-        return nil, err
-    }
-    defer file.Close()
-
-    scanner := bufio.NewScanner(file)
-    for scanner.Scan() {
-        line := strings.TrimSpace(scanner.Text())
-        if line == "" || !strings.Contains(line, "=") {
-            continue
-        }
-        parts := strings.SplitN(line, "=", 2)
-        key := strings.TrimSpace(parts[0])
-        value := strings.Trim(strings.TrimSpace(parts[1]), `"`)
-        values[key] = value
-    }
-    return values, scanner.Err()
-}
-
-//
-// -------------------- Docker Compose Functions --------------------
-//
-
-// RunComposeInteractive updates the docker-compose file interactively.
-func RunComposeInteractive() {
-    fmt.Println("\n=== Docker Compose Update ===")
-    const LAST_VALUES_FILE = ".hecate.conf"
-    lastValues, err := LoadLastValues()
-    if err != nil {
-        fmt.Printf("Error loading configuration: %v\n", err)
-        os.Exit(1)
-    }
-    defaultSelection := lastValues["APPS_SELECTION"]
-
-    // Display the options before prompting for selection.
-    config.DisplayOptions()
-    
-    selectedApps, selectionStr := config.GetUserSelection(defaultSelection)
-    lastValues["APPS_SELECTION"] = selectionStr
-    if err := SaveLastValues(lastValues); err != nil {
-        fmt.Printf("Error saving configuration: %v\n", err)
-    }
-    if err := UpdateComposeFile(selectedApps); err != nil {
-        fmt.Printf("Error updating docker-compose file: %v\n", err)
-        os.Exit(1)
-    }
-    // Output updated docker-compose file.
-    composeFile := "docker-compose.yml" // adjust as needed
-    data, err := os.ReadFile(composeFile)
-    if err != nil {
-        fmt.Printf("Error reading %s: %v\n", composeFile, err)
-    } else {
-        fmt.Println("\n---- Updated docker-compose.yml ----")
-        fmt.Println(string(data))
-    }
-}
-
-
-// UpdateComposeFile reads the docker-compose file and, for each line that contains any marker
-// from a selected app, removes the leading '#' so that the line becomes active.
-// Additionally, for certain apps (Nextcloud, Mailcow, and Wazuh), it will process entire blocks
-// delimited by a designated start marker and finish marker.
-func UpdateComposeFile(selectedApps map[string]config.App) error {
-	content, err := os.ReadFile(DockerComposeFile)
-	if err != nil {
-		return fmt.Errorf("Error: %s not found", DockerComposeFile)
+// StopContainers stops the specified Docker containers.
+func StopContainers(containers []string) error {
+	// Build the arguments for "docker stop" command.
+	args := append([]string{"stop"}, containers...)
+	
+	// Execute the command.
+	if err := Execute("docker", args...); err != nil {
+		return fmt.Errorf("failed to stop containers %v: %w", containers, err)
 	}
-	lines := strings.Split(string(content), "\n")
-	uncommentRegex := regexp.MustCompile(`^(\s*)#\s*`)
-
-	// First pass: Uncomment individual lines that contain any marker from any selected app.
-	for i, line := range lines {
-		for _, app := range selectedApps {
-			for _, marker := range app.Markers {
-				if strings.Contains(line, marker) {
-					lines[i] = uncommentRegex.ReplaceAllString(line, "$1")
-					goto NextLine
-				}
-			}
-		}
-	NextLine:
-	}
-
-	// Define block markers for services that need full block uncommenting.
-	blockMarkers := map[string]struct {
-		start  string
-		finish string
-	}{
-		"wazuh":     {start: "# <- uncomment if using Wazuh behind Hecate", finish: "# <- finish"},
-		"mailcow":   {start: "# <- uncomment if using Mailcow behind Hecate", finish: "# <- finish"},
-		"nextcloud": {start: "# <- uncomment if using Nextcloud behind Hecate", finish: "# <- finish"},
-	}
-
-	// Second pass: Process block uncommenting for each selected app that has block markers.
-	for appName, markers := range blockMarkers {
-		// Check if this service is selected.
-		if _, ok := selectedApps[strings.ToLower(appName)]; !ok {
-			continue
-		}
-		inBlock := false
-		for i, line := range lines {
-			trimmed := strings.TrimSpace(line)
-			if strings.Contains(trimmed, markers.start) {
-				inBlock = true
-				// Uncomment the start marker line.
-				lines[i] = uncommentRegex.ReplaceAllString(line, "$1")
-				continue
-			}
-			if inBlock {
-				lines[i] = uncommentRegex.ReplaceAllString(line, "$1")
-				if strings.Contains(trimmed, markers.finish) {
-					inBlock = false
-				}
-			}
-		}
-	}
-
-	// Backup the original docker-compose file.
-	if err := BackupFile(DockerComposeFile); err != nil {
-		return err
-	}
-	outContent := strings.Join(lines, "\n")
-	if err := os.WriteFile(DockerComposeFile, []byte(outContent), 0644); err != nil {
-		return err
-	}
-	var selApps []string
-	for _, app := range selectedApps {
-		selApps = append(selApps, app.Name)
-	}
-	fmt.Printf("Updated %s for apps: %s\n", DockerComposeFile, strings.Join(selApps, ", "))
+	
+	// Log the successful stopping of containers.
+	log.Info("Containers stopped successfully", zap.Any("containers", containers))
 	return nil
 }
 
+// RemoveContainers removes the specified Docker containers.
+func RemoveContainers(containers []string) error {
+	args := append([]string{"rm"}, containers...)
+	if err := Execute("docker", args...); err != nil {
+		return fmt.Errorf("failed to remove containers %v: %w", containers, err)
+	}
+	log.Info("Containers removed successfully", zap.Any("containers", containers))
+	return nil
+}
 
-// -------------------- Certificate Functions --------------------
-
-func PromptSubdomain() string {
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		fmt.Print("Enter the subdomain to configure (e.g. sub). Leave blank if none: ")
-		subdomain, _ := reader.ReadString('\n')
-		subdomain = strings.TrimSpace(subdomain)
-		if subdomain == "" {
-			fmt.Print("You entered a blank subdomain. Do you wish to continue with no subdomain? (Y/n): ")
-			confirm, _ := reader.ReadString('\n')
-			confirm = strings.TrimSpace(confirm)
-			if confirm == "" || strings.EqualFold(confirm, "y") || strings.EqualFold(confirm, "yes") {
-				return ""
-			}
-			continue
+// RemoveImages removes the specified Docker images.
+// It logs a warning if an image cannot be removed, but continues with the others.
+func RemoveImages(images []string) error {
+	for _, image := range images {
+		if err := Execute("docker", "rmi", image); err != nil {
+			log.Warn("failed to remove image (it might be used elsewhere)",
+				zap.String("image", image), zap.Error(err))
 		} else {
-			return subdomain
+			log.Info("Image removed successfully", zap.String("image", image))
 		}
 	}
+	return nil
 }
 
-func ConfirmCertName(defaultName string) string {
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		fmt.Printf("Use certificate name '%s'? (Y/n): ", defaultName)
-		subdomain, _ := reader.ReadString('\n')
-		subdomain = strings.TrimSpace(defaultName)
-		if subdomain == "" {
-			fmt.Print("You entered no name. Do you wish to continue with no certificate name? (Y/n): ")
-			confirm, _ := reader.ReadString('\n')
-			confirm = strings.TrimSpace(confirm)
-			if confirm == "" || strings.EqualFold(confirm, "y") || strings.EqualFold(confirm, "yes") {
-				return ""
-			}
-			continue
-		} else {
-			return subdomain
-		}
+// BackupVolume backs up a single Docker volume by running a temporary Alpine container.
+// It returns the full path to the backup file.
+func BackupVolume(volumeName, backupDir string) (string, error) {
+	timestamp := time.Now().Format("20060102_150405")
+	backupFile := fmt.Sprintf("%s_%s.tar.gz", timestamp, volumeName)
+	cmd := []string{
+		"run", "--rm",
+		"-v", fmt.Sprintf("%s:/volume", volumeName),
+		"-v", fmt.Sprintf("%s:/backup", backupDir),
+		"alpine",
+		"tar", "czf", fmt.Sprintf("/backup/%s", backupFile),
+		"-C", "/volume", ".",
 	}
-}
-
-
-// -------------------- File Backup and Copy Functions --------------------
-
-// BackupFile creates a backup of the given file by appending a timestamp.
-func BackupFile(path string) error {
-    info, err := os.Stat(path)
-    if err != nil || info.IsDir() {
-        return nil
-    }
-    timestamp := time.Now().Format("20060102-150405")
-    dir := filepath.Dir(path)
-    base := filepath.Base(path)
-    backupPath := filepath.Join(dir, fmt.Sprintf("%s_%s.bak", timestamp, base))
-
-    in, err := os.Open(path)
-    if err != nil {
-        return err
-    }
-    defer in.Close()
-
-    out, err := os.Create(backupPath)
-    if err != nil {
-        return err
-    }
-    defer out.Close()
-
-    if _, err := io.Copy(out, in); err != nil {
-        return err
-    }
-
-    fmt.Printf("Backup of '%s' created as '%s'.\n", path, backupPath)
-    return nil
-}
-
-// RemoveIfExists deletes a file or directory if it exists.
-func RemoveIfExists(path string) error {
-    if _, err := os.Stat(path); err == nil {
-        info, err := os.Stat(path)
-        if err != nil {
-            return err
-        }
-        if info.IsDir() {
-            fmt.Printf("Removing existing directory '%s'...\n", path)
-            return os.RemoveAll(path)
-        }
-        fmt.Printf("Removing existing file '%s'...\n", path)
-        return os.Remove(path)
-    }
-    return nil
-}
-
-// CopyFile copies a single file from src to dst.
-func CopyFile(src, dst string) error {
-    in, err := os.Open(src)
-    if err != nil {
-        return err
-    }
-    defer in.Close()
-
-    out, err := os.Create(dst)
-    if err != nil {
-        return err
-    }
-    defer func() { _ = out.Close() }()
-
-    if _, err = io.Copy(out, in); err != nil {
-        return err
-    }
-
-    if info, err := os.Stat(src); err == nil {
-        return os.Chmod(dst, info.Mode())
-    }
-    return nil
-}
-
-// CopyDir recursively copies a directory tree, attempting to preserve permissions.
-func CopyDir(src, dst string) error {
-    src = filepath.Clean(src)
-    dst = filepath.Clean(dst)
-
-    srcInfo, err := os.Stat(src)
-    if err != nil {
-        return err
-    }
-    if !srcInfo.IsDir() {
-        return fmt.Errorf("source %s is not a directory", src)
-    }
-
-    if err = os.MkdirAll(dst, srcInfo.Mode()); err != nil {
-        return err
-    }
-
-    entries, err := os.ReadDir(src)
-    if err != nil {
-        return err
-    }
-    for _, entry := range entries {
-        srcPath := filepath.Join(src, entry.Name())
-        dstPath := filepath.Join(dst, entry.Name())
-
-        entryInfo, err := entry.Info()
-        if err != nil {
-            return err
-        }
-
-        if entryInfo.IsDir() {
-            if err = CopyDir(srcPath, dstPath); err != nil {
-                return err
-            }
-        } else {
-            if err = CopyFile(srcPath, dstPath); err != nil {
-                return err
-            }
-        }
-    }
-    return nil
-}
-
-// RestoreDir removes dstDir and copies backupDir -> dstDir.
-func RestoreDir(backupDir, dstDir string) {
-    info, err := os.Stat(backupDir)
-    if err != nil || !info.IsDir() {
-        fmt.Printf("Error: Backup directory '%s' does not exist or is not a directory.\n", backupDir)
-        os.Exit(1)
-    }
-    if err := RemoveIfExists(dstDir); err != nil {
-        fmt.Printf("Error removing %s: %v\n", dstDir, err)
-        os.Exit(1)
-    }
-    if err := CopyDir(backupDir, dstDir); err != nil {
-        fmt.Printf("Error during restore of %s: %v\n", backupDir, err)
-        os.Exit(1)
-    }
-    fmt.Printf("Restore complete: '%s' has been restored to '%s'.\n", backupDir, dstDir)
-}
-
-// RestoreFile removes dstFile and copies backupFile -> dstFile.
-func RestoreFile(backupFile, dstFile string) {
-    info, err := os.Stat(backupFile)
-    if err != nil || info.IsDir() {
-        fmt.Printf("Error: Backup file '%s' does not exist or is a directory.\n", backupFile)
-        os.Exit(1)
-    }
-    if err := RemoveIfExists(dstFile); err != nil {
-        fmt.Printf("Error removing %s: %v\n", dstFile, err)
-        os.Exit(1)
-    }
-    if err := CopyFile(backupFile, dstFile); err != nil {
-        fmt.Printf("Error during restore of %s: %v\n", backupFile, err)
-        os.Exit(1)
-    }
-    fmt.Printf("Restore complete: '%s' has been restored to '%s'.\n", backupFile, dstFile)
-}
-
-// FindLatestBackup finds the lexicographically greatest file whose name starts with `prefix` and ends with ".bak".
-func FindLatestBackup(prefix string) (string, error) {
-    entries, err := os.ReadDir(".")
-    if err != nil {
-        return "", err
-    }
-    var latest string
-    for _, e := range entries {
-        name := e.Name()
-        if strings.HasPrefix(name, prefix) && strings.HasSuffix(name, ".bak") {
-            if name > latest {
-                latest = name
-            }
-        }
-    }
-    if latest == "" {
-        return "", fmt.Errorf("No .bak files found for prefix %q", prefix)
-    }
-    return latest, nil
-}
-
-// UpdateFile reads a file, replaces placeholders, creates a backup if changes occur, then writes the new content.
-func UpdateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN string) {
-    original, err := os.ReadFile(path)
-    if err != nil {
-        fmt.Printf("Error reading %s: %v\n", path, err)
-        return
-    }
-    content := string(original)
-    newContent := strings.ReplaceAll(content, "${BACKEND_IP}", BACKEND_IP)
-    newContent = strings.ReplaceAll(newContent, "${PERS_BACKEND_IP}", PERS_BACKEND_IP)
-    newContent = strings.ReplaceAll(newContent, "${DELPHI_BACKEND_IP}", DELPHI_BACKEND_IP)
-    newContent = strings.ReplaceAll(newContent, "${BASE_DOMAIN}", BASE_DOMAIN)
-
-    if newContent != content {
-        if err := BackupFile(path); err != nil {
-            fmt.Printf("Error creating backup for %s: %v\n", path, err)
-            return
-        }
-        err = os.WriteFile(path, []byte(newContent), 0644)
-        if err != nil {
-            fmt.Printf("Error writing %s: %v\n", path, err)
-            return
-        }
-        fmt.Printf("Updated %s\n", path)
-    }
-}
-
-// RemoveUnwantedConfFiles walks through ConfDir and deletes any .conf file whose base name is not in allowedFiles.
-func RemoveUnwantedConfFiles(allowedFiles map[string]bool) {
-	info, err := os.Stat(ConfDir)
-	if err != nil || !info.IsDir() {
-		fmt.Printf("Error: Directory '%s' not found.\n", ConfDir)
-		os.Exit(1)
+	if err := Execute("docker", cmd...); err != nil {
+		return "", fmt.Errorf("failed to backup volume %s: %w", volumeName, err)
 	}
-	var removedFiles []string
-	err = filepath.Walk(ConfDir, func(path string, info fs.FileInfo, err error) error {
+	return filepath.Join(backupDir, backupFile), nil
+}
+
+// BackupVolumes backs up all provided volumes to the specified backupDir.
+// It returns a map with volume names as keys and their backup file paths as values.
+// If any backup fails, it logs the error but continues processing the remaining volumes.
+func BackupVolumes(volumes []string, backupDir string) (map[string]string, error) {
+	backupResults := make(map[string]string)
+
+	// Ensure the backup directory exists.
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return backupResults, fmt.Errorf("failed to create backup directory %s: %w", backupDir, err)
+	}
+
+	// Loop through each volume and back it up.
+	for _, vol := range volumes {
+		log.Info("Backing up volume", zap.String("volume", vol))
+		backupFile, err := BackupVolume(vol, backupDir)
 		if err != nil {
-			return err
+			log.Error("Error backing up volume", zap.String("volume", vol), zap.Error(err))
+			// Continue processing other volumes even if one fails.
+		} else {
+			log.Info("Volume backup completed", zap.String("volume", vol), zap.String("backupFile", backupFile))
+			backupResults[vol] = backupFile
 		}
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".conf") {
-			if !allowedFiles[info.Name()] {
-				if err := os.Remove(path); err != nil {
-					fmt.Printf("Error removing %s: %v\n", path, err)
+	}
+	return backupResults, nil
+}
+
+// ComposeFile represents the minimal structure of your docker-compose file.
+type ComposeFile struct {
+	Services map[string]Service `yaml:"services"`
+	Volumes  map[string]interface{} `yaml:"volumes"`
+}
+
+// Service holds the details we care about for each service.
+type Service struct {
+	Image         string `yaml:"image"`
+	ContainerName string `yaml:"container_name"`
+}
+
+// ParseComposeFile reads a docker-compose file and returns container names, images, and volumes.
+func ParseComposeFile(composePath string) (containers []string, images []string, volumes []string, err error) {
+	data, err := ioutil.ReadFile(composePath)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to read compose file: %w", err)
+	}
+
+	var compose ComposeFile
+	if err := yaml.Unmarshal(data, &compose); err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to unmarshal compose file: %w", err)
+	}
+
+	// Extract container names and images from services.
+	for key, svc := range compose.Services {
+		// If ContainerName is not provided, you can decide to use the service key
+		if svc.ContainerName != "" {
+			containers = append(containers, svc.ContainerName)
+		} else {
+			containers = append(containers, key)
+		}
+		if svc.Image != "" {
+			images = append(images, svc.Image)
+		}
+	}
+
+	// Extract volume names.
+	for volName := range compose.Volumes {
+		volumes = append(volumes, volName)
+	}
+
+	log.Info("Parsed compose file successfully", zap.String("path", composePath),
+		zap.Any("containers", containers), zap.Any("images", images), zap.Any("volumes", volumes))
+
+	return containers, images, volumes, nil
+}
+
+
+// EnsureArachneNetwork checks if the Docker network "arachne-net" exists.
+// If it does not exist, it creates it with the desired IPv4 and IPv6 subnets.
+func EnsureArachneNetwork() error {
+	networkName := "arachne-net"
+	desiredIPv4 := "10.1.0.0/16"
+	desiredIPv6 := "fd42:1a2b:3c4d:5e6f::/64"
+
+	// Check if the network exists by running: docker network inspect arachne-net
+	cmd := exec.Command("docker", "network", "inspect", networkName)
+	if err := cmd.Run(); err == nil {
+		// Network exists, so just return
+		return nil
+	}
+
+	// If the network does not exist, create it with the specified subnets.
+	createCmd := exec.Command("docker", "network", "create",
+		"--driver", "bridge",
+		"--subnet", desiredIPv4,
+		"--ipv6",
+		"--subnet", desiredIPv6,
+		networkName,
+	)
+	output, err := createCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to create network %s: %v, output: %s", networkName, err, output)
+	}
+
+	return nil
+}
+
+// CheckDockerContainers runs "docker ps" and logs its output.
+// It returns an error if the command fails.
+func CheckDockerContainers() error {
+	cmd := exec.Command("docker", "ps")
+	output, err := cmd.CombinedOutput()
+	// Print output to terminal
+	fmt.Println(string(output))
+	if err != nil {
+		return fmt.Errorf("failed to run docker ps: %v, output: %s", err, output)
+	}
+	log.Info("Docker ps output", zap.String("output", string(output)))
+	return nil
+}
+
+//
+//---------------------------- COMMAND EXECUTION ---------------------------- //
+//
+
+// Execute runs a command with separate arguments.
+func Execute(command string, args ...string) error {
+	log.Debug("Executing command", zap.String("command", command), zap.Strings("args", args))
+	cmd := exec.Command(command, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Error("Command execution failed", zap.String("command", command), zap.Strings("args", args), zap.Error(err))
+	} else {
+		log.Info("Command executed successfully", zap.String("command", command))
+	}
+	return err
+}
+
+// ExecuteShell runs a shell command with pipes (`| grep`).
+func ExecuteShell(command string) error {
+	log.Debug("Executing shell command", zap.String("command", command))
+	cmd := exec.Command("bash", "-c", command) // Runs in shell mode
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+	err := cmd.Run()
+	if err != nil {
+		log.Error("Shell command execution failed", zap.String("command", command), zap.Error(err))
+	} else {
+		log.Info("Shell command executed successfully", zap.String("command", command))
+	}
+	return err
+}
+
+func ExecuteInDir(dir, command string, args ...string) error {
+	log.Debug("Executing command in directory", zap.String("directory", dir), zap.String("command", command), zap.Strings("args", args))
+	cmd := exec.Command(command, args...)
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Error("Command execution failed in directory", zap.String("directory", dir), zap.String("command", command), zap.Strings("args", args), zap.Error(err))
+	} else {
+		log.Info("Command executed successfully in directory", zap.String("directory", dir), zap.String("command", command))
+	}
+	return err
+}
+
+//
+//---------------------------- CRYPTO, HASHING, SECRETS ---------------------------- //
+//
+
+// HashString computes and returns the SHA256 hash of the provided string.
+func HashString(s string) string {
+	log.Debug("Computing SHA256 hash", zap.String("input", s))
+	hash := sha256.Sum256([]byte(s))
+	hashStr := hex.EncodeToString(hash[:])
+	log.Debug("Computed SHA256 hash", zap.String("hash", hashStr))
+	return hashStr
+}
+
+// generatePassword creates a random alphanumeric password of the given length.
+func GeneratePassword(length int) (string, error) {
+	// Generate random bytes. Since hex encoding doubles the length, we need length/2 bytes.
+	bytes := make([]byte, length/2)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", err
+	}
+	// Encode to hex and trim to required length.
+	return hex.EncodeToString(bytes)[:length], nil
+}
+
+
+//
+//---------------------------- LOGGING ---------------------------- //
+//
+
+// monitorVaultLogs tails the log file and prints new lines to STDOUT.
+// It returns when it sees a line containing the specified marker or when the context is done.
+func MonitorVaultLogs(ctx context.Context, logFilePath, marker string) error {
+	file, err := os.Open(logFilePath)
+	if err != nil {
+		log.Error("Failed to open log file for monitoring", zap.String("logFilePath", logFilePath), zap.Error(err))
+		return fmt.Errorf("failed to open log file for monitoring: %w", err)
+	}
+	defer file.Close()
+
+	// Seek to the end of the file so we only see new log lines.
+	_, err = file.Seek(0, io.SeekEnd)
+	if err != nil {
+		log.Error("Failed to seek log file", zap.String("logFilePath", logFilePath), zap.Error(err))
+		return fmt.Errorf("failed to seek log file: %w", err)
+	}
+
+	scanner := bufio.NewScanner(file)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Warn("Timeout reached while waiting for Vault to start")
+			return fmt.Errorf("timeout reached while waiting for Vault to start")
+		default:
+			if scanner.Scan() {
+				line := scanner.Text()
+				fmt.Println(line) // Print the log line to terminal
+				log.Debug("Vault Log Line", zap.String("logLine", line))
+				if strings.Contains(line, marker) {
+					log.Info("Vault marker found, exiting log monitor", zap.String("marker", marker))
+					return nil
+				}
+			} else {
+				time.Sleep(500 * time.Millisecond) // No new line, wait and try again
+			}
+		}
+	}
+}
+
+//
+//---------------------------- HOSTNAME ---------------------------- //
+//
+
+// GetInternalHostname returns the machine's hostname.
+// If os.Hostname() fails, it logs the error and returns "localhost".
+func GetInternalHostname() string {
+	log.Info("Retrieving internal hostname")
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Error("Unable to retrieve hostname, defaulting to localhost", zap.Error(err))
+		return "localhost"
+	}
+	log.Info("Retrieved hostname", zap.String("hostname", hostname))
+	return hostname
+}
+
+
+//
+//---------------------------- ERROR HANDLING ---------------------------- //
+//
+
+// HandleError logs an error and optionally exits the program
+func HandleError(err error, message string, exit bool) {
+	if err != nil {
+		log.Error(message, zap.Error(err))
+		if exit {
+			log.Fatal("Exiting program due to error", zap.String("message", message))
+		}
+	}
+}
+
+// WithErrorHandling wraps a function with error handling
+func WithErrorHandling(fn func() error) {
+	err := fn()
+	if err != nil {
+		HandleError(err, "An error occurred", true)
+	}
+}
+
+
+//
+//---------------------------- PERMISSIONS ---------------------------- //
+//
+
+// CheckSudo checks if the current user has sudo privileges
+func CheckSudo() bool {
+	log.Info("Checking if user has sudo privileges")
+	cmd := exec.Command("sudo", "-n", "true") // Non-interactive sudo check
+	err := cmd.Run()
+	if err != nil {
+		log.Warn("User does not have sudo privileges", zap.Error(err))
+		return false
+	}
+	log.Info("User has sudo privileges")
+	return true
+}
+
+
+//
+//---------------------------- YAML ---------------------------- //
+//
+
+
+// Recursive function to process and print nested YAML structures
+func ProcessMap(data map[string]interface{}, indent string) {
+	log.Debug("Processing YAML map")
+	for key, value := range data {
+		switch v := value.(type) {
+		case map[string]interface{}:
+			fmt.Printf("%s%s:\n", indent, key)
+			ProcessMap(v, indent+"  ")
+		case []interface{}:
+			fmt.Printf("%s%s:\n", indent, key)
+			for _, item := range v {
+				if itemMap, ok := item.(map[string]interface{}); ok {
+					ProcessMap(itemMap, indent+"  ")
 				} else {
-					removedFiles = append(removedFiles, path)
-					fmt.Printf("Removed: %s\n", path)
+					fmt.Printf("%s  - %v\n", indent, item)
 				}
 			}
-		}
-		return nil
-	})
-	if err != nil {
-		fmt.Printf("Error walking through '%s': %v\n", ConfDir, err)
-		os.Exit(1)
-	}
-	if len(removedFiles) == 0 {
-		fmt.Println("No configuration files were removed.")
-	} else {
-		fmt.Println("\nCleanup complete. The following files were removed:")
-		for _, f := range removedFiles {
-			fmt.Printf(" - %s\n", f)
+		default:
+			fmt.Printf("%s%s: %v\n", indent, key, v)
 		}
 	}
-}
-
-// ProcessConfDirectory walks through a directory recursively, updating each .conf file.
-func ProcessConfDirectory(directory, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN string) error {
-    return filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
-        if err != nil {
-            return err
-        }
-        if !d.IsDir() && strings.HasSuffix(d.Name(), ".conf") {
-            UpdateFile(path, BACKEND_IP, PERS_BACKEND_IP, DELPHI_BACKEND_IP, BASE_DOMAIN)
-        }
-        return nil
-    })
-}
-
-//
-// ------------------ USER INTERACTION ------------------
-//
-
-// PromptInput prompts the user with a message and returns the input or default value.
-func PromptInput(varName, promptMessage, defaultVal string) string {
-    reader := bufio.NewReader(os.Stdin)
-    for {
-        if defaultVal != "" {
-            fmt.Printf("%s [%s]: ", promptMessage, defaultVal)
-        } else {
-            fmt.Printf("%s: ", promptMessage)
-        }
-        in, _ := reader.ReadString('\n')
-        in = strings.TrimSpace(in)
-        if in == "" && defaultVal != "" {
-            return defaultVal
-        } else if in != "" {
-            return in
-        }
-        fmt.Printf("Error: %s cannot be empty. Please enter a valid value.\n", varName)
-    }
+	log.Debug("Completed processing YAML map")
 }
