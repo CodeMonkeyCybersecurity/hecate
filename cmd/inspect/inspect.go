@@ -1,5 +1,5 @@
-// cmd/inspect.go
-package cmd
+// cmd/inspect/inspect.go
+package inspect
 
 import (
 	"bufio"
