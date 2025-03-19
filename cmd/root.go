@@ -41,7 +41,7 @@ var log *zap.Logger // Global logger instance
 
 
 // rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:   "hecate",
 	Short: "Manage and configure your reverse proxy with Hecate CLI.",
 	Long: `Hecate is a command-line tool designed to simplify the management and configuration 
