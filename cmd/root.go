@@ -71,13 +71,13 @@ the deployment process for your reverse proxy setup.`,
 
 // Register all subcommands in the init function
 func init() {
-	rootCmd.AddCommand(create.CreateCmd)
-	rootCmd.AddCommand(inspect.InspectCmd)
-	rootCmd.AddCommand(update.UpdateCmd)
-	rootCmd.AddCommand(delete.DeleteCmd)
-	rootCmd.AddCommand(restore.RestoreCmd)
-	rootCmd.AddCommand(deploy.DeployCmd)
-	rootCmd.AddCommand(backup.BackupCmd)
+	RootCmd.AddCommand(create.CreateCmd)
+	RootCmd.AddCommand(inspect.InspectCmd)
+	RootCmd.AddCommand(update.UpdateCmd)
+	RootCmd.AddCommand(delete.DeleteCmd)
+	RootCmd.AddCommand(restore.RestoreCmd)
+	RootCmd.AddCommand(deploy.DeployCmd)
+	RootCmd.AddCommand(backup.BackupCmd)
 }
 
 // Execute starts the CLI
@@ -102,7 +102,7 @@ func Execute() {
 	}()
 
 	// Execute the root command
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		if log != nil {
 			log.Error("CLI execution error", zap.Error(err))
 		} else {
