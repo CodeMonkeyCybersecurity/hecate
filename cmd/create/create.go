@@ -18,5 +18,5 @@ needed for your Hecate deployment, such as certificates, proxy configurations, e
 }
 
 func init() {
-	cmd.RootCmd.AddCommand(CreateCmd) // ✅ Attach CreateCmd to rootCmd
+	root.RootCmd.AddCommand(CreateCmd) // ✅ Attach CreateCmd to rootCmd
 }
