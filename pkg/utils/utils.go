@@ -23,6 +23,48 @@ import (
 	"hecate/pkg/config"
 )
 
+// DeployApp deploys the application by copying necessary config files and restarting services
+func DeployApp(app string, force bool) error {
+    log := logger.GetLogger()
+    if log == nil {
+        fmt.Println("⚠️ Warning: Logger is nil. Defaulting to console output.")
+    }
+
+    log.Info("Starting deployment process", zap.String("app", app), zap.Bool("force", force))
+
+    appConfigPath := filepath.Join("/opt/hecate/configs", app)
+    appDeploymentPath := filepath.Join("/etc/nginx/sites-available", app)
+
+    // Check if config already exists
+    if _, err := os.Stat(appDeploymentPath); err == nil {
+        if !force {
+            errMsg := fmt.Sprintf("❌ Application %s is already deployed. Use --force to overwrite.", app)
+            log.Warn(errMsg)
+            return fmt.Errorf(errMsg)
+        }
+        log.Warn("⚠️ Overwriting existing deployment", zap.String("app", app))
+        os.Remove(appDeploymentPath)
+    }
+
+    // Copy config file
+    err := CopyFile(appConfigPath, appDeploymentPath)
+    if err != nil {
+        log.Error("Failed to copy config file", zap.String("app", app), zap.Error(err))
+        return err
+    }
+
+    // Restart Nginx
+    cmd := exec.Command("systemctl", "restart", "nginx")
+    if err := cmd.Run(); err != nil {
+        log.Error("Failed to restart Nginx", zap.Error(err))
+        return err
+    }
+
+    log.Info("✅ Deployment successful", zap.String("app", app))
+    return nil
+}
+
+
 //
 //---------------------------- FORCE ---------------------------- //
 //
