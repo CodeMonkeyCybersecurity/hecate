@@ -135,8 +135,3 @@ func deleteNginxDefaults() {
 		}
 	}
 }
-
-
-func init() {
-	RootCmd.AddCommand(deleteCmd)
-}
