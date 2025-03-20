@@ -1,5 +1,5 @@
 // pkg/exec.go
-package exec
+package execute
 
 import (
 	"fmt"
