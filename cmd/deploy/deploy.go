@@ -28,8 +28,3 @@ func runDeploy(cmd *cobra.Command, args []string) {
 		fmt.Println("Error:", err)
 	}
 }
-
-func init() {
-	RootCmd.AddCommand(deployCmd)
-	DeployCmd.Flags().Bool("without-talk", false, "Deploy NextCloud without Coturn")
-}
