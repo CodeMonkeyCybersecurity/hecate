@@ -32,7 +32,7 @@ You can choose to update one or all of these resources interactively.`,
 }
 
 func init() {
-	rootCmd.AddCommand(updateCmd)
+	RootCmd.AddCommand(updateCmd)
 }
 
 // runUpdateConfig presents an interactive menu for update actions.
@@ -102,5 +102,5 @@ func updateNginxDefaults() {
 }
 
 func init() {
-	rootCmd.AddCommand(updateCmd)
+	RootCmd.AddCommand(updateCmd)
 }

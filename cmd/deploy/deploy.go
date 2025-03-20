@@ -30,6 +30,6 @@ func runDeploy(cmd *cobra.Command, args []string) {
 }
 
 func init() {
-	rootCmd.AddCommand(deployCmd)
+	RootCmd.AddCommand(deployCmd)
 	DeployCmd.Flags().Bool("without-talk", false, "Deploy NextCloud without Coturn")
 }

@@ -38,7 +38,7 @@ You can choose from:
 
 func init() {
 	// Attach inspectCmd to the root command.
-	rootCmd.AddCommand(inspectCmd)
+	RootCmd.AddCommand(inspectCmd)
 	// Attach inspectConfigCmd as a subcommand of inspectCmd.
 	inspectCmd.AddCommand(inspectConfigCmd)
 }

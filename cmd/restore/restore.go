@@ -130,5 +130,5 @@ func restoreCompose() {
 
 
 func init() {
-	rootCmd.AddCommand(restoreCmd)
+	RootCmd.AddCommand(restoreCmd)
 }

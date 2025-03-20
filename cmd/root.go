@@ -40,7 +40,7 @@ import (
 var log *zap.Logger // Global logger instance
 
 
-// rootCmd represents the base command when called without any subcommands
+// RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "hecate",
 	Short: "Manage and configure your reverse proxy with Hecate CLI.",

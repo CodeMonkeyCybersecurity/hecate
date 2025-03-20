@@ -33,7 +33,7 @@ You can choose to delete one or all of these resources interactively.`,
 }
 
 func init() {
-	rootCmd.AddCommand(deleteCmd)
+	RootCmd.AddCommand(deleteCmd)
 }
 
 // runDeleteConfig presents an interactive menu for delete actions.
@@ -138,5 +138,5 @@ func deleteNginxDefaults() {
 
 
 func init() {
-	rootCmd.AddCommand(deleteCmd)
+	RootCmd.AddCommand(deleteCmd)
 }
