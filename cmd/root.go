@@ -101,8 +101,6 @@ func Execute() {
 		log.Info("🚀 Hecate CLI started successfully.")
 	}
 
-	
-
 	// ✅ Execute the root command and handle errors properly
 	if err := RootCmd.Execute(); err != nil {
 		if log != nil {
