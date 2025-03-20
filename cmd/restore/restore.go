@@ -1,6 +1,3 @@
-/*
-Copyright © 2025 NAME HERE
-*/
 package restore
 
 import (
@@ -11,24 +8,25 @@ import (
 	"strings"
 
 	"hecate/pkg/utils"
+	"hecate/cmd/root"  // ✅ Import root command
 
 	"github.com/spf13/cobra"
 )
 
 var timestampFlag string
 
-// restoreCmd represents the restore command.
-var restoreCmd = &cobra.Command{
+// RestoreCmd represents the restore command.
+var RestoreCmd = &cobra.Command{
 	Use:   "restore",
 	Short: "Restore configuration and files from backup",
-	Long: `Restore the configuration directory, certificates, and docker-compose file from their backups.
+	Long: `Restore configuration files, certificates, and docker-compose file from backups.
 
 If --timestamp is provided (e.g. --timestamp 20250325-101010), then restore will look for:
   conf.d.<timestamp>.bak
   certs.<timestamp>.bak
   docker-compose.yml.<timestamp>.bak
 
-If no --timestamp is given, the command enters interactive mode, where you'll choose which resource(s) to restore.`,
+If no --timestamp is given, the command enters interactive mode to choose which resources to restore.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if timestampFlag != "" {
 			runAutoRestore(timestampFlag)
@@ -39,12 +37,11 @@ If no --timestamp is given, the command enters interactive mode, where you'll ch
 }
 
 func init() {
-	// Attach restoreCmd to createCmd so you can run: hecate create restore
-	createCmd.AddCommand(restoreCmd)
+	root.RootCmd.AddCommand(RestoreCmd) // ✅ Attach to RootCmd, NOT createCmd
 
-	// Define a timestamp flag for optional backup selection.
-	restoreCmd.Flags().StringVarP(&timestampFlag, "timestamp", "t", "",
-		"Timestamp used by backup (format: YYYYMMDD-HHMMSS). If omitted, interactive mode is used.")
+	// Define timestamp flag
+	RestoreCmd.Flags().StringVarP(&timestampFlag, "timestamp", "t", "",
+		"Timestamp for backup (format: YYYYMMDD-HHMMSS). If omitted, interactive mode is used.")
 }
 
 // runAutoRestore automatically restores resources using the provided timestamp.
@@ -126,9 +123,4 @@ func restoreCompose() {
 	}
 	fmt.Printf("Restoring docker-compose file from backup: %s\n", backupCompose)
 	utils.RestoreFile(backupCompose, SRC_COMPOSE)
-}
-
-
-func init() {
-	RootCmd.AddCommand(restoreCmd)
 }
