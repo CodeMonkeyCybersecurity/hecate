@@ -1,3 +1,5 @@
+// main.go
+
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 
@@ -19,11 +21,30 @@ package main
 import (
 	"hecate/cmd"
 	"hecate/pkg/logger"
+	"go.uber.org/zap" 
 )
-func main() {
-	logger.Initialize()
-	defer logger.Sync()
-	logger.GetLogger().Info("Hecate CLI initialized and ready.")
 
-	cmd.Execute()
+func main() {
+    // Initialize logging
+    logger.Initialize()
+    defer logger.Sync() // ✅ Ensures logs are flushed properly
+	
+    log := logger.GetLogger()
+    fallbackLogging := log == nil
+
+    if fallbackLogging {
+        println("⚠️ Warning: Logger is nil. Defaulting to console output.")
+    }
+
+    // Register all commands in one place
+    cmd.RegisterCommands()
+
+    // Execute the root command
+    if err := cmd.RootCmd.Execute(); err != nil {
+        if log != nil {
+            log.Error("CLI execution error", zap.Error(err))
+        } else {
+            println("❌ CLI execution error:", err.Error()) // Fallback logging
+        }
+    }
 }
