@@ -47,6 +47,15 @@ type App struct {
 	Markers  []string
 }
 
+// GetSupportedAppNames returns a list of supported application names.
+func GetSupportedAppNames() []string {
+	var names []string
+	for _, app := range Apps {
+		names = append(names, strings.ToLower(app.Name)) // Normalize names to lowercase
+	}
+	return names
+}
+
 // Apps holds all available application options.
 var Apps = []App{
 	{"1", "Static website", "base.conf", DefaultMarkers},
