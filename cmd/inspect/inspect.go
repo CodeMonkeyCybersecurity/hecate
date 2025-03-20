@@ -36,13 +36,6 @@ You can choose from:
 	},
 }
 
-func init() {
-	// Attach inspectCmd to the root command.
-	RootCmd.AddCommand(inspectCmd)
-	// Attach inspectConfigCmd as a subcommand of inspectCmd.
-	inspectCmd.AddCommand(inspectConfigCmd)
-}
-
 // runInspectConfig presents an interactive menu for inspection.
 func runInspectConfig() {
 	reader := bufio.NewReader(os.Stdin)
