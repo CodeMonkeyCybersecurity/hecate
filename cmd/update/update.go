@@ -1,106 +1,68 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
-// cmd/update/update.go
 package update
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
+
+	"hecate/cmd/root"  // ✅ Import root command
+	"hecate/pkg/utils"
 
 	"github.com/spf13/cobra"
 )
 
-// updateCmd represents the update command.
-var updateCmd = &cobra.Command{
+// UpdateCmd represents the update command
+var UpdateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Update various resources",
-	Long: `This command updates various configurations for Hecate:
+	Short: "Update configurations and services",
+	Long: `Update Hecate configurations, renew certificates, or update specific services.
 
-  1) Update Certificates
-  2) Update docker-compose file
-  3) Update Eos backend web apps configuration
-  4) Update Nginx defaults
-  5) Update all configurations
-
-You can choose to update one or all of these resources interactively.`,
+Examples:
+  hecate update certs
+  hecate update eos
+  hecate update http
+`,
 	Run: func(cmd *cobra.Command, args []string) {
-		runUpdateConfig()
+		fmt.Println("Update command executed")
+		if len(args) == 0 {
+			fmt.Println("No specific update target provided.")
+		}
 	},
 }
 
+// Attach subcommands to UpdateCmd
 func init() {
-	RootCmd.AddCommand(updateCmd)
+	root.RootCmd.AddCommand(UpdateCmd) // ✅ Attach to RootCmd
+
+	UpdateCmd.AddCommand(runCertsCmd) // ✅ Fix: Use correct variable for subcommand
+	UpdateCmd.AddCommand(runEosCmd)   // ✅ Fix: Use correct variable for subcommand
+	UpdateCmd.AddCommand(runHttpCmd)  // ✅ Fix: Use correct variable for subcommand
 }
 
-// runUpdateConfig presents an interactive menu for update actions.
-func runUpdateConfig() {
-	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("=== Update Configurations ===")
-	fmt.Println("Select the resource you want to update:")
-	fmt.Println("1) Update Certificates")
-	fmt.Println("2) Update docker-compose file")
-	fmt.Println("3) Update Eos backend web apps configuration")
-	fmt.Println("4) Update Nginx defaults")
-	fmt.Println("5) Update all configurations")
-	fmt.Print("Enter choice (1-5): ")
-	choice, _ := reader.ReadString('\n')
-	choice = strings.TrimSpace(choice)
-
-	switch choice {
-	case "1":
-		updateCertificates()
-	case "2":
-		updateDockerCompose()
-	case "3":
-		updateEosConfig()
-	case "4":
-		updateNginxDefaults()
-	case "5":
-		updateCertificates()
-		updateDockerCompose()
-		updateEosConfig()
-		updateNginxDefaults()
-	default:
-		fmt.Println("Invalid choice. Exiting.")
-		os.Exit(1)
-	}
+// runCertsCmd renews SSL certificates
+var runCertsCmd = &cobra.Command{
+	Use:   "certs",
+	Short: "Renew SSL certificates",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Renewing SSL certificates...")
+		// Implement logic for renewing certificates
+	},
 }
 
-func updateCertificates() {
-	fmt.Println("\n--- Updating Certificates ---")
-	// For example, re-run certificate generation logic or allow updating certificate parameters.
-	// Here, we simply call runCerts() as a placeholder (or you could add more refined update logic).
-	runCerts()
-	fmt.Println("Certificates updated.")
+// runEosCmd updates the EOS system
+var runEosCmd = &cobra.Command{
+	Use:   "eos",
+	Short: "Update EOS system",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Updating EOS system...")
+		// Implement logic for updating EOS
+	},
 }
 
-func updateDockerCompose() {
-	fmt.Println("\n--- Updating docker-compose file ---")
-	// As an update operation, you might want to re-run the compose update logic.
-	// For now, we'll call RunComposeInteractive() from utils as a placeholder.
-	utils.RunComposeInteractive()
-	fmt.Println("docker-compose file updated.")
-}
-
-func updateEosConfig() {
-	fmt.Println("\n--- Updating Eos backend web apps configuration ---")
-	// You might re-run your Eos configuration logic (or update specific settings).
-	// For now, we'll call runEos() as a placeholder.
-	runEos()
-	fmt.Println("Eos backend web apps configuration updated.")
-}
-
-func updateNginxDefaults() {
-	fmt.Println("\n--- Updating Nginx defaults ---")
-	// Similarly, you can re-run your Nginx configuration updater (or update specific settings).
-	// Here we call runHttp() as a placeholder.
-	runHttp()
-	fmt.Println("Nginx defaults updated.")
-}
-
-func init() {
-	RootCmd.AddCommand(updateCmd)
+// runHttpCmd updates the HTTP server
+var runHttpCmd = &cobra.Command{
+	Use:   "http",
+	Short: "Update HTTP configurations",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Updating HTTP configurations...")
+		// Implement logic for updating HTTP configurations
+	},
 }
