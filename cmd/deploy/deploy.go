@@ -79,7 +79,7 @@ func runDeploy(cmd *cobra.Command, args []string) {
 
 // ✅ Deployment wrapper function
 func deployApplication(app string, cmd *cobra.Command) error {
-	if err := utils.DeployApp(app, cmd, utils.GetForce()); err != nil {
+	if err := utils.DeployApp(app, utils.GetForce()); err != nil {
 		return fmt.Errorf("❌ Deployment failed for '%s': %w", app, err)
 	}
 	return nil
