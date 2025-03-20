@@ -32,13 +32,9 @@ import (
 	"hecate/cmd/backup"
 	"hecate/cmd/restore"
 	
-	"hecate/pkg/utils"
 	"hecate/pkg/logger"
 	"hecate/pkg/config"
 )
-
-var log *zap.Logger // Global logger instance
-
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -69,45 +65,51 @@ the deployment process for your reverse proxy setup.`,
 }
 
 
-// Register all subcommands in the init function
-func init() {
-	RootCmd.AddCommand(create.CreateCmd)
-	RootCmd.AddCommand(inspect.InspectCmd)
-	RootCmd.AddCommand(update.UpdateCmd)
-	RootCmd.AddCommand(delete.DeleteCmd)
-	RootCmd.AddCommand(restore.RestoreCmd)
-	RootCmd.AddCommand(deploy.DeployCmd)
-	RootCmd.AddCommand(backup.BackupCmd)
+// ✅ Register all subcommands dynamically
+func RegisterCommands() {
+	commands := []*cobra.Command{
+		create.CreateCmd,
+		inspect.InspectCmd,
+		update.UpdateCmd,
+		delete.DeleteCmd,
+		restore.RestoreCmd,
+		deploy.DeployCmd,
+		backup.BackupCmd,
+	}
+
+	for _, cmd := range commands {
+		RootCmd.AddCommand(cmd) // ✅ Registers all commands in a loop
+	}
 }
 
-// Execute starts the CLI
+// ✅ Execute starts the CLI
 func Execute() {
-	// Initialize the logger once globally
-	logger.Initialize()
-	log = logger.GetLogger() // Ensure log is assigned before use
+	RegisterCommands()
+
+	// ✅ Prevent duplicate logging initialization
+	if logger.GetLogger() == nil {
+		logger.Initialize()
+	}
+	defer logger.Sync() // ✅ Ensure logs are flushed properly
+
+	log := logger.GetLogger() // ✅ Get logger directly inside Execute()
 
 	// ✅ Prevent nil logger issue before logging starts
 	if log == nil {
-		println("Warning: Logger is nil, falling back to default output.")
+		println("⚠️ Warning: Logger is nil. Defaulting to console output.")
+	} else {
+		log.Info("🚀 Hecate CLI started successfully.")
 	}
 
-	// ✅ Log CLI startup here (not in Run:)
-	log.Info("Hecate CLI started successfully.")
 	
-	defer func() {
-		if err := logger.Sync(); err != nil {
-			// Prevent panic if logging fails
-			println("Logger sync failed:", err.Error())
-		}
-	}()
 
-	// Execute the root command
+	// ✅ Execute the root command and handle errors properly
 	if err := RootCmd.Execute(); err != nil {
 		if log != nil {
-			log.Error("CLI execution error", zap.Error(err))
+			log.Error("❌ CLI execution error", zap.Error(err))
 		} else {
-			println("CLI execution error:", err.Error()) // Fallback if logger is nil
+			println("❌ CLI execution error:", err.Error()) // Fallback if logger is nil
 		}
-		os.Exit(1)
+		os.Exit(1) // ✅ Exit with error code only if execution fails
 	}
 }
