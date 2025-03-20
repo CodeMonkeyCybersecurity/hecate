@@ -32,10 +32,6 @@ You can choose to delete one or all of these resources interactively.`,
 	},
 }
 
-func init() {
-	RootCmd.AddCommand(deleteCmd)
-}
-
 // runDeleteConfig presents an interactive menu for delete actions.
 func runDeleteConfig() {
 	reader := bufio.NewReader(os.Stdin)
