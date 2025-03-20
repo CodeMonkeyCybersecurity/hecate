@@ -3,7 +3,6 @@ package execute
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 
 	"go.uber.org/zap"

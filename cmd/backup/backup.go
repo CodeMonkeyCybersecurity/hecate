@@ -11,9 +11,8 @@ import (
     	"time"
 
 	"github.com/spf13/cobra"
-	
+
     	"hecate/pkg/utils"
-	"hecate/pkg/docker"
 )
 
 // backupCmd represents the backup command.
