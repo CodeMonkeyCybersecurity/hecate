@@ -1,4 +1,5 @@
 // pkg/utils/utils.go
+
 package utils
 
 import (
@@ -11,13 +12,54 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 	"io"
 
 	"go.uber.org/zap"
 
 	"hecate/pkg/logger"
+	"hecate/pkg/config"
 )
+
+//
+//---------------------------- FORCE ---------------------------- //
+//
+
+// ✅ Global force flag
+var (
+	force bool
+	mu    sync.Mutex
+)
+
+// SetForce sets the force flag value.
+func SetForce(value bool) {
+	mu.Lock()
+	defer mu.Unlock()
+	force = value
+}
+
+// GetForce retrieves the force flag value.
+func GetForce() bool {
+	mu.Lock()
+	defer mu.Unlock()
+	return force
+}
+
+
+//
+//---------------------------- FACT CHECKING ---------------------------- //
+//
+
+// ✅ Moved here since it may be used in multiple commands
+func IsValidApp(app string) bool {
+	for _, validApp := range config.GetSupportedAppNames() {
+		if app == validApp {
+			return true
+		}
+	}
+	return false
+}
 
 //
 //---------------------------- FILE CRUD ---------------------------- //
@@ -146,6 +188,23 @@ func MonitorVaultLogs(ctx context.Context, logFilePath, marker string) error {
 			}
 		}
 	}
+}
+
+// ✅ Logs safely, even if logger is nil
+func SafeLog(log *zap.Logger, msg string, fields ...zap.Field) {
+	if log == nil {
+		fmt.Println(msg)
+	} else {
+		log.Info(msg, fields...)
+	}
+}
+
+// ✅ Logs an error safely, even if logger is nil
+func PrintError(log *zap.Logger, msg string) {
+	if log != nil {
+		log.Error(msg)
+	}
+	fmt.Println(msg)
 }
 
 //
