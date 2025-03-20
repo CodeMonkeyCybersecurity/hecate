@@ -25,43 +25,68 @@ import (
 
 // DeployApp deploys the application by copying necessary config files and restarting services
 func DeployApp(app string, force bool) error {
-    log := logger.GetLogger()
-    if log == nil {
-        fmt.Println("⚠️ Warning: Logger is nil. Defaulting to console output.")
-    }
+	log := logger.GetLogger()
+	if log == nil {
+		fmt.Println("⚠️ Warning: Logger is nil. Defaulting to console output.")
+	}
 
-    log.Info("Starting deployment process", zap.String("app", app), zap.Bool("force", force))
+	log.Info("🚀 Starting deployment", zap.String("app", app), zap.Bool("force", force))
 
-    appConfigPath := filepath.Join("/opt/hecate/configs", app)
-    appDeploymentPath := filepath.Join("/etc/nginx/sites-available", app)
+	appConfigPath := filepath.Join("/opt/hecate/configs", app)
+	appDeploymentPath := filepath.Join("/etc/nginx/sites-available", app)
+	appEnabledPath := filepath.Join("/etc/nginx/sites-enabled", app)
 
-    // Check if config already exists
-    if _, err := os.Stat(appDeploymentPath); err == nil {
-        if !force {
-            errMsg := fmt.Sprintf("❌ Application %s is already deployed. Use --force to overwrite.", app)
-            log.Warn(errMsg)
-            return fmt.Errorf(errMsg)
-        }
-        log.Warn("⚠️ Overwriting existing deployment", zap.String("app", app))
-        os.Remove(appDeploymentPath)
-    }
+	// Check if config already exists
+	if _, err := os.Stat(appDeploymentPath); err == nil {
+		if !force {
+			errMsg := fmt.Sprintf("❌ Application %s is already deployed. Use --force to overwrite.", app)
+			log.Warn(errMsg)
+			return fmt.Errorf(errMsg)
+		}
+		log.Warn("⚠️ Overwriting existing deployment", zap.String("app", app))
+		
+		// Remove existing deployment
+		if err := os.Remove(appDeploymentPath); err != nil {
+			log.Error("❌ Failed to remove existing config", zap.String("app", app), zap.Error(err))
+			return err
+		}
 
-    // Copy config file
-    err := CopyFile(appConfigPath, appDeploymentPath)
-    if err != nil {
-        log.Error("Failed to copy config file", zap.String("app", app), zap.Error(err))
-        return err
-    }
+		// Remove existing symlink in sites-enabled
+		if err := os.RemoveAll(appEnabledPath); err != nil {
+			log.Error("❌ Failed to remove existing symlink", zap.String("app", app), zap.Error(err))
+			return err
+		}
+	}
 
-    // Restart Nginx
-    cmd := exec.Command("systemctl", "restart", "nginx")
-    if err := cmd.Run(); err != nil {
-        log.Error("Failed to restart Nginx", zap.Error(err))
-        return err
-    }
+	// Copy new config file
+	err := CopyFile(appConfigPath, appDeploymentPath)
+	if err != nil {
+		log.Error("❌ Failed to copy config file", zap.String("app", app), zap.Error(err))
+		return err
+	}
 
-    log.Info("✅ Deployment successful", zap.String("app", app))
-    return nil
+	// Create a symlink in `sites-enabled`
+	if err := os.Symlink(appDeploymentPath, appEnabledPath); err != nil {
+		log.Error("❌ Failed to create symlink", zap.String("app", app), zap.Error(err))
+		return err
+	}
+
+	// Test Nginx configuration before restarting
+	cmdTest := exec.Command("nginx", "-t")
+	if output, err := cmdTest.CombinedOutput(); err != nil {
+		log.Error("❌ Nginx config test failed", zap.String("output", string(output)), zap.Error(err))
+		return fmt.Errorf("Nginx config test failed: %s", string(output))
+	}
+
+	// Restart Nginx
+	cmdRestart := exec.Command("systemctl", "restart", "nginx")
+	if err := cmdRestart.Run(); err != nil {
+		log.Error("❌ Failed to restart Nginx", zap.Error(err))
+		return err
+	}
+
+	log.Info("✅ Deployment successful", zap.String("app", app))
+	return nil
 }
 
 
