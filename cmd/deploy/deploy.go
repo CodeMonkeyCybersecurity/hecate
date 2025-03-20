@@ -1,3 +1,5 @@
+// cmd/deploy/deploy.go
+
 package deploy
 
 import (
