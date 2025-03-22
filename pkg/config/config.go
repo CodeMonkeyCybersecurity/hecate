@@ -16,17 +16,17 @@ import (
 
 // Constants for file and directory names.
 const (
-	LastValuesFile    	= ".hecate.conf"
-	DefaultComposeYML 	= "docker-compose.yml"
-	DefaultCertsDir   	= "certs"
-	DefaultConfDir     	= "conf.d"
-	AssetsPath 	 		= "assets"
-	NginxConfPath 	 	= "/etc/nginx/conf.d/"
-	NginxStreamPath  	= "/etc/nginx/stream.d/"
-	DockerNetworkName 	= "arachne-net"
-	DockerIPv4Subnet  	= "10.1.0.0/16"
-	DockerIPv6Subnet  	= "fd42:1a2b:3c4d:5e6f::/64"
-	DefaultConfigPath 	= "./config/default.yaml"
+	LastValuesFile    = ".hecate.conf"
+	DefaultComposeYML = "docker-compose.yml"
+	DefaultCertsDir   = "certs"
+	DefaultConfDir    = "conf.d"
+	AssetsPath        = "assets"
+	NginxConfPath     = "/etc/nginx/conf.d/"
+	NginxStreamPath   = "/etc/nginx/stream.d/"
+	DockerNetworkName = "arachne-net"
+	DockerIPv4Subnet  = "10.1.0.0/16"
+	DockerIPv6Subnet  = "fd42:1a2b:3c4d:5e6f::/64"
+	DefaultConfigPath = "./config/default.yaml"
 )
 
 // DefaultMarkers holds the default port markers that apply to all apps.
@@ -78,7 +78,6 @@ var Apps = []App{
 //
 // ---------------------------- FUNCTIONS ---------------------------- //
 //
-
 
 // DisplayOptions prints the available application options.
 func DisplayOptions() {

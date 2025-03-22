@@ -8,13 +8,16 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package backup
 
 import (
-    	"fmt"
-    	"os"
-    	"time"
+	"fmt"
+	"os"
+	"time"
 
-	"github.com/spf13/cobra"
+    "github.com/spf13/cobra"
+    "go.uber.org/zap"
 
-    	"hecate/pkg/utils"
+    "hecate/pkg/utils"
+    "hecate/pkg/logger"
+    "hecate/pkg/config"
 )
 
 // backupCmd represents the backup command.
@@ -29,66 +32,59 @@ var BackupCmd = &cobra.Command{
 
 // runBackup is called when the user runs "hecate create backup".
 func runBackup() {
-    // 1) Define your source directories / files.
-    const (
-        SRC_CONF    = "conf.d"
-        SRC_CERTS   = "certs"
-        SRC_COMPOSE = "docker-compose.yml"
-    )
+	log := logger.GetLogger()
+	if log == nil {
+		println("⚠️ Logger is nil. Defaulting to console output.")
+	}
 
-    // 2) Build a timestamp string
-    timestamp := time.Now().Format("20060102-150405")
+	timestamp := time.Now().Format("20060102-150405")
+	backupConf := config.DefaultConfDir + "." + timestamp + ".bak"
+	backupCerts := config.DefaultCertsDir + "." + timestamp + ".bak"
+	backupCompose := config.DefaultComposePath + "." + timestamp + ".bak"
 
-    // 3) Generate unique backup names
-    backupConf    := fmt.Sprintf("%s.%s.bak", SRC_CONF, timestamp)
-    backupCerts   := fmt.Sprintf("%s.%s.bak", SRC_CERTS, timestamp)
-    backupCompose := fmt.Sprintf("%s.%s.bak", SRC_COMPOSE, timestamp)
-
-    // === Backup conf.d directory ===
-    confInfo, err := os.Stat(SRC_CONF)
-    if err != nil || !confInfo.IsDir() {
-        fmt.Printf("Error: Source directory '%s' does not exist.\n", SRC_CONF)
+	// conf.d
+	if info, err := os.Stat(config.DefaultConfDir); err != nil || !info.IsDir() {
+		log.Error("Missing or invalid conf.d", zap.String("dir", config.DefaultConfDir), zap.Error(err))
+		os.Exit(1)
+	}
+	if err := utils.RemoveIfExists(backupConf); err != nil {
+        log.Error("Failed to remove existing backup", zap.String("path", backupConf), zap.Error(err))
         os.Exit(1)
     }
-    if err := utils.RemoveIfExists(backupConf); err != nil {
-        fmt.Printf("Error removing backup directory '%s': %v\n", backupConf, err)
-        os.Exit(1)
-    }
-    if err := utils.CopyDir(SRC_CONF, backupConf); err != nil {
-        fmt.Printf("Error during backup of %s: %v\n", SRC_CONF, err)
-        os.Exit(1)
-    }
-    fmt.Printf("Backup complete: '%s' has been backed up to '%s'.\n", SRC_CONF, backupConf)
+    
+	if err := utils.CopyDir(config.DefaultConfDir, backupConf); err != nil {
+		log.Error("Backup failed", zap.String("src", config.DefaultConfDir), zap.Error(err))
+		os.Exit(1)
+	}
+	log.Info("✅ conf.d backed up", zap.String("dest", backupConf))
 
-    // === Backup certs directory ===
-    certsInfo, err := os.Stat(SRC_CERTS)
-    if err != nil || !certsInfo.IsDir() {
-        fmt.Printf("Error: Source directory '%s' does not exist.\n", SRC_CERTS)
+    // certs
+    if info, err := os.Stat(config.DefaultCertsDir); err != nil || !info.IsDir() {
+        log.Error("Missing or invalid certs", zap.String("dir", config.DefaultCertsDir), zap.Error(err))
         os.Exit(1)
     }
     if err := utils.RemoveIfExists(backupCerts); err != nil {
-        fmt.Printf("Error removing backup directory '%s': %v\n", backupCerts, err)
+        log.Error("Failed to remove existing backup", zap.String("path", backupCerts), zap.Error(err))
         os.Exit(1)
     }
-    if err := utils.CopyDir(SRC_CERTS, backupCerts); err != nil {
-        fmt.Printf("Error during backup of %s: %v\n", SRC_CERTS, err)
+    if err := utils.CopyDir(config.DefaultCertsDir, backupCerts); err != nil {
+        log.Error("Backup failed", zap.String("src", config.DefaultCertsDir), zap.Error(err))
         os.Exit(1)
     }
-    fmt.Printf("Backup complete: '%s' has been backed up to '%s'.\n", SRC_CERTS, backupCerts)
+    log.Info("✅ certs backed up", zap.String("dest", backupCerts))
 
-    // === Backup docker-compose.yml file ===
-    composeInfo, err := os.Stat(SRC_COMPOSE)
-    if err != nil || composeInfo.IsDir() {
-        fmt.Printf("Error: Source file '%s' does not exist.\n", SRC_COMPOSE)
+
+    // docker-compose.yml
+    if info, err := os.Stat(config.DefaultComposePath); err != nil || info.IsDir() {
+        log.Error("Missing or invalid compose file", zap.String("file", config.DefaultComposePath), zap.Error(err))
         os.Exit(1)
     }
     if err := utils.RemoveIfExists(backupCompose); err != nil {
-        fmt.Printf("Error removing backup file '%s': %v\n", backupCompose, err)
+        log.Error("Failed to remove existing backup", zap.String("path", backupCompose), zap.Error(err))
         os.Exit(1)
     }
-    if err := utils.CopyFile(SRC_COMPOSE, backupCompose); err != nil {
-        fmt.Printf("Error during backup of %s: %v\n", SRC_COMPOSE, err)
+    if err := utils.CopyFile(config.DefaultComposePath, backupCompose); err != nil {
+        log.Error("Backup failed", zap.String("src", config.DefaultComposePath), zap.Error(err))
         os.Exit(1)
     }
-    fmt.Printf("Backup complete: '%s' has been backed up to '%s'.\n", SRC_COMPOSE, backupCompose)
-}
+    log.Info("✅ docker-compose.yml backed up", zap.String("dest", backupCompose))
