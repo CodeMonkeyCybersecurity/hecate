@@ -1,3 +1,5 @@
+// cmd/restore/restore.go
+
 package restore
 
 import (
