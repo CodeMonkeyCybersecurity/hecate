@@ -39,7 +39,7 @@ func runBackup() {
 	timestamp := time.Now().Format("20060102-150405")
 	backupConf := config.DefaultConfDir + "." + timestamp + ".bak"
 	backupCerts := config.DefaultCertsDir + "." + timestamp + ".bak"
-	backupCompose := config.DefaultComposePath + "." + timestamp + ".bak"
+	backupCompose := config.DefaultComposeYML + "." + timestamp + ".bak"
 
 	// conf.d
 	if info, err := os.Stat(config.DefaultConfDir); err != nil || !info.IsDir() {
@@ -73,16 +73,16 @@ func runBackup() {
 	log.Info("✅ certs backed up", zap.String("dest", backupCerts))
 
 	// docker-compose.yml
-	if info, err := os.Stat(config.DefaultComposePath); err != nil || info.IsDir() {
-		log.Error("Missing or invalid compose file", zap.String("file", config.DefaultComposePath), zap.Error(err))
+	if info, err := os.Stat(config.DefaultComposeYML); err != nil || info.IsDir() {
+		log.Error("Missing or invalid compose file", zap.String("file", config.DefaultComposeYML), zap.Error(err))
 		os.Exit(1)
 	}
 	if err := utils.RemoveIfExists(backupCompose); err != nil {
 		log.Error("Failed to remove existing backup", zap.String("path", backupCompose), zap.Error(err))
 		os.Exit(1)
 	}
-	if err := utils.CopyFile(config.DefaultComposePath, backupCompose); err != nil {
-		log.Error("Backup failed", zap.String("src", config.DefaultComposePath), zap.Error(err))
+	if err := utils.CopyFile(config.DefaultComposeYML, backupCompose); err != nil {
+		log.Error("Backup failed", zap.String("src", config.DefaultComposeYML), zap.Error(err))
 		os.Exit(1)
 	}
 	log.Info("✅ docker-compose.yml backed up", zap.String("dest", backupCompose))
