@@ -23,6 +23,79 @@ import (
 	"hecate/pkg/config"
 )
 
+
+//
+//---------------------------- RESTORE ---------------------------- //
+//
+
+// RestoreDir restores a backup directory by copying it to the target location.
+func RestoreDir(src, dest string) error {
+	logger := logger.GetLogger()
+	logger.Info("Restoring directory", zap.String("src", src), zap.String("dest", dest))
+
+	err := CopyDir(src, dest)
+	if err != nil {
+		logger.Error("Failed to restore directory", zap.Error(err))
+		return err
+	}
+	logger.Info("Directory restored successfully", zap.String("dest", dest))
+	return nil
+}
+
+// RestoreFile restores a backup file to the original location.
+func RestoreFile(src, dest string) error {
+	logger := logger.GetLogger()
+	logger.Info("Restoring file", zap.String("src", src), zap.String("dest", dest))
+
+	err := CopyFile(src, dest)
+	if err != nil {
+		logger.Error("Failed to restore file", zap.Error(err))
+		return err
+	}
+	logger.Info("File restored successfully", zap.String("dest", dest))
+	return nil
+}
+
+// FindLatestBackup finds the latest backup file with a given prefix.
+func FindLatestBackup(prefix string) (string, error) {
+	logger := logger.GetLogger()
+	logger.Info("Searching for latest backup with prefix", zap.String("prefix", prefix))
+
+	dir := "." // or the directory where your backups are stored
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		logger.Error("Failed to read directory", zap.Error(err))
+		return "", err
+	}
+
+	var latest string
+	var latestModTime time.Time
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasPrefix(entry.Name(), prefix) {
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			if info.ModTime().After(latestModTime) {
+				latest = entry.Name()
+				latestModTime = info.ModTime()
+			}
+		}
+	}
+
+	if latest == "" {
+		return "", fmt.Errorf("no backups found with prefix %s", prefix)
+	}
+
+	logger.Info("Latest backup found", zap.String("filename", latest))
+	return latest, nil
+}
+
+//
+//---------------------------- DEPLOY ---------------------------- //
+//
+
+
 // DeployApp deploys the application by copying necessary config files and restarting services
 func DeployApp(app string, force bool) error {
 	log := logger.GetLogger()
