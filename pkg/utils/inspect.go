@@ -1,3 +1,14 @@
+// pkg/utils/inspect.go
+
+package utils
+
+import (
+	"fmt"
+	"os"
+	"strings"
+)
+
+
 func InspectCertificates() {
 	certsDir := "certs"
 	fmt.Printf("\n--- Inspecting Certificates in '%s' ---\n", certsDir)
