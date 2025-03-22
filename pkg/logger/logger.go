@@ -2,6 +2,7 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -15,7 +16,7 @@ func DefaultConfig() zap.Config {
 	level := zap.InfoLevel
 	switch os.Getenv("LOG_LEVEL") {
 	case "trace":
-		level = zap.DebugLevel 
+		level = zap.DebugLevel
 	case "debug":
 		level = zap.DebugLevel
 	case "dpanic":
@@ -29,7 +30,7 @@ func DefaultConfig() zap.Config {
 	}
 
 	return zap.Config{
-		Level:            zap.NewAtomicLevelAt(level),                	      // Default log level: Info
+		Level:            zap.NewAtomicLevelAt(level),                        // Default log level: Info
 		Development:      true,                                               // Development mode by default
 		Encoding:         "json",                                             // JSON log format
 		OutputPaths:      []string{"stdout", "/var/log/cyberMonkey/eos.log"}, // Log to console and file
