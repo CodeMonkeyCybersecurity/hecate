@@ -8,26 +8,25 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package backup
 
 import (
-	"fmt"
 	"os"
 	"time"
 
-    "github.com/spf13/cobra"
-    "go.uber.org/zap"
+	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
-    "hecate/pkg/utils"
-    "hecate/pkg/logger"
-    "hecate/pkg/config"
+	"hecate/pkg/config"
+	"hecate/pkg/logger"
+	"hecate/pkg/utils"
 )
 
 // backupCmd represents the backup command.
 var BackupCmd = &cobra.Command{
-    Use:   "backup",
-    Short: "Backup configuration and files",
-    Long:  `Backup important configuration directories and files.`,
-    Run: func(cmd *cobra.Command, args []string) {
-        runBackup()
-    },
+	Use:   "backup",
+	Short: "Backup configuration and files",
+	Long:  `Backup important configuration directories and files.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		runBackup()
+	},
 }
 
 // runBackup is called when the user runs "hecate create backup".
@@ -48,43 +47,44 @@ func runBackup() {
 		os.Exit(1)
 	}
 	if err := utils.RemoveIfExists(backupConf); err != nil {
-        log.Error("Failed to remove existing backup", zap.String("path", backupConf), zap.Error(err))
-        os.Exit(1)
-    }
-    
+		log.Error("Failed to remove existing backup", zap.String("path", backupConf), zap.Error(err))
+		os.Exit(1)
+	}
+
 	if err := utils.CopyDir(config.DefaultConfDir, backupConf); err != nil {
 		log.Error("Backup failed", zap.String("src", config.DefaultConfDir), zap.Error(err))
 		os.Exit(1)
 	}
 	log.Info("✅ conf.d backed up", zap.String("dest", backupConf))
 
-    // certs
-    if info, err := os.Stat(config.DefaultCertsDir); err != nil || !info.IsDir() {
-        log.Error("Missing or invalid certs", zap.String("dir", config.DefaultCertsDir), zap.Error(err))
-        os.Exit(1)
-    }
-    if err := utils.RemoveIfExists(backupCerts); err != nil {
-        log.Error("Failed to remove existing backup", zap.String("path", backupCerts), zap.Error(err))
-        os.Exit(1)
-    }
-    if err := utils.CopyDir(config.DefaultCertsDir, backupCerts); err != nil {
-        log.Error("Backup failed", zap.String("src", config.DefaultCertsDir), zap.Error(err))
-        os.Exit(1)
-    }
-    log.Info("✅ certs backed up", zap.String("dest", backupCerts))
+	// certs
+	if info, err := os.Stat(config.DefaultCertsDir); err != nil || !info.IsDir() {
+		log.Error("Missing or invalid certs", zap.String("dir", config.DefaultCertsDir), zap.Error(err))
+		os.Exit(1)
+	}
+	if err := utils.RemoveIfExists(backupCerts); err != nil {
+		log.Error("Failed to remove existing backup", zap.String("path", backupCerts), zap.Error(err))
+		os.Exit(1)
+	}
+	if err := utils.CopyDir(config.DefaultCertsDir, backupCerts); err != nil {
+		log.Error("Backup failed", zap.String("src", config.DefaultCertsDir), zap.Error(err))
+		os.Exit(1)
+	}
+	log.Info("✅ certs backed up", zap.String("dest", backupCerts))
 
-
-    // docker-compose.yml
-    if info, err := os.Stat(config.DefaultComposePath); err != nil || info.IsDir() {
-        log.Error("Missing or invalid compose file", zap.String("file", config.DefaultComposePath), zap.Error(err))
-        os.Exit(1)
-    }
-    if err := utils.RemoveIfExists(backupCompose); err != nil {
-        log.Error("Failed to remove existing backup", zap.String("path", backupCompose), zap.Error(err))
-        os.Exit(1)
-    }
-    if err := utils.CopyFile(config.DefaultComposePath, backupCompose); err != nil {
-        log.Error("Backup failed", zap.String("src", config.DefaultComposePath), zap.Error(err))
-        os.Exit(1)
-    }
-    log.Info("✅ docker-compose.yml backed up", zap.String("dest", backupCompose))
+	// docker-compose.yml
+	if info, err := os.Stat(config.DefaultComposePath); err != nil || info.IsDir() {
+		log.Error("Missing or invalid compose file", zap.String("file", config.DefaultComposePath), zap.Error(err))
+		os.Exit(1)
+	}
+	if err := utils.RemoveIfExists(backupCompose); err != nil {
+		log.Error("Failed to remove existing backup", zap.String("path", backupCompose), zap.Error(err))
+		os.Exit(1)
+	}
+	if err := utils.CopyFile(config.DefaultComposePath, backupCompose); err != nil {
+		log.Error("Backup failed", zap.String("src", config.DefaultComposePath), zap.Error(err))
+		os.Exit(1)
+	}
+	log.Info("✅ docker-compose.yml backed up", zap.String("dest", backupCompose))
+	log.Info("🎉 All backup tasks completed successfully", zap.String("timestamp", timestamp))
+}
