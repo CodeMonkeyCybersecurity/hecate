@@ -168,22 +168,28 @@ func ensureCertificates(domain string) error {
     privKey := filepath.Join(certDir, fmt.Sprintf("%s.privkey.pem", domain))
     fullChain := filepath.Join(certDir, fmt.Sprintf("%s.fullchain.pem", domain))
 
-    // if they’re not there, get them from Let’s Encrypt
-    if _, err := os.Stat(privKey); os.IsNotExist(err) {
-        fmt.Printf("No private key found for domain %s. Attempting to issue certificate...\n", domain)
-        // Insert your ACME client or shell out to certbot, etc.:
-        // e.g. runCertbot(domain)
+    // Check both files
+    _, errKey := os.Stat(privKey)
+    _, errChain := os.Stat(fullChain)
+
+    if os.IsNotExist(errKey) || os.IsNotExist(errChain) {
+        fmt.Printf("No valid certificate found for domain %s.\nLooking for:\n  %s\n  %s\n", domain, privKey, fullChain)
+        fmt.Printf("Attempting to issue certificate for %s...\n", domain)
+
+        // Insert your ACME client or certbot logic here.
+        // e.g. runCertbot(domain) or however you issue certs.
 
         // For illustration only:
-        // copy or rename from some location to:
-        //   certs/domain.privkey.pem
-        //   certs/domain.fullchain.pem
-        fmt.Println("✅ Certificate generated and placed in certs/ directory (stub).")
+        // 1) generate new .privkey.pem and .fullchain.pem
+        // 2) place them into certs/
+        fmt.Println("✅ Certificates generated and placed in certs/ directory (stub).")
+    } else {
+        fmt.Printf("✅ Certificate files for domain %s already exist in certs/.\n", domain)
     }
-    // you could also check if fullChain is missing, etc.
 
     return nil
 }
+
 
 // Possibly uncomment Jenkins port in docker-compose.yaml
 func maybeUncommentJenkinsPort(composeFile string) error {
