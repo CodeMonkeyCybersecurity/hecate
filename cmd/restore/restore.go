@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"hecate/pkg/utils"
-	"hecate/cmd/root"  // ✅ Import root command
 
 	"github.com/spf13/cobra"
 )
