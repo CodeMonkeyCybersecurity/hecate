@@ -3,8 +3,6 @@ package update
 import (
 	"fmt"
 
-	"hecate/pkg/utils"
-
 	"github.com/spf13/cobra"
 )
 
