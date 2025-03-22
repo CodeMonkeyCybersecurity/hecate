@@ -17,10 +17,10 @@ import (
 // Constants for file and directory names.
 const (
 	LastValuesFile    	= ".hecate.conf"
-	DockerComposeFile 	= "docker-compose.yml"
+	DefaultComposeYML 	= "docker-compose.yml"
 	DefaultCertsDir   	= "certs"
-	DefaultConfDir      	= "conf.d"
-	AssetsPath 	 	= "assets"
+	DefaultConfDir     	= "conf.d"
+	AssetsPath 	 		= "assets"
 	NginxConfPath 	 	= "/etc/nginx/conf.d/"
 	NginxStreamPath  	= "/etc/nginx/stream.d/"
 	DockerNetworkName 	= "arachne-net"

@@ -7,14 +7,13 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"go.uber.org/zap"
 	"github.com/spf13/cobra"
-	
-	"hecate/pkg/logger"
-	"hecate/pkg/utils"
+	"go.uber.org/zap"
+
 	"hecate/pkg/config"
 	"hecate/pkg/docker"
-	
+	"hecate/pkg/logger"
+	"hecate/pkg/utils"
 )
 
 //
@@ -23,8 +22,8 @@ import (
 
 // DeployApp deploys an application by copying necessary configs and restarting services
 func DeployApp(app string, cmd *cobra.Command) error {
-	logger.Info("Starting deployment", zap.String("app", app))  // ✅ Use logger.Info directly
-	fmt.Printf("Deploying %s...\n", app)  // 👈 Added for user visibility
+	logger.Info("Starting deployment", zap.String("app", app)) // ✅ Use logger.Info directly
+	fmt.Printf("Deploying %s...\n", app)                       // 👈 Added for user visibility
 
 	// Check if the required HTTP config exists
 	httpConfig := filepath.Join(config.AssetsPath, "servers", app+".conf")
@@ -51,7 +50,7 @@ func DeployApp(app string, cmd *cobra.Command) error {
 		noTalk, _ := cmd.Flags().GetBool("without-talk")
 		if !noTalk {
 			logger.Info("Deploying Coturn for NextCloud Talk")
-			if err := docker.RunDockerComposeService(config.DockerComposeFile, "coturn"); err != nil {
+			if err := docker.RunDockerComposeService(config.DefaultComposeYML, "coturn"); err != nil {
 				return fmt.Errorf("failed to deploy Coturn: %w", err)
 			}
 		} else {
@@ -73,35 +72,34 @@ func DeployApp(app string, cmd *cobra.Command) error {
 	return nil
 }
 
-
 // ValidateNginx runs `nginx -t` to check configuration validity
 func ValidateNginx() error {
-    logger.Info("Validating Nginx configuration...")
-    cmd := exec.Command("nginx", "-t")
-    output, err := cmd.CombinedOutput()  // Capture full output
-    fmt.Println(string(output))          // Print to console for visibility
+	logger.Info("Validating Nginx configuration...")
+	cmd := exec.Command("nginx", "-t")
+	output, err := cmd.CombinedOutput() // Capture full output
+	fmt.Println(string(output))         // Print to console for visibility
 
-    if err != nil {
-        logger.Error("Nginx configuration validation failed",
-            zap.Error(err), zap.String("output", string(output)))
-        return fmt.Errorf("nginx validation failed: %s", output)
-    }
-    logger.Info("Nginx configuration is valid", zap.String("output", "\n"+string(output)))
-    return nil
+	if err != nil {
+		logger.Error("Nginx configuration validation failed",
+			zap.Error(err), zap.String("output", string(output)))
+		return fmt.Errorf("nginx validation failed: %s", output)
+	}
+	logger.Info("Nginx configuration is valid", zap.String("output", "\n"+string(output)))
+	return nil
 }
 
 // RestartNginx reloads the Nginx service
 func RestartNginx() error {
-    logger.Info("Restarting Nginx...")
-    cmd := exec.Command("systemctl", "reload", "nginx")
-    output, err := cmd.CombinedOutput()  // Capture full output
-    fmt.Println(string(output))          // Print to console
+	logger.Info("Restarting Nginx...")
+	cmd := exec.Command("systemctl", "reload", "nginx")
+	output, err := cmd.CombinedOutput() // Capture full output
+	fmt.Println(string(output))         // Print to console
 
-    if err != nil {
-        logger.Error("Failed to restart Nginx",
-            zap.Error(err), zap.String("output", string(output)))
-        return fmt.Errorf("nginx reload failed: %s", output)
-    }
-    logger.Info("Nginx restarted successfully", zap.String("output", "\n"+string(output)))
-    return nil
+	if err != nil {
+		logger.Error("Failed to restart Nginx",
+			zap.Error(err), zap.String("output", string(output)))
+		return fmt.Errorf("nginx reload failed: %s", output)
+	}
+	logger.Info("Nginx restarted successfully", zap.String("output", "\n"+string(output)))
+	return nil
 }
