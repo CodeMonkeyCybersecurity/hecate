@@ -51,7 +51,7 @@ Examples:
 var force bool
 
 func runDeploy(cmd *cobra.Command, args []string) {
-	log := logger.GetLogger()
+	log := logger.GetSafeLogger()
 	if log == nil {
 		fmt.Println("⚠️ Warning: Logger is nil. Defaulting to console output.")
 	}

@@ -29,7 +29,7 @@ func main() {
     logger.Initialize()
     defer logger.Sync() // ✅ Ensures logs are flushed properly
 	
-    log := logger.GetLogger()
+    log := logger.GetSafeLogger()
     fallbackLogging := log == nil
 
     if fallbackLogging {

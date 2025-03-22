@@ -150,3 +150,13 @@ func Sync() error {
 	}
 	return nil
 }
+
+// ✅ Add this helper to guarantee a logger (fallback to console logger if needed)
+func GetSafeLogger() *zap.Logger {
+	if Log == nil {
+		fmt.Println("⚠️ Logger not initialized, using fallback zap logger")
+		fallback, _ := zap.NewDevelopment()
+		return fallback
+	}
+	return Log
+}

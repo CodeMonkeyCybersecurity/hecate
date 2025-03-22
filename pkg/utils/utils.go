@@ -30,41 +30,41 @@ import (
 
 // RestoreDir restores a backup directory by copying it to the target location.
 func RestoreDir(src, dest string) error {
-	logger := logger.GetLogger()
-	logger.Info("Restoring directory", zap.String("src", src), zap.String("dest", dest))
+	log := logger.GetSafeLogger()
+	log.Info("Restoring directory", zap.String("src", src), zap.String("dest", dest))
 
 	err := CopyDir(src, dest)
 	if err != nil {
-		logger.Error("Failed to restore directory", zap.Error(err))
+		log.Error("Failed to restore directory", zap.Error(err))
 		return fmt.Errorf("failed to restore directory: %w", err)
 	}
-	logger.Info("Directory restored successfully", zap.String("dest", dest))
+	log.Info("Directory restored successfully", zap.String("dest", dest))
 	return nil
 }
 
 // RestoreFile restores a backup file to the original location.
 func RestoreFile(src, dest string) error {
-	logger := logger.GetLogger()
-	logger.Info("Restoring file", zap.String("src", src), zap.String("dest", dest))
+	log := logger.GetSafeLogger()
+	log.Info("Restoring file", zap.String("src", src), zap.String("dest", dest))
 
 	err := CopyFile(src, dest)
 	if err != nil {
-		logger.Error("Failed to restore file", zap.Error(err))
+		log.Error("Failed to restore file", zap.Error(err))
 		return fmt.Errorf("failed to restore file: %w", err)
 	}
-	logger.Info("File restored successfully", zap.String("dest", dest))
+	log.Info("File restored successfully", zap.String("dest", dest))
 	return nil
 }
 
 // FindLatestBackup finds the latest backup file with a given prefix.
 func FindLatestBackup(prefix string) (string, error) {
-	logger := logger.GetLogger()
-	logger.Info("Searching for latest backup with prefix", zap.String("prefix", prefix))
+	log := logger.GetSafeLogger()
+	log.Info("Searching for latest backup with prefix", zap.String("prefix", prefix))
 
 	dir := "." // or the directory where your backups are stored
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		logger.Error("Failed to read directory", zap.Error(err))
+		log.Error("Failed to read directory", zap.Error(err))
 		return "", err
 	}
 
@@ -87,7 +87,7 @@ func FindLatestBackup(prefix string) (string, error) {
 		return "", fmt.Errorf("no backups found with prefix %s", prefix)
 	}
 
-	logger.Info("Latest backup found", zap.String("filename", latest))
+	log.Info("Latest backup found", zap.String("filename", latest))
 	return latest, nil
 }
 
@@ -99,7 +99,7 @@ func FindLatestBackup(prefix string) (string, error) {
 // DeployApp deploys the application by copying necessary config files and restarting services
 // DeployApp deploys the application by copying necessary config files and restarting services
 func DeployApp(app string, force bool) error {
-	log := logger.GetLogger()
+	log := logger.GetSafeLogger()
 	if log == nil {
 		fmt.Println("⚠️ Warning: Logger is nil. Defaulting to console output.")
 	}
@@ -237,10 +237,10 @@ func CopyFile(src, dst string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
 		if os.IsNotExist(err) {
-			logger.Error("Source file not found", zap.String("file", src))
+			log.Error("Source file not found", zap.String("file", src))
 			return fmt.Errorf("source file does not exist: %s", src)
 		}
-		logger.Error("Error opening source file", zap.String("file", src), zap.Error(err))
+		log.Error("Error opening source file", zap.String("file", src), zap.Error(err))
 		return fmt.Errorf("error opening source file: %w", err)
 	}
 	defer srcFile.Close()
@@ -248,7 +248,7 @@ func CopyFile(src, dst string) error {
 	// Create destination file
 	dstFile, err := os.Create(dst)
 	if err != nil {
-		logger.Error("Error creating destination file", zap.String("file", dst), zap.Error(err))
+		log.Error("Error creating destination file", zap.String("file", dst), zap.Error(err))
 		return fmt.Errorf("error creating destination file: %w", err)
 	}
 	defer dstFile.Close()
@@ -256,7 +256,7 @@ func CopyFile(src, dst string) error {
 	// Copy contents
 	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
-		logger.Error("Error copying file contents", zap.String("src", src), zap.String("dst", dst), zap.Error(err))
+		log.Error("Error copying file contents", zap.String("src", src), zap.String("dst", dst), zap.Error(err))
 		return fmt.Errorf("error copying file: %w", err)
 	}
 
@@ -272,7 +272,7 @@ func RemoveIfExists(path string) error {
 		if os.IsNotExist(err) {
 			return nil // No need to remove if it doesn't exist
 		}
-		logger.Error("Error checking path before removal", zap.String("path", path), zap.Error(err))
+		log.Error("Error checking path before removal", zap.String("path", path), zap.Error(err))
 		return fmt.Errorf("error checking path before removal: %w", err)
 
 	}
@@ -287,7 +287,7 @@ func RemoveIfExists(path string) error {
 func CopyDir(src string, dst string) error {
 	if _, err := os.Stat(src); err != nil {
 		if os.IsNotExist(err) {
-			logger.Error("Source directory not found", zap.String("dir", src))
+			log.Error("Source directory not found", zap.String("dir", src))
 			return fmt.Errorf("source directory does not exist: %s", src)
 		}
 		return fmt.Errorf("error checking source directory: %w", err)
@@ -330,10 +330,10 @@ func CopyDir(src string, dst string) error {
 
 // HashString computes and returns the SHA256 hash of the provided string.
 func HashString(s string) string {
-	logger.Debug("Computing SHA256 hash", zap.String("input", s))
+	log.Debug("Computing SHA256 hash", zap.String("input", s))
 	hash := sha256.Sum256([]byte(s))
 	hashStr := hex.EncodeToString(hash[:])
-	logger.Debug("Computed SHA256 hash", zap.String("hash", hashStr))
+	log.Debug("Computed SHA256 hash", zap.String("hash", hashStr))
 	return hashStr
 }
 
@@ -359,7 +359,7 @@ func GeneratePassword(length int) (string, error) {
 func MonitorVaultLogs(ctx context.Context, logFilePath, marker string) error {
 	file, err := os.Open(logFilePath)
 	if err != nil {
-		logger.Error("Failed to open log file for monitoring", zap.String("logFilePath", logFilePath), zap.Error(err))
+		log.Error("Failed to open log file for monitoring", zap.String("logFilePath", logFilePath), zap.Error(err))
 		return fmt.Errorf("failed to open log file for monitoring: %w", err)
 	}
 	defer file.Close()
@@ -367,7 +367,7 @@ func MonitorVaultLogs(ctx context.Context, logFilePath, marker string) error {
 	// Seek to the end of the file so we only see new log lines.
 	_, err = file.Seek(0, io.SeekEnd)
 	if err != nil {
-		logger.Error("Failed to seek log file", zap.String("logFilePath", logFilePath), zap.Error(err))
+		log.Error("Failed to seek log file", zap.String("logFilePath", logFilePath), zap.Error(err))
 		return fmt.Errorf("failed to seek log file: %w", err)
 	}
 
@@ -381,9 +381,9 @@ func MonitorVaultLogs(ctx context.Context, logFilePath, marker string) error {
 			if scanner.Scan() {
 				line := scanner.Text()
 				fmt.Println(line) // Print the log line to terminal
-				logger.Debug("Vault Log Line", zap.String("logLine", line))
+				log.Debug("Vault Log Line", zap.String("logLine", line))
 				if strings.Contains(line, marker) {
-					logger.Info("Vault marker found, exiting log monitor", zap.String("marker", marker))
+					log.Info("Vault marker found, exiting log monitor", zap.String("marker", marker))
 					return nil
 				}
 			} else {
@@ -417,13 +417,13 @@ func PrintError(log *zap.Logger, msg string) {
 // GetInternalHostname returns the machine's hostname.
 // If os.Hostname() fails, it logs the error and returns "localhost".
 func GetInternalHostname() string {
-	logger.Info("Retrieving internal hostname")
+	log.Info("Retrieving internal hostname")
 	hostname, err := os.Hostname()
 	if err != nil {
-		logger.Error("Unable to retrieve hostname, defaulting to localhost", zap.Error(err))
+		log.Error("Unable to retrieve hostname, defaulting to localhost", zap.Error(err))
 		return "localhost"
 	}
-	logger.Info("Retrieved hostname", zap.String("hostname", hostname))
+	log.Info("Retrieved hostname", zap.String("hostname", hostname))
 	return hostname
 }
 
@@ -435,7 +435,7 @@ func GetInternalHostname() string {
 // HandleError logs an error and optionally exits the program
 func HandleError(err error, message string, exit bool) {
 	if err != nil {
-		logger.Error(message, zap.Error(err))
+		log.Error(message, zap.Error(err))
 		if exit {
 			logger.Fatal("Exiting program due to error", zap.String("message", message))
 		}
@@ -473,7 +473,7 @@ func CheckSudo() bool {
 
 // Recursive function to process and print nested YAML structures
 func ProcessMap(data map[string]interface{}, indent string) {
-	logger.Debug("Processing YAML map")
+	log.Debug("Processing YAML map")
 	for key, value := range data {
 		switch v := value.(type) {
 		case map[string]interface{}:
@@ -492,7 +492,7 @@ func ProcessMap(data map[string]interface{}, indent string) {
 			fmt.Printf("%s%s: %v\n", indent, key, v)
 		}
 	}
-	logger.Debug("Completed processing YAML map")
+	log.Debug("Completed processing YAML map")
 }
 
 
@@ -507,7 +507,7 @@ func quote(s string) string {
 
 // RemoveApp deletes existing deployment files safely (used with --force)
 func RemoveApp(app string) error {
-	log := logger.GetLogger()
+	log := logger.GetSafeLogger()
 	httpDest := filepath.Join("/etc/nginx/sites-available", app)
 	streamDest := filepath.Join("/etc/nginx/stream.d", app+".conf")
 	symlinkPath := filepath.Join("/etc/nginx/sites-enabled", app)
@@ -536,7 +536,7 @@ func RemoveApp(app string) error {
 
 // ValidateConfigPaths checks that the app’s Nginx source config files exist
 func ValidateConfigPaths(app string) error {
-	log := logger.GetLogger()
+	log := logger.GetSafeLogger()
 	httpSrc := filepath.Join("assets/servers", app+".conf")
 
 	if _, err := os.Stat(httpSrc); err != nil {

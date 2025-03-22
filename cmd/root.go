@@ -92,7 +92,7 @@ func Execute() {
 	}
 	defer logger.Sync() // ✅ Ensure logs are flushed properly
 
-	log := logger.GetLogger() // ✅ Get logger directly inside Execute()
+	log := logger.GetSafeLogger() // ✅ Get logger directly inside Execute()
 
 	// ✅ Prevent nil logger issue before logging starts
 	if log == nil {
