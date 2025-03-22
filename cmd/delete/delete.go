@@ -1,35 +1,54 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
-// delete.go
 package delete
 
 import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-// deleteCmd represents the delete command.
-var deleteCmd = &cobra.Command{
+// DeleteCmd is the root "delete" command: supports either `delete <app>` or subcommands like `delete resources`
+var DeleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: "Delete various resources",
+	Short: "Delete deployed applications or resources",
+	Long: `Delete applications or configuration resources managed by Hecate.
+
+Examples:
+  hecate delete jenkins
+  hecate delete resources`,
+	Args: cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			fmt.Println("🗑️  Please use a subcommand like 'delete resources' or specify an app name.")
+			return
+		}
+
+		app := args[0]
+		fmt.Printf("🗑️  Deleting application: %s\n", app)
+		// TODO: Add logic to delete individual app configuration
+	},
+}
+
+var deleteResourcesCmd = &cobra.Command{
+	Use:   "resources",
+	Short: "Interactively delete configuration resources",
 	Long: `This command deletes various resources for Hecate:
 
   1) Delete Certificates
   2) Delete docker-compose modifications/backups
   3) Delete Eos backend web apps configuration files
   4) Delete (or revert) Nginx defaults
-  5) Delete all specified resources
-
-You can choose to delete one or all of these resources interactively.`,
+  5) Delete all specified resources`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runDeleteConfig()
 	},
+}
+
+func init() {
+	DeleteCmd.AddCommand(deleteResourcesCmd)
 }
 
 // runDeleteConfig presents an interactive menu for delete actions.
@@ -44,7 +63,7 @@ func runDeleteConfig() {
 	fmt.Println("5) Delete all specified resources")
 	fmt.Print("Enter choice (1-5): ")
 	choice, _ := reader.ReadString('\n')
-	choice = strings.TrimSpace(choice)
+	choice = strings.ToLower(strings.TrimSpace(choice))
 
 	switch choice {
 	case "1":
@@ -68,8 +87,7 @@ func runDeleteConfig() {
 
 func deleteCertificates() {
 	fmt.Println("\n--- Deleting Certificates ---")
-	// Example: Remove files from the certificates directory.
-	certsDir := "certs" // Adjust as necessary.
+	certsDir := "certs"
 	err := os.RemoveAll(certsDir)
 	if err != nil {
 		fmt.Printf("Error deleting certificates directory: %v\n", err)
@@ -80,8 +98,6 @@ func deleteCertificates() {
 
 func deleteDockerCompose() {
 	fmt.Println("\n--- Deleting docker-compose modifications/backups ---")
-	// Example: Remove backup files (you might have a naming pattern for backups).
-	// Here we assume backups have a .bak extension in the current directory.
 	matches, err := filepath.Glob("*_docker-compose.yml.bak")
 	if err != nil {
 		fmt.Printf("Error searching for backups: %v\n", err)
@@ -98,8 +114,7 @@ func deleteDockerCompose() {
 
 func deleteEosConfig() {
 	fmt.Println("\n--- Deleting Eos backend web apps configuration files ---")
-	// Example: Delete all .conf files in the conf.d directory that match a pattern.
-	confDir := "conf.d" // Adjust as necessary.
+	confDir := "conf.d"
 	err := os.RemoveAll(confDir)
 	if err != nil {
 		fmt.Printf("Error deleting Eos configuration directory %s: %v\n", confDir, err)
@@ -110,10 +125,8 @@ func deleteEosConfig() {
 
 func deleteNginxDefaults() {
 	fmt.Println("\n--- Deleting (or reverting) Nginx defaults ---")
-	// Example: Remove or revert http.conf to a backup if one exists.
 	configFile := "http.conf"
 	backupFile := "http.conf.bak"
-	// Check if a backup exists, and if so, restore it (i.e. delete the current file and rename the backup)
 	if _, err := os.Stat(backupFile); err == nil {
 		if err := os.Remove(configFile); err != nil {
 			fmt.Printf("Error removing current %s: %v\n", configFile, err)
@@ -123,7 +136,6 @@ func deleteNginxDefaults() {
 			fmt.Printf("Nginx defaults reverted by restoring %s.\n", configFile)
 		}
 	} else {
-		// If no backup exists, simply delete the file.
 		if err := os.Remove(configFile); err != nil {
 			fmt.Printf("Error removing %s: %v\n", configFile, err)
 		} else {
