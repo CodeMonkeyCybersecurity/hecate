@@ -27,8 +27,6 @@ Examples:
 
 // Attach subcommands to UpdateCmd
 func init() {
-	root.RootCmd.AddCommand(UpdateCmd) // ✅ Attach to RootCmd
-
 	UpdateCmd.AddCommand(runCertsCmd) // ✅ Fix: Use correct variable for subcommand
 	UpdateCmd.AddCommand(runEosCmd)   // ✅ Fix: Use correct variable for subcommand
 	UpdateCmd.AddCommand(runHttpCmd)  // ✅ Fix: Use correct variable for subcommand
