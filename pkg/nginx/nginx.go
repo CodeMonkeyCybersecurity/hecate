@@ -16,6 +16,8 @@ import (
 	"hecate/pkg/utils"
 )
 
+var log = logger.GetSafeLogger()
+
 //
 //---------------------------- NGINX FUNCTIONS ---------------------------- //
 //

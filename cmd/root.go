@@ -36,6 +36,9 @@ import (
 	"hecate/pkg/config"
 )
 
+var log = logger.GetSafeLogger()
+
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "hecate",

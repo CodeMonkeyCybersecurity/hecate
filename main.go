@@ -24,12 +24,13 @@ import (
 	"go.uber.org/zap" 
 )
 
+var log = logger.GetSafeLogger()
+
 func main() {
     // Initialize logging
     logger.Initialize()
     defer logger.Sync() // ✅ Ensures logs are flushed properly
 	
-    log := logger.GetSafeLogger()
     fallbackLogging := log == nil
 
     if fallbackLogging {

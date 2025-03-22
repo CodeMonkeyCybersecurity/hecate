@@ -50,11 +50,9 @@ Examples:
 // ✅ New `force` flag (kept here because it's specific to this command)
 var force bool
 
+var log = logger.GetSafeLogger()
+
 func runDeploy(cmd *cobra.Command, args []string) {
-	log := logger.GetSafeLogger()
-	if log == nil {
-		fmt.Println("⚠️ Warning: Logger is nil. Defaulting to console output.")
-	}
 	
 	app := strings.ToLower(args[0]) // ✅ Normalize input to lowercase
 

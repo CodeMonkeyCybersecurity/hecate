@@ -19,6 +19,8 @@ import (
 	"hecate/pkg/utils"
 )
 
+var log = logger.GetSafeLogger()
+
 // backupCmd represents the backup command.
 var BackupCmd = &cobra.Command{
 	Use:   "backup",

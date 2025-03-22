@@ -24,13 +24,15 @@ import (
 )
 
 
+var log = logger.GetSafeLogger()
+
 //
 //---------------------------- RESTORE ---------------------------- //
 //
 
 // RestoreDir restores a backup directory by copying it to the target location.
 func RestoreDir(src, dest string) error {
-	log := logger.GetSafeLogger()
+	
 	log.Info("Restoring directory", zap.String("src", src), zap.String("dest", dest))
 
 	err := CopyDir(src, dest)
@@ -44,7 +46,7 @@ func RestoreDir(src, dest string) error {
 
 // RestoreFile restores a backup file to the original location.
 func RestoreFile(src, dest string) error {
-	log := logger.GetSafeLogger()
+	
 	log.Info("Restoring file", zap.String("src", src), zap.String("dest", dest))
 
 	err := CopyFile(src, dest)
@@ -58,7 +60,7 @@ func RestoreFile(src, dest string) error {
 
 // FindLatestBackup finds the latest backup file with a given prefix.
 func FindLatestBackup(prefix string) (string, error) {
-	log := logger.GetSafeLogger()
+	
 	log.Info("Searching for latest backup with prefix", zap.String("prefix", prefix))
 
 	dir := "." // or the directory where your backups are stored
@@ -99,7 +101,7 @@ func FindLatestBackup(prefix string) (string, error) {
 // DeployApp deploys the application by copying necessary config files and restarting services
 // DeployApp deploys the application by copying necessary config files and restarting services
 func DeployApp(app string, force bool) error {
-	log := logger.GetSafeLogger()
+	
 	if log == nil {
 		fmt.Println("⚠️ Warning: Logger is nil. Defaulting to console output.")
 	}
@@ -220,12 +222,14 @@ func IsValidApp(app string) bool {
 
 // FileExists checks if a file exists
 func FileExists(filename string) bool {
+	
+
 	_, err := os.Stat(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false
 		}
-		logger.Warn("Unexpected error checking file", zap.String("file", filename), zap.Error(err))
+		log.Warn("Unexpected error checking file", zap.String("file", filename), zap.Error(err))
 		return false
 	}
 	return true
@@ -233,7 +237,8 @@ func FileExists(filename string) bool {
 
 
 func CopyFile(src, dst string) error {
-	// Check source file existence
+	
+
 	srcFile, err := os.Open(src)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -267,6 +272,8 @@ func CopyFile(src, dst string) error {
 
 // RemoveIfExists removes a file or directory if it exists.
 func RemoveIfExists(path string) error {
+	
+
 	_, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -507,7 +514,7 @@ func quote(s string) string {
 
 // RemoveApp deletes existing deployment files safely (used with --force)
 func RemoveApp(app string) error {
-	log := logger.GetSafeLogger()
+	
 	httpDest := filepath.Join("/etc/nginx/sites-available", app)
 	streamDest := filepath.Join("/etc/nginx/stream.d", app+".conf")
 	symlinkPath := filepath.Join("/etc/nginx/sites-enabled", app)
@@ -536,7 +543,7 @@ func RemoveApp(app string) error {
 
 // ValidateConfigPaths checks that the app’s Nginx source config files exist
 func ValidateConfigPaths(app string) error {
-	log := logger.GetSafeLogger()
+	
 	httpSrc := filepath.Join("assets/servers", app+".conf")
 
 	if _, err := os.Stat(httpSrc); err != nil {
