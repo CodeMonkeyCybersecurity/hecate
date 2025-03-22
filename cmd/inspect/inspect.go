@@ -3,10 +3,7 @@
 package inspect
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
