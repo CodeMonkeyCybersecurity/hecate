@@ -38,7 +38,6 @@ If no --timestamp is given, the command enters interactive mode to choose which 
 }
 
 func init() {
-	root.RootCmd.AddCommand(RestoreCmd) // ✅ Attach to RootCmd, NOT createCmd
 
 	// Define timestamp flag
 	RestoreCmd.Flags().StringVarP(&timestampFlag, "timestamp", "t", "",
