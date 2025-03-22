@@ -1,3 +1,5 @@
+// cmd/backup/backup.go
+
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 
@@ -16,7 +18,7 @@ import (
 )
 
 // backupCmd represents the backup command.
-var backupCmd = &cobra.Command{
+var BackupCmd = &cobra.Command{
     Use:   "backup",
     Short: "Backup configuration and files",
     Long:  `Backup important configuration directories and files.`,
