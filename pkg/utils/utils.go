@@ -36,7 +36,7 @@ func RestoreDir(src, dest string) error {
 	err := CopyDir(src, dest)
 	if err != nil {
 		logger.Error("Failed to restore directory", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to restore directory: %w", err)
 	}
 	logger.Info("Directory restored successfully", zap.String("dest", dest))
 	return nil
@@ -50,7 +50,7 @@ func RestoreFile(src, dest string) error {
 	err := CopyFile(src, dest)
 	if err != nil {
 		logger.Error("Failed to restore file", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to restore file: %w", err)
 	}
 	logger.Info("File restored successfully", zap.String("dest", dest))
 	return nil
@@ -97,6 +97,7 @@ func FindLatestBackup(prefix string) (string, error) {
 
 
 // DeployApp deploys the application by copying necessary config files and restarting services
+// DeployApp deploys the application by copying necessary config files and restarting services
 func DeployApp(app string, force bool) error {
 	log := logger.GetLogger()
 	if log == nil {
@@ -105,57 +106,67 @@ func DeployApp(app string, force bool) error {
 
 	log.Info("🚀 Starting deployment", zap.String("app", app), zap.Bool("force", force))
 
-	appConfigPath := filepath.Join("/opt/hecate/configs", app)
-	appDeploymentPath := filepath.Join("/etc/nginx/sites-available", app)
-	appEnabledPath := filepath.Join("/etc/nginx/sites-enabled", app)
+	if err := ValidateConfigPaths(app); err != nil {
+		return fmt.Errorf("failed to validate config paths: %w", err)
+	}
+	
+
+	httpSrc := filepath.Join("assets/servers", app+".conf")
+	httpDest := filepath.Join("/etc/nginx/sites-available", app)
+	streamSrc := filepath.Join("assets/stream", app+".conf")
+	streamDest := filepath.Join("/etc/nginx/stream.d", app+".conf")
+	symlinkPath := filepath.Join("/etc/nginx/sites-enabled", app)
 
 	// Check if config already exists
-	if _, err := os.Stat(appDeploymentPath); err == nil {
-		if !force {
-			errMsg := fmt.Sprintf("❌ Application %s is already deployed. Use --force to overwrite.", app)
-			log.Warn(errMsg)
-			return fmt.Errorf(errMsg)
-		}
+	if _, err := os.Stat(httpDest); err == nil && !force {
+		log.Warn("❌ Application already deployed. Use --force to overwrite.", zap.String("app", app))
+		return fmt.Errorf("application %s already deployed. Use --force to overwrite", app)
+	}
+
+	// Clean up existing files if force is enabled
+	if force {
 		log.Warn("⚠️ Overwriting existing deployment", zap.String("app", app))
-		
-		// Remove existing deployment
-		if err := os.Remove(appDeploymentPath); err != nil {
-			log.Error("❌ Failed to remove existing config", zap.String("app", app), zap.Error(err))
-			return err
+		if err := RemoveApp(app); err != nil {
+			return fmt.Errorf("failed to overwrite existing deployments: %w", err)
 		}
+	}	
 
-		// Remove existing symlink in sites-enabled
-		if err := os.RemoveAll(appEnabledPath); err != nil {
-			log.Error("❌ Failed to remove existing symlink", zap.String("app", app), zap.Error(err))
-			return err
+	// Copy HTTP config
+	if err := CopyFile(httpSrc, httpDest); err != nil {
+		log.Error("❌ Failed to copy HTTP config", zap.String("src", httpSrc), zap.Error(err))
+		return fmt.Errorf("failed to copy HTTP config: %w", err)
+	}
+	log.Info("✅ HTTP config copied", zap.String("dest", httpDest))
+
+	// Copy Stream config (if present)
+	if FileExists(streamSrc) {
+		if err := CopyFile(streamSrc, streamDest); err != nil {
+			log.Error("❌ Failed to copy stream config", zap.String("src", streamSrc), zap.Error(err))
+			return fmt.Errorf("failed to copy stream config: %w", err)
 		}
+		log.Info("✅ Stream config copied", zap.String("dest", streamDest))
 	}
 
-	// Copy new config file
-	err := CopyFile(appConfigPath, appDeploymentPath)
-	if err != nil {
-		log.Error("❌ Failed to copy config file", zap.String("app", app), zap.Error(err))
-		return err
+	// Symlink into sites-enabled
+	if err := os.Symlink(httpDest, symlinkPath); err != nil && !os.IsExist(err) {
+		log.Error("❌ Failed to create symlink", zap.String("link", symlinkPath), zap.Error(err))
+		return fmt.Errorf("failed to create symlink: %w", err)
 	}
 
-	// Create a symlink in `sites-enabled`
-	if err := os.Symlink(appDeploymentPath, appEnabledPath); err != nil {
-		log.Error("❌ Failed to create symlink", zap.String("app", app), zap.Error(err))
-		return err
-	}
+	log.Info("🔗 Symlink created", zap.String("from", symlinkPath), zap.String("to", httpDest))
 
-	// Test Nginx configuration before restarting
+	// Test Nginx configuration
 	cmdTest := exec.Command("nginx", "-t")
 	if output, err := cmdTest.CombinedOutput(); err != nil {
 		log.Error("❌ Nginx config test failed", zap.String("output", string(output)), zap.Error(err))
-		return fmt.Errorf("Nginx config test failed: %s", string(output))
+		return fmt.Errorf("nginx config test failed: %s", string(output))
 	}
 
 	// Restart Nginx
 	cmdRestart := exec.Command("systemctl", "restart", "nginx")
 	if err := cmdRestart.Run(); err != nil {
 		log.Error("❌ Failed to restart Nginx", zap.Error(err))
-		return err
+		return fmt.Errorf("failed to restart nginx: %w", err)
 	}
 
 	log.Info("✅ Deployment successful", zap.String("app", app))
@@ -210,51 +221,102 @@ func IsValidApp(app string) bool {
 // FileExists checks if a file exists
 func FileExists(filename string) bool {
 	_, err := os.Stat(filename)
-	return !os.IsNotExist(err)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		logger.Warn("Unexpected error checking file", zap.String("file", filename), zap.Error(err))
+		return false
+	}
+	return true
 }
 
-// CopyFile copies a file from src to dst
+
 func CopyFile(src, dst string) error {
-	input, err := os.ReadFile(src)
+	// Check source file existence
+	srcFile, err := os.Open(src)
 	if err != nil {
-		return err
+		if os.IsNotExist(err) {
+			logger.Error("Source file not found", zap.String("file", src))
+			return fmt.Errorf("source file does not exist: %s", src)
+		}
+		logger.Error("Error opening source file", zap.String("file", src), zap.Error(err))
+		return fmt.Errorf("error opening source file: %w", err)
 	}
-	return os.WriteFile(dst, input, 0644)
+	defer srcFile.Close()
+
+	// Create destination file
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		logger.Error("Error creating destination file", zap.String("file", dst), zap.Error(err))
+		return fmt.Errorf("error creating destination file: %w", err)
+	}
+	defer dstFile.Close()
+
+	// Copy contents
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		logger.Error("Error copying file contents", zap.String("src", src), zap.String("dst", dst), zap.Error(err))
+		return fmt.Errorf("error copying file: %w", err)
+	}
+
+	return nil
 }
+
 
 
 // RemoveIfExists removes a file or directory if it exists.
 func RemoveIfExists(path string) error {
-    if _, err := os.Stat(path); err == nil {
-        return os.RemoveAll(path)
-    }
-    return nil
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // No need to remove if it doesn't exist
+		}
+		logger.Error("Error checking path before removal", zap.String("path", path), zap.Error(err))
+		return fmt.Errorf("error checking path before removal: %w", err)
+
+	}
+	if err := os.RemoveAll(path); err != nil {
+		return fmt.Errorf("failed to remove path %s: %w", path, err)
+	}
+	return nil
 }
+
 
 // CopyDir copies the contents of a directory from src to dst.
 func CopyDir(src string, dst string) error {
-    // This is a simple example; production code may need more robust error handling.
-    entries, err := os.ReadDir(src)
-    if err != nil {
-        return err
-    }
+	if _, err := os.Stat(src); err != nil {
+		if os.IsNotExist(err) {
+			logger.Error("Source directory not found", zap.String("dir", src))
+			return fmt.Errorf("source directory does not exist: %s", src)
+		}
+		return fmt.Errorf("error checking source directory: %w", err)
+	}
+
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return fmt.Errorf("failed to read source directory: %w", err)
+	}
+
     if err := os.MkdirAll(dst, 0755); err != nil {
-        return err
-    }
+        return fmt.Errorf("failed to create destination directory %s: %w", dst, err)
+	}
+    
     for _, entry := range entries {
         srcPath := filepath.Join(src, entry.Name())
         dstPath := filepath.Join(dst, entry.Name())
+
         if entry.IsDir() {
             if err := CopyDir(srcPath, dstPath); err != nil {
-                return err
+                return fmt.Errorf("failed to copy subdirectory %s: %w", srcPath, err)
             }
         } else {
             input, err := os.ReadFile(srcPath)
             if err != nil {
-                return err
+                return fmt.Errorf("failed to read file %s: %w", srcPath, err)
             }
             if err := os.WriteFile(dstPath, input, 0644); err != nil {
-                return err
+                return fmt.Errorf("failed to write file %s: %w", dstPath, err)
             }
         }
     }
@@ -431,4 +493,60 @@ func ProcessMap(data map[string]interface{}, indent string) {
 		}
 	}
 	logger.Debug("Completed processing YAML map")
+}
+
+
+//
+//---------------------------- DEPLOY HELPERS ---------------------------- //
+//
+
+// quote adds quotes around a string for cleaner logging
+func quote(s string) string {
+	return fmt.Sprintf("%q", s)
+}
+
+// RemoveApp deletes existing deployment files safely (used with --force)
+func RemoveApp(app string) error {
+	log := logger.GetLogger()
+	httpDest := filepath.Join("/etc/nginx/sites-available", app)
+	streamDest := filepath.Join("/etc/nginx/stream.d", app+".conf")
+	symlinkPath := filepath.Join("/etc/nginx/sites-enabled", app)
+
+	// Remove main config
+	if err := os.RemoveAll(httpDest); err != nil && !os.IsNotExist(err) {
+		log.Error("❌ Failed to remove HTTP config", zap.String("file", httpDest), zap.Error(err))
+		return fmt.Errorf("failed to remove HTTP config: %w", err)
+	}
+
+	// Remove stream config if it exists
+	if err := os.RemoveAll(streamDest); err != nil && !os.IsNotExist(err) {
+		log.Error("❌ Failed to remove stream config", zap.String("file", streamDest), zap.Error(err))
+		return fmt.Errorf("failed to remove stream config: %w", err)
+	}
+
+	// Remove symlink
+	if err := os.RemoveAll(symlinkPath); err != nil && !os.IsNotExist(err) {
+		log.Error("❌ Failed to remove symlink", zap.String("link", symlinkPath), zap.Error(err))
+		return fmt.Errorf("failed to remove symlink: %w", err)
+	}
+
+	log.Info("✅ Existing deployment cleaned up", zap.String("app", app))
+	return nil
+}
+
+// ValidateConfigPaths checks that the app’s Nginx source config files exist
+func ValidateConfigPaths(app string) error {
+	log := logger.GetLogger()
+	httpSrc := filepath.Join("assets/servers", app+".conf")
+
+	if _, err := os.Stat(httpSrc); err != nil {
+		if os.IsNotExist(err) {
+			log.Error("❌ Required config file not found", zap.String("file", httpSrc))
+			return fmt.Errorf("missing HTTP config: %s", httpSrc)
+		}
+		return fmt.Errorf("error checking config file: %w", err)
+	}	
+
+	// Stream config is optional — no error if missing
+	return nil
 }
