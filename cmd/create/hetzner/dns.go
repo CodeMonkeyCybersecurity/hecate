@@ -1,3 +1,5 @@
+// cmd/create/hetzner/dns.go
+
 package hetzner
 
 import (
@@ -10,7 +12,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+
+	"hecate/pkg/logger"
 )
+
+var log = logger.GetLogger()
 
 const hetznerAPIBase = "https://dns.hetzner.com/api/v1"
 
@@ -49,44 +56,81 @@ func NewCreateHetznerWildcardCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "hetzner-dns",
-		Short: "Create a DNS record at Hetzner, ideally with a wildcard but with a fall back to a subdomain if wildcard fails",
-		Run: func(cmd *cobra.Command, args []string) error {
+		Short: "Create a DNS record at Hetzner, ideally with a wildcard but with a fallback to a subdomain if wildcard fails",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Basic validation
 			if domain == "" || ip == "" {
-				return fmt.Errorf("domain and ip are required")
+				err := fmt.Errorf("domain and ip are required")
+				log.Error("Missing required flags", zap.String("domain", domain), zap.String("ip", ip), zap.Error(err))
+				return err
 			}
 
+			// Get token
 			hetznerToken := os.Getenv("HETZNER_DNS_API_TOKEN")
 			if hetznerToken == "" {
-				return fmt.Errorf("missing Hetzner DNS API token (env HETZNER_DNS_API_TOKEN)")
+				err := fmt.Errorf("missing Hetzner DNS API token (env HETZNER_DNS_API_TOKEN)")
+				log.Error("No Hetzner API token found in environment", zap.Error(err))
+				return err
 			}
 
-			// 1) Fetch the zone ID for the given domain from Hetzner
+			// 1) Fetch the zone ID
 			zoneID, err := getZoneIDForDomain(hetznerToken, domain)
 			if err != nil {
+				log.Error("Failed to get zone for domain",
+					zap.String("domain", domain),
+					zap.Error(err),
+				)
 				return fmt.Errorf("failed to get zone for domain %q: %v", domain, err)
 			}
 
-			fmt.Printf("Using zone %s for domain %s\n", zoneID, domain)
-			fmt.Println("Attempting to create wildcard record...")
+			log.Info("Using zone for domain",
+				zap.String("zoneID", zoneID),
+				zap.String("domain", domain),
+			)
+			log.Info("Attempting to create wildcard record",
+				zap.String("wildcard", "*."+domain),
+				zap.String("ip", ip),
+			)
 
 			// 2) Attempt to create a wildcard record
 			err = createRecord(hetznerToken, zoneID, "*", ip)
 			if err != nil {
-				fmt.Printf("Wildcard record creation failed: %v\n", err)
-				fmt.Println("Falling back to normal subdomain: 'wildcard-fallback'")
+				log.Warn("Wildcard record creation failed",
+					zap.Error(err),
+					zap.String("wildcard", "*."+domain),
+				)
+
+				// Fallback to a normal subdomain
 				subdomain := "wildcard-fallback"
+				log.Info("Falling back to normal subdomain record",
+					zap.String("subdomain", subdomain),
+					zap.String("domain", domain),
+					zap.String("ip", ip),
+				)
 
 				fallbackErr := createRecord(hetznerToken, zoneID, subdomain, ip)
 				if fallbackErr != nil {
+					log.Error("Subdomain creation failed after wildcard failure",
+						zap.String("subdomain", subdomain),
+						zap.String("domain", domain),
+						zap.String("ip", ip),
+						zap.Error(fallbackErr),
+					)
 					return fmt.Errorf("subdomain creation failed after wildcard failure: %v", fallbackErr)
 				}
 
-				fmt.Printf("Successfully created subdomain record: %s.%s -> %s\n", subdomain, domain, ip)
+				log.Info("Successfully created subdomain record",
+					zap.String("record", subdomain+"."+domain),
+					zap.String("ip", ip),
+				)
 				return nil
 			}
 
 			// If we succeed with wildcard
-			fmt.Printf("Successfully created wildcard record: *.%s -> %s\n", domain, ip)
+			log.Info("Successfully created wildcard record",
+				zap.String("wildcard", "*."+domain),
+				zap.String("ip", ip),
+			)
 			return nil
 		},
 	}
@@ -99,12 +143,11 @@ func NewCreateHetznerWildcardCmd() *cobra.Command {
 
 // getZoneIDForDomain fetches all zones from Hetzner and attempts to match the given domain.
 func getZoneIDForDomain(token, domain string) (string, error) {
-	// Some users might store domain as "example.com" while the zone is "example.com."
-	// For safety, we remove trailing dots, etc.
 	domain = strings.TrimSuffix(domain, ".")
 
 	req, err := http.NewRequest("GET", hetznerAPIBase+"/zones", nil)
 	if err != nil {
+		log.Error("Failed to create request for fetching zones", zap.Error(err))
 		return "", err
 	}
 	req.Header.Set("Auth-API-Token", token)
@@ -112,28 +155,34 @@ func getZoneIDForDomain(token, domain string) (string, error) {
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Error("Failed to execute HTTP request for fetching zones", zap.Error(err))
 		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		log.Error("Unexpected status from zones list",
+			zap.Int("statusCode", resp.StatusCode),
+		)
 		return "", fmt.Errorf("unexpected status from zones list: %s", resp.Status)
 	}
 
 	var zr ZonesResponse
 	if err := json.NewDecoder(resp.Body).Decode(&zr); err != nil {
+		log.Error("Failed to decode JSON for zones response", zap.Error(err))
 		return "", err
 	}
 
 	for _, z := range zr.Zones {
-		// If the user’s domain is exactly the zone name or ends with it
-		// (so “sub.example.com” can match zone “example.com”).
 		zoneName := strings.TrimSuffix(z.Name, ".")
 		if zoneName == domain || strings.HasSuffix(domain, zoneName) {
 			return z.ID, nil
 		}
 	}
-	return "", fmt.Errorf("zone not found for domain %q", domain)
+
+	err = fmt.Errorf("zone not found for domain %q", domain)
+	log.Error("Zone not found for domain", zap.String("domain", domain), zap.Error(err))
+	return "", err
 }
 
 // createRecord tries to create an A record in Hetzner DNS.
@@ -141,18 +190,20 @@ func createRecord(token, zoneID, name, ip string) error {
 	reqBody := CreateRecordRequest{
 		ZoneID: zoneID,
 		Type:   "A",
-		Name:   name, // "*" for wildcard, or "wildcard-fallback" for a normal subdomain
+		Name:   name, // "*" for wildcard or fallback subdomain
 		Value:  ip,
 		TTL:    300,  // Adjust as desired
 	}
 
 	bodyBytes, err := json.Marshal(&reqBody)
 	if err != nil {
+		log.Error("Failed to marshal CreateRecordRequest", zap.Error(err))
 		return err
 	}
 
 	req, err := http.NewRequest("POST", hetznerAPIBase+"/records", bytes.NewBuffer(bodyBytes))
 	if err != nil {
+		log.Error("Failed to create request for creating record", zap.Error(err))
 		return err
 	}
 	req.Header.Set("Auth-API-Token", token)
@@ -161,6 +212,7 @@ func createRecord(token, zoneID, name, ip string) error {
 	client := &http.Client{Timeout: 15 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Error("Failed to execute HTTP request for creating record", zap.Error(err))
 		return err
 	}
 	defer resp.Body.Close()
@@ -168,17 +220,24 @@ func createRecord(token, zoneID, name, ip string) error {
 	if resp.StatusCode != http.StatusCreated {
 		var responseBody bytes.Buffer
 		_, _ = responseBody.ReadFrom(resp.Body)
-		return fmt.Errorf(
-			"record creation failed (%d): %s",
+		errMsg := fmt.Sprintf("record creation failed (%d): %s",
 			resp.StatusCode,
 			responseBody.String(),
 		)
+		log.Error("createRecord: unexpected status", zap.String("error", errMsg))
+		return fmt.Errorf(errMsg)
 	}
 
 	var recordResp RecordResponse
 	if err := json.NewDecoder(resp.Body).Decode(&recordResp); err != nil {
+		log.Error("Failed to decode record creation response", zap.Error(err))
 		return err
 	}
 
+	log.Debug("Record creation response decoded successfully",
+		zap.String("recordID", recordResp.Record.ID),
+		zap.String("recordName", recordResp.Record.Name),
+		zap.String("recordType", recordResp.Record.Type),
+	)
 	return nil
 }
