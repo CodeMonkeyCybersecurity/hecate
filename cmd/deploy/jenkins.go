@@ -4,7 +4,6 @@ package deploy
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -15,7 +14,7 @@ import (
 var deployJenkinsCmd = &cobra.Command{
 	Use:   "jenkins",
 	Short: "Deploy reverse proxy for Jenkins",
-		Long: `Deploy the reverse proxy configuration for Jenkins using Hecate.
+	Long: `Deploy the reverse proxy configuration for Jenkins using Hecate.
 	
 This command performs a series of automated steps to ensure that your Jenkins reverse proxy is 
 properly configured and deployed. The overall process includes the following steps:
@@ -54,12 +53,6 @@ consistency across environments. This command is designed to be extendable so th
 or advanced logging) can be integrated in the future.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("🚀 Deploying reverse proxy for Jenkins...")
-
-		// Load Hecate configuration.
-		cfg, err := config.LoadConfig()
-		if err != nil {
-			return fmt.Errorf("configuration error: %w", err)
-		}
 
 		// Organize assets: move unused configuration files into assets/other.
 		if err := utils.OrganizeAssetsForDeployment("jenkins"); err != nil {
