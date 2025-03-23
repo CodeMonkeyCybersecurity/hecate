@@ -168,7 +168,7 @@ type HecateConfig struct {
 
 // LoadConfig reads the .hecate.conf file and returns the configuration.
 // If the file does not exist or values are missing, it prompts the user with friendly messages.
-func LoadConfig() (*HecateConfig, error) {
+func LoadConfig(defaultSubdomain string) (*HecateConfig, error) {
 	configPath := LastValuesFile
 	cfg := &HecateConfig{}
 
@@ -199,6 +199,12 @@ func LoadConfig() (*HecateConfig, error) {
 		}
 	}
 
+	// If Subdomain is empty, default it to the provided value.
+	if cfg.Subdomain == "" && defaultSubdomain != "" {
+		cfg.Subdomain = defaultSubdomain
+		fmt.Printf("No subdomain found, defaulting to '%s'\n", defaultSubdomain)
+	}
+
 	// Display current configuration.
 	fmt.Println("Current configuration:")
 	fmt.Printf("  Base Domain: %s\n", cfg.BaseDomain)
@@ -206,28 +212,29 @@ func LoadConfig() (*HecateConfig, error) {
 	fmt.Printf("  Subdomain: %s\n", cfg.Subdomain)
 	fmt.Printf("  Email: %s\n", cfg.Email)
 
-	// Ask the user whether to keep the current values.
-	if !yesOrNo("Do you want to keep these values? (Y/n): ") || 
-	   cfg.BaseDomain == "" || cfg.BackendIP == "" || cfg.Subdomain == "" || cfg.Email == "" {
+	// Determine which fields are missing.
+	missingFields := []string{}
+	if cfg.BaseDomain == "" {
+		missingFields = append(missingFields, "Base Domain")
+	}
+	if cfg.BackendIP == "" {
+		missingFields = append(missingFields, "Backend IP")
+	}
+	if cfg.Email == "" {
+		missingFields = append(missingFields, "Email")
+	}
+
+	// If there are missing fields, prompt the user for them.
+	if len(missingFields) > 0 {
+		fmt.Printf("The following fields need to be set: %s\n", strings.Join(missingFields, ", "))
 		if cfg.BaseDomain == "" {
-			cfg.BaseDomain = prompt("Please enter the base domain for your reverse proxy (e.g., example.com): ")
-		} else {
-			cfg.BaseDomain = prompt("Enter a new base domain for your reverse proxy (e.g., example.com): ")
+			cfg.BaseDomain = prompt("Please enter the Base Domain (e.g., example.com): ")
 		}
 		if cfg.BackendIP == "" {
-			cfg.BackendIP = prompt("Please enter the backend IP address for your services (e.g., 192.168.1.100): ")
-		} else {
-			cfg.BackendIP = prompt("Enter a new backend IP address for your services (e.g., 192.168.1.100): ")
-		}
-		if cfg.Subdomain == "" {
-			cfg.Subdomain = prompt("Please enter the subdomain for this application (e.g., jenkins): ")
-		} else {
-			cfg.Subdomain = prompt("Enter a new subdomain for this application (e.g., jenkins): ")
+			cfg.BackendIP = prompt("Please enter the Backend IP (e.g., 192.168.1.100): ")
 		}
 		if cfg.Email == "" {
 			cfg.Email = prompt("Please enter the email address for certificate requests (e.g., admin@example.com): ")
-		} else {
-			cfg.Email = prompt("Enter a new email address for certificate requests (e.g., admin@example.com): ")
 		}
 	}
 
@@ -240,6 +247,7 @@ func LoadConfig() (*HecateConfig, error) {
 
 	return cfg, nil
 }
+
 
 // prompt reads a line from standard input after displaying the provided message.
 func prompt(message string) string {
