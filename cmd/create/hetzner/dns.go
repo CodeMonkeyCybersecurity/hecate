@@ -66,10 +66,11 @@ Examples:
 
 Note: You must set the environment variable HETZNER_DNS_API_TOKEN for authentication.
 	To do this, login to your Hetzner account at 'https://dns.hetzner.com//'
- 	-> Manage API tokens
-  	-> Follow the prompts to then select 'Create access token'
+ 	-> Manage API tokens,
+  	-> Enter name, eg. 'hecate-token',
+  	-> Follow the prompts to then select 'Create access token'.
 
-   	Copy the token value and store it securely
+   	Copy the token value and store it securely.
 
 	To use it here, run:
  	'export HETZNER_DNS_API_TOKEN="YOUR-HETZNER-TOKEN-HERE"'
