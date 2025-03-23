@@ -65,7 +65,7 @@ Examples:
   hecate create hetzner-dns --domain example.com --ip 1.2.3.4
 
 Note: You must set the environment variable HETZNER_DNS_API_TOKEN for authentication.`,
-	Run: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) error {
 			// Basic validation
 			if domain == "" || ip == "" {
 				err := fmt.Errorf("domain and ip are required")
