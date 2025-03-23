@@ -61,17 +61,6 @@ or advanced logging) can be integrated in the future.`,
 			return fmt.Errorf("configuration error: %w", err)
 		}
 
-		// Replace placeholders in Jenkins configuration files.
-		serverConf := filepath.Join("assets", "servers", "jenkins.conf")
-		streamConf := filepath.Join("assets", "stream", "jenkins.conf")
-		if err := utils.ReplacePlaceholders(serverConf, cfg.BaseDomain, cfg.BackendIP); err != nil {
-			return fmt.Errorf("failed to update server config: %w", err)
-		}
-		if err := utils.ReplacePlaceholders(streamConf, cfg.BaseDomain, cfg.BackendIP); err != nil {
-			return fmt.Errorf("failed to update stream config: %w", err)
-		}
-		fmt.Println("✅ Configuration files updated.")
-
 		// Organize assets: move unused configuration files into assets/other.
 		if err := utils.OrganizeAssetsForDeployment("jenkins"); err != nil {
 			return fmt.Errorf("failed to organize assets: %w", err)
