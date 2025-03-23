@@ -1,303 +1,143 @@
-// cmd/deploy/jenkins
+// cmd/deploy/jenkins.go
 
 package deploy
 
 import (
-    "bufio"
-    "fmt"
-    "os"
-    "path/filepath"
-    "strings"
+	"bufio"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
-    "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 )
 
-// deployJenkinsCmd represents the "deploy jenkins" subcommand
 var deployJenkinsCmd = &cobra.Command{
-    Use:   "jenkins",
-    Short: "Deploy Jenkins using Hecate",
-    RunE: func(cmd *cobra.Command, args []string) error {
-        fmt.Println("🚀 Deploying Jenkins...")
+	Use:   "jenkins",
+	Short: "Deploy reverse proxy for Jenkins",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Println("🚀 Deploying reverse proxy for Jenkins...")
 
-        // 1) Check for .hecate.conf and gather variables
-        baseDomain, backendIP, err := ensureHecateConfig()
-        if err != nil {
-            return fmt.Errorf("failed retrieving/confirming config: %w", err)
-        }
+		// 1. Ensure configuration values exist (from .hecate.conf) or ask the user.
+		baseDomain, backendIP, err := ensureHecateConfig()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve configuration: %w", err)
+		}
 
-        // 2) Identify required files vs “other” files
-        requiredFiles := map[string]bool{
-            "servers/jenkins.conf": true,
-            "stream/jenkins.conf":  true,
-            "http.conf":            true,
-            "stream.conf":          true,
-            // .hecate.conf is not in assets folder, but keep track if needed
-        }
+		// 2. Replace placeholders in Jenkins config files (HTTP and Stream).
+		if err := replacePlaceholders(filepath.Join("assets", "servers", "jenkins.conf"), baseDomain, backendIP); err != nil {
+			return fmt.Errorf("failed to update servers config: %w", err)
+		}
+		if err := replacePlaceholders(filepath.Join("assets", "stream", "jenkins.conf"), baseDomain, backendIP); err != nil {
+			return fmt.Errorf("failed to update stream config: %w", err)
+		}
+		fmt.Println("✅ Configurations updated.")
 
-        assetsDir := "assets"
-        err = organizeAssets(assetsDir, requiredFiles)
-        if err != nil {
-            return err
-        }
+		// 3. Run docker compose up -d to deploy the reverse proxy (and Jenkins)
+		cmdStr := "docker compose up -d"
+		fmt.Printf("Running: %s\n", cmdStr)
+		parts := strings.Split(cmdStr, " ")
+		cmdExec := exec.Command(parts[0], parts[1:]...)
+		cmdExec.Stdout = os.Stdout
+		cmdExec.Stderr = os.Stderr
 
-        // 3) Replace placeholders in jenkins.conf files
-        err = replacePlaceholders(filepath.Join(assetsDir, "servers/jenkins.conf"), baseDomain, backendIP)
-        if err != nil {
-            return err
-        }
-        err = replacePlaceholders(filepath.Join(assetsDir, "stream/jenkins.conf"), baseDomain, backendIP)
-        if err != nil {
-            return err
-        }
+		if err := cmdExec.Run(); err != nil {
+			return fmt.Errorf("failed to run docker compose: %w", err)
+		}
 
-        // 4) Check for certificates, or generate if necessary
-        err = ensureCertificates(baseDomain)
-        if err != nil {
-            return err
-        }
-
-        // 5) Check whether we need to update docker-compose.yaml for Jenkins
-        err = maybeUncommentJenkinsPort("docker-compose.yaml")
-        if err != nil {
-            return err
-        }
-
-        // 6) All done, run docker compose up -d
-        fmt.Println("✅ All tasks completed. Bringing up Jenkins via Docker...")
-        if err := dockerComposeUp(); err != nil {
-            return fmt.Errorf("failed running docker compose: %w", err)
-        }
-
-        fmt.Println("🎉 Jenkins deployed successfully.")
-        return nil
-    },
+		fmt.Println("🎉 Jenkins reverse proxy deployed successfully.")
+		return nil
+	},
 }
 
-// Ensure .hecate.conf exists and retrieve or confirm variables
+// ensureHecateConfig checks for .hecate.conf, reads the BASE_DOMAIN and backendIP values if present,
+// and asks the user to confirm or update them. It then writes the final values back to the file.
 func ensureHecateConfig() (string, string, error) {
-    configPath := ".hecate.conf"
+	const configPath = ".hecate.conf"
+	var baseDomain, backendIP string
 
-    var baseDomain, backendIP string
-    // Check if file exists
-    _, err := os.Stat(configPath)
-    if os.IsNotExist(err) {
-        //  File not there, so ask user for new values
-        baseDomain, backendIP, err = promptForHecateVars("", "")
-        if err != nil {
-            return "", "", err
-        }
-        // Save
-        err = writeHecateConfig(configPath, baseDomain, backendIP)
-        if err != nil {
-            return "", "", err
-        }
-    } else {
-        // parse existing .hecate.conf
-        storedDomain, storedIP, err := readHecateConfig(configPath)
-        if err != nil {
-            return "", "", err
-        }
-        // ask user to confirm or override
-        baseDomain, backendIP, err = promptForHecateVars(storedDomain, storedIP)
-        if err != nil {
-            return "", "", err
-        }
-        // possibly rewrite .hecate.conf if changed
-        err = writeHecateConfig(configPath, baseDomain, backendIP)
-        if err != nil {
-            return "", "", err
-        }
-    }
-    return baseDomain, backendIP, nil
+	// Check if the file exists.
+	if _, err := os.Stat(configPath); err == nil {
+		// File exists. Read its contents.
+		file, err := os.Open(configPath)
+		if err != nil {
+			return "", "", fmt.Errorf("unable to open %s: %w", configPath, err)
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "BASE_DOMAIN=") {
+				baseDomain = strings.TrimSpace(strings.TrimPrefix(line, "BASE_DOMAIN="))
+			} else if strings.HasPrefix(line, "backendIP=") {
+				backendIP = strings.TrimSpace(strings.TrimPrefix(line, "backendIP="))
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			return "", "", fmt.Errorf("error reading %s: %w", configPath, err)
+		}
+
+		fmt.Printf("Found existing configuration:\n  BASE_DOMAIN: %s\n  backendIP: %s\n", baseDomain, backendIP)
+		// Ask user if they want to keep the values or update them.
+		if yesOrNo("Do you want to keep these values? (Y/n): ") {
+			// User confirmed; nothing to change.
+		} else {
+			// Ask for new values.
+			baseDomain = prompt("Enter new BASE_DOMAIN: ")
+			backendIP = prompt("Enter new backendIP: ")
+		}
+	} else {
+		// File does not exist; ask for new values.
+		baseDomain = prompt("Enter BASE_DOMAIN: ")
+		backendIP = prompt("Enter backendIP: ")
+	}
+
+	// Write the values back to .hecate.conf.
+	content := fmt.Sprintf("BASE_DOMAIN=%s\nbackendIP=%s\n", baseDomain, backendIP)
+	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+		return "", "", fmt.Errorf("failed to write %s: %w", configPath, err)
+	}
+	return baseDomain, backendIP, nil
 }
 
-// Example: move files not in requiredFiles to other/
-func organizeAssets(assetsDir string, requiredFiles map[string]bool) error {
-    otherDir := filepath.Join(assetsDir, "other")
-    if err := os.MkdirAll(otherDir, 0755); err != nil {
-        return fmt.Errorf("failed creating other/ dir: %w", err)
-    }
-
-    err := filepath.Walk(assetsDir, func(path string, info os.FileInfo, err error) error {
-        if err != nil {
-            return err
-        }
-
-        // Skip directories themselves
-        if info.IsDir() {
-            return nil
-        }
-
-        relPath, _ := filepath.Rel(assetsDir, path)
-        // If not in required set, move it
-        if !requiredFiles[relPath] {
-            newPath := filepath.Join(otherDir, relPath)
-            // Make sure the directory structure inside other/ matches
-            if err := os.MkdirAll(filepath.Dir(newPath), 0755); err != nil {
-                return fmt.Errorf("error making subdir for %s: %w", newPath, err)
-            }
-            if err := os.Rename(path, newPath); err != nil {
-                return fmt.Errorf("error moving %s to %s: %w", path, newPath, err)
-            }
-        }
-        return nil
-    })
-    return err
+// prompt reads a single line from standard input after displaying the provided message.
+func prompt(message string) string {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print(message)
+	text, _ := reader.ReadString('\n')
+	return strings.TrimSpace(text)
 }
 
-// Replace placeholders in file
-func replacePlaceholders(filePath, domain, ip string) error {
-    input, err := os.ReadFile(filePath)
-    if err != nil {
-        return fmt.Errorf("error reading %s: %w", filePath, err)
-    }
-    content := string(input)
-    content = strings.ReplaceAll(content, "${BASE_DOMAIN}", domain)
-    content = strings.ReplaceAll(content, "${backendIP}", ip)
-
-    err = os.WriteFile(filePath, []byte(content), 0644)
-    if err != nil {
-        return fmt.Errorf("error writing %s: %w", filePath, err)
-    }
-    return nil
+// yesOrNo asks the user a yes/no question and returns true if the answer is yes (default yes).
+func yesOrNo(message string) bool {
+	response := prompt(message)
+	// Default to yes if response is empty.
+	if response == "" {
+		return true
+	}
+	response = strings.ToLower(response)
+	return response == "y" || response == "yes"
 }
 
-// Check for cert files in certs/ or use let’s encrypt
-func ensureCertificates(domain string) error {
-    certDir := "certs"
-    privKey := filepath.Join(certDir, fmt.Sprintf("%s.privkey.pem", domain))
-    fullChain := filepath.Join(certDir, fmt.Sprintf("%s.fullchain.pem", domain))
-
-    // Check both files
-    _, errKey := os.Stat(privKey)
-    _, errChain := os.Stat(fullChain)
-
-    if os.IsNotExist(errKey) || os.IsNotExist(errChain) {
-        fmt.Printf("No valid certificate found for domain %s.\nLooking for:\n  %s\n  %s\n", domain, privKey, fullChain)
-        fmt.Printf("Attempting to issue certificate for %s...\n", domain)
-
-        // Insert your ACME client or certbot logic here.
-        // e.g. runCertbot(domain) or however you issue certs.
-
-        // For illustration only:
-        // 1) generate new .privkey.pem and .fullchain.pem
-        // 2) place them into certs/
-        fmt.Println("✅ Certificates generated and placed in certs/ directory (stub).")
-    } else {
-        fmt.Printf("✅ Certificate files for domain %s already exist in certs/.\n", domain)
-    }
-
-    return nil
+// replacePlaceholders opens the file at filePath, replaces ${BASE_DOMAIN} and ${backendIP} placeholders
+// with the provided values, and writes the updated content back to the same file.
+func replacePlaceholders(filePath, baseDomain, backendIP string) error {
+	contentBytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("error reading file %s: %w", filePath, err)
+	}
+	content := string(contentBytes)
+	content = strings.ReplaceAll(content, "${BASE_DOMAIN}", baseDomain)
+	content = strings.ReplaceAll(content, "${backendIP}", backendIP)
+	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("error writing file %s: %w", filePath, err)
+	}
+	return nil
 }
 
-
-// Possibly uncomment Jenkins port in docker-compose.yaml
-func maybeUncommentJenkinsPort(composeFile string) error {
-    // If you do *not* want to uncomment automatically, skip.
-    // This shows how you could do it if you do want to.
-
-    input, err := os.ReadFile(composeFile)
-    if err != nil {
-        return fmt.Errorf("failed reading %s: %w", composeFile, err)
-    }
-    lines := strings.Split(string(input), "\n")
-
-    // Example: search for "#- \"50000:50000\"" and uncomment it
-    for i, line := range lines {
-        trimmed := strings.TrimSpace(line)
-        if strings.HasPrefix(trimmed, "#- \"50000:50000\"") {
-            // Suppose we want to uncomment:
-            lines[i] = strings.Replace(line, "#-", "-", 1)
-        }
-    }
-    output := strings.Join(lines, "\n")
-    err = os.WriteFile(composeFile, []byte(output), 0644)
-    if err != nil {
-        return fmt.Errorf("failed writing updated %s: %w", composeFile, err)
-    }
-    return nil
-}
-
-// Finally, run `docker compose up -d`
-func dockerComposeUp() error {
-    // You can either shell out or use something like https://github.com/docker/compose/v2/pkg/api
-    // Here we’ll just do a simple shell exec:
-    cmd := "docker compose up -d"
-    fmt.Printf("Running: %s\n", cmd)
-    // e.g. os/exec
-    //   out, err := exec.Command("sh", "-c", cmd).CombinedOutput()
-    //   fmt.Println(string(out))
-    //   return err
-    return nil
-}
-
-// Prompt user for domain and IP
-func promptForHecateVars(storedDomain, storedIP string) (string, string, error) {
-    reader := bufio.NewReader(os.Stdin)
-
-    finalDomain := storedDomain
-    finalIP := storedIP
-
-    if storedDomain != "" {
-        fmt.Printf("Detected BASE_DOMAIN=%q from .hecate.conf; press Enter to keep or type a new value: ", storedDomain)
-        text, _ := reader.ReadString('\n')
-        text = strings.TrimSpace(text)
-        if text != "" {
-            finalDomain = text
-        }
-    } else {
-        fmt.Printf("Enter BASE_DOMAIN: ")
-        text, _ := reader.ReadString('\n')
-        finalDomain = strings.TrimSpace(text)
-    }
-
-    if storedIP != "" {
-        fmt.Printf("Detected backendIP=%q from .hecate.conf; press Enter to keep or type a new value: ", storedIP)
-        text, _ := reader.ReadString('\n')
-        text = strings.TrimSpace(text)
-        if text != "" {
-            finalIP = text
-        }
-    } else {
-        fmt.Printf("Enter backendIP: ")
-        text, _ := reader.ReadString('\n')
-        finalIP = strings.TrimSpace(text)
-    }
-
-    // Basic validation, if you want
-    if finalDomain == "" || finalIP == "" {
-        return "", "", fmt.Errorf("cannot have empty domain or IP")
-    }
-
-    return finalDomain, finalIP, nil
-}
-
-// Stub: read .hecate.conf
-func readHecateConfig(path string) (string, string, error) {
-    // For example, if .hecate.conf is just lines: BASE_DOMAIN=..., backendIP=...
-    data, err := os.ReadFile(path)
-    if err != nil {
-        return "", "", err
-    }
-    lines := strings.Split(string(data), "\n")
-    var domain, ip string
-    for _, line := range lines {
-        if strings.HasPrefix(line, "BASE_DOMAIN=") {
-            domain = strings.TrimPrefix(line, "BASE_DOMAIN=")
-        } else if strings.HasPrefix(line, "backendIP=") {
-            ip = strings.TrimPrefix(line, "backendIP=")
-        }
-    }
-    return domain, ip, nil
-}
-
-// Stub: write .hecate.conf
-func writeHecateConfig(path, domain, ip string) error {
-    content := fmt.Sprintf("BASE_DOMAIN=%s\nbackendIP=%s\n", domain, ip)
-    return os.WriteFile(path, []byte(content), 0644)
-}
-
-// Expose your command so it can be added to the root cmd
+// NewDeployJenkinsCmd exposes this command to be added to the root command.
 func NewDeployJenkinsCmd() *cobra.Command {
-    return deployJenkinsCmd
+	return deployJenkinsCmd
 }
