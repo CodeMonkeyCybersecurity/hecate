@@ -36,7 +36,7 @@ import (
 	"hecate/pkg/config"
 )
 
-var log = logger.GetSafeLogger()
+var log = logger.GetLogger()
 
 
 // RootCmd represents the base command when called without any subcommands
