@@ -16,14 +16,18 @@ var CreateCmd = &cobra.Command{
     Use:   "create",
     Short: "Create resources for Hecate",
     Long: `The create command allows you to create specific resources
-needed for your Hecate deployment, such as certificates, proxy configurations, etc.`,
-    Run: func(cmd *cobra.Command, args []string) {
-        cmd.Println("Create command executed!")
+needed for your Hecate deployment, such as certificates, proxy configurations, DNS records with Hetzner Cloud, etc.`,
+     Run: func(cmd *cobra.Command, args []string) {
+        // Instead of printing, use the centralized logger:
+        log.Info("Create command executed!",
+            zap.String("command", cmd.Name()),
+            zap.Strings("args", args),
+        )
     },
 }
 
 // init gets called automatically at package load time
 func init() {
-    // Attach the hetzner-wildcard subcommand here
+    // Attach the hetzner-dns subcommand here
     CreateCmd.AddCommand(hetzner.NewCreateHetznerWildcardCmd())
 }
