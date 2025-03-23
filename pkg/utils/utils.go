@@ -97,10 +97,12 @@ func FindLatestBackup(prefix string) (string, error) {
 //---------------------------- DEPLOY ---------------------------- //
 //
 
-// OrganizeAssetsForDeployment moves any files in the assets directory 
-// that are not explicitly needed for the given app into the "other" directory 
-// located at the project root (not inside assets).
-// A file is considered relevant if its base filename (case-insensitive) contains the app name.
+// OrganizeAssetsForDeployment moves every file in the assets directory that is not explicitly needed
+// for the given app into the "other" directory located at the project root.
+// A file is considered relevant if either:
+//   - Its base filename (lowercase) exactly matches one of the generic allowed names ("http.conf", "stream.conf", "nginx.conf"), or
+//   - Its base filename (lowercase) contains the app name (e.g., "jenkins").
+// Files not meeting these criteria are moved into the "other" directory, preserving their relative structure.
 func OrganizeAssetsForDeployment(app string) error {
 	assetsDir := "assets"
 	otherDir := "other" // "other" is at the project root
@@ -109,47 +111,68 @@ func OrganizeAssetsForDeployment(app string) error {
 	if err := os.MkdirAll(otherDir, 0755); err != nil {
 		return fmt.Errorf("failed to create 'other' directory: %w", err)
 	}
+	log.Info("OrganizeAssetsForDeployment: 'other' directory verified", zap.String("other_Dir", otherDir))
+
+	// Define the generic allowed filenames (lowercase).
+	allowedGenerics := map[string]bool{
+		"http.conf":   true,
+		"stream.conf": true,
+		"nginx.conf":  true,
+	}
 
 	// Walk the assets directory.
 	err := filepath.Walk(assetsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
+			log.Error("Error accessing path", zap.String("path", path), zap.Error(err))
 			return err
 		}
 
 		// Skip directories.
 		if info.IsDir() {
+			log.Debug("Skipping directory", zap.String("dir", path))
 			return nil
 		}
 
 		// Compute the file's relative path from assetsDir.
 		relPath, err := filepath.Rel(assetsDir, path)
 		if err != nil {
+			log.Error("Failed to compute relative path", zap.String("path", path), zap.Error(err))
 			return err
 		}
 
-		// Determine if the file is relevant: it must have the app name in its filename.
+		log.Debug("Processing file", zap.String("relativePath", relPath))
+
+		// Get the base filename in lowercase.
 		base := strings.ToLower(filepath.Base(path))
-		if strings.Contains(base, strings.ToLower(app)) {
-			// File is relevant; do nothing.
+
+		// Check if the file is relevant.
+		if allowedGenerics[base] || strings.Contains(base, strings.ToLower(app)) {
+			log.Debug("File is relevant, leaving it in assets", zap.String("file", path))
 			return nil
 		}
 
-		// Otherwise, move the file to the "other" directory, preserving its relative structure.
+		// Otherwise, move the file to the other directory, preserving its relative structure.
 		dest := filepath.Join(otherDir, relPath)
+		log.Debug("File not relevant; preparing to move", zap.String("file", path), zap.String("destination", dest))
+
 		// Ensure the destination directory exists.
 		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+			log.Error("Failed to create destination directory", zap.String("destDir", filepath.Dir(dest)), zap.Error(err))
 			return fmt.Errorf("failed to create destination directory %s: %w", filepath.Dir(dest), err)
 		}
 
 		// Move (rename) the file.
 		if err := os.Rename(path, dest); err != nil {
-			log.Error("Failed to move file to 'other'", zap.String("file", path), zap.Error(err))
+			log.Error("Failed to move file to 'other'", zap.String("from", path), zap.String("to", dest), zap.Error(err))
 			return fmt.Errorf("failed to move file %s to %s: %w", path, dest, err)
 		}
 
 		log.Info("Moved unused asset file to 'other'", zap.String("from", path), zap.String("to", dest))
 		return nil
 	})
+	if err != nil {
+		log.Error("Error during asset organization", zap.Error(err))
+	}
 	return err
 }
 
