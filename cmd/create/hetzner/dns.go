@@ -74,7 +74,9 @@ Note: You must set the environment variable HETZNER_DNS_API_TOKEN for authentica
 	To use it here, run:
  	'export HETZNER_DNS_API_TOKEN="YOUR-HETZNER-TOKEN-HERE"'
 
-  	Replace YOUR-HETZNER-TOKEN-HERE with the actual token you copied from Hetzner, then run this command again
+  	Replace YOUR-HETZNER-TOKEN-HERE with the actual token you copied from Hetzner.
+   
+   	Then, run this command again.
      `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 			// Basic validation
