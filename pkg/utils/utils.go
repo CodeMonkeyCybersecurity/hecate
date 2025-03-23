@@ -161,18 +161,6 @@ func DeployApp(app string, force bool) error {
 	if err := ValidateConfigPaths(app); err != nil {
 		return fmt.Errorf("failed to validate config paths: %w", err)
 	}
-	
-	httpSrc := filepath.Join("assets/servers", app+".conf")
-	streamSrc := filepath.Join("assets/stream", app+".conf")
-	symlinkPath := filepath.Join("/etc/nginx/sites-enabled", app)
-
-	// Clean up existing files if force is enabled
-	if force {
-		log.Warn("⚠️ Overwriting existing deployment", zap.String("app", app))
-		if err := RemoveApp(app); err != nil {
-			return fmt.Errorf("failed to overwrite existing deployments: %w", err)
-		}
-	}	
 
 	// Skip copying stream config; we are using the file directly from the assets directory.
 	log.Info("Skipping stream config copy; using assets directory mount", zap.String("streamConfig", streamSrc))
