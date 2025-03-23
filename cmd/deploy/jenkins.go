@@ -3,12 +3,8 @@
 package deploy
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 
