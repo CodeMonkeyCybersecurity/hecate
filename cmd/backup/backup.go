@@ -33,7 +33,7 @@ var BackupCmd = &cobra.Command{
 
 // runBackup is called when the user runs "hecate create backup".
 func runBackup() {
-	log := logger.GetSafeLogger()
+	log := logger.GetLogger()
 	if log == nil {
 		println("⚠️ Logger is nil. Defaulting to console output.")
 	}
