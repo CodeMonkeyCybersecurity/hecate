@@ -28,13 +28,12 @@ that are not relevant to Jenkins into the "other" directory at the project root.
 			log.Info("Starting Jenkins deployment")
 
 			// Stop the container if it's running.
-			if err := docker.StopContainer("hecate-nginx"); err != nil {
-				log.Error("Error stopping container", zap.String("container", "hecate-nginx"), zap.Error(err))
+			if err := docker.StopContainerBySubstring("hecate"); err != nil {
+				log.Error("Error stopping container", zap.String("substring", "hecate"), zap.Error(err))
 				fmt.Printf("Error stopping container: %v\n", err)
 				return
 			}
-			log.Info("Container stopped successfully", zap.String("container", "hecate-nginx"))
-
+			log.Info("Containers with 'hecate' in the name stopped successfully")
 
 			// Organize assets for Jenkins.
 			if err := utils.OrganizeAssetsForDeployment("jenkins"); err != nil {
