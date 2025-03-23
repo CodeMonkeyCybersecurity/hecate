@@ -64,7 +64,18 @@ doesn't allow it or returns an error, it falls back to creating 'wildcard-fallba
 Examples:
   hecate create hetzner-dns --domain example.com --ip 1.2.3.4
 
-Note: You must set the environment variable HETZNER_DNS_API_TOKEN for authentication.`,
+Note: You must set the environment variable HETZNER_DNS_API_TOKEN for authentication.
+	To do this, login to your Hetzner account at 'https://dns.hetzner.com//'
+ 	-> Manage API tokens
+  	-> Follow the prompts to then select 'Create access token'
+
+   	Copy the token value and store it securely
+
+	To use it here, run:
+ 	'export HETZNER_DNS_API_TOKEN="YOUR-HETZNER-TOKEN-HERE"'
+
+  	Replace YOUR-HETZNER-TOKEN-HERE with the actual token you copied from Hetzner, then run this command again
+     `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 			// Basic validation
 			if domain == "" || ip == "" {
