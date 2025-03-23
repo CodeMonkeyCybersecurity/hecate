@@ -19,10 +19,10 @@ var CreateCmd = &cobra.Command{
 needed for your Hecate deployment, such as certificates, proxy configurations, DNS records with Hetzner Cloud, etc.`,
      Run: func(cmd *cobra.Command, args []string) {
         // Instead of printing, use the centralized logger:
-        log.Info("Create command executed!",
-            zap.String("command", cmd.Name()),
-            zap.Strings("args", args),
-        )
+        log.Info("Create command executed!", 
+                 zap.String("command", cmd.Name()),
+                zap.Strings("args", args),
+        ) 
     },
 }
 
