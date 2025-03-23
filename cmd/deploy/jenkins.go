@@ -72,8 +72,12 @@ or advanced logging) can be integrated in the future.`,
 		}
 		fmt.Println("✅ Configuration files updated.")
 
-		// Additional deployment steps...
+		// Organize assets: move unused configuration files into assets/other.
+		if err := utils.OrganizeAssetsForDeployment("jenkins"); err != nil {
+			return fmt.Errorf("failed to organize assets: %w", err)
+		}
 
+		fmt.Println("🎉 Jenkins reverse proxy deployed successfully.")
 		return nil
 	},
 }
