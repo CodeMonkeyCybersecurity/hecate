@@ -162,9 +162,6 @@ func DeployApp(app string, force bool) error {
 		return fmt.Errorf("failed to validate config paths: %w", err)
 	}
 
-	// Skip copying stream config; we are using the file directly from the assets directory.
-	log.Info("Skipping stream config copy; using assets directory mount", zap.String("streamConfig", streamSrc))
-
 	// Test Nginx configuration
 	cmdTest := exec.Command("nginx", "-t")
 	if output, err := cmdTest.CombinedOutput(); err != nil {
