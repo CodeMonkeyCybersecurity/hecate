@@ -50,7 +50,7 @@ properly configured and deployed. The overall process includes the following ste
 By automating these steps, Hecate streamlines the deployment process for Jenkins, reducing manual errors and ensuring 
 consistency across environments. This command is designed to be extendable so that additional checks (like asset organization 
 or advanced logging) can be integrated in the future.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) error {
 		fmt.Println("🚀 Deploying reverse proxy for Jenkins...")
 
 		// Organize assets: move unused configuration files into assets/other.
