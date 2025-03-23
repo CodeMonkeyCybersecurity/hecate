@@ -16,6 +16,36 @@ import (
 	"hecate/pkg/execute"
 )
 
+//
+//---------------------------- STOP FUNCTIONS ---------------------------- //
+//
+
+// StopContainer checks if a container with the given name is running, and stops it if it is.
+func StopContainer(containerName string) error {
+	// Run "docker ps" to check if the container is running.
+	out, err := exec.Command("docker", "ps", "--filter", "name="+containerName, "--format", "{{.Names}}").Output()
+	if err != nil {
+		return fmt.Errorf("failed to check container status: %w", err)
+	}
+	
+	containerNames := strings.TrimSpace(string(out))
+	if containerNames == "" {
+		// Container is not running.
+		log.Info("Container not running", zap.String("container", containerName))
+		return nil
+	}
+
+	log.Info("Container is running; stopping container", zap.String("container", containerName))
+	// Run "docker stop" on the container.
+	stopCmd := exec.Command("docker", "stop", containerName)
+	if output, err := stopCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to stop container %s: %s: %w", containerName, string(output), err)
+	}
+
+	log.Info("Container stopped successfully", zap.String("container", containerName))
+	return nil
+}
+
 
 //
 //---------------------------- CONTAINER FUNCTIONS ---------------------------- //
