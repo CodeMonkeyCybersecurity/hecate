@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"hecate/pkg/config"
 	"hecate/pkg/docker"
 	"hecate/pkg/logger"
 	"hecate/pkg/utils"
