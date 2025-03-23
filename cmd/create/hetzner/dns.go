@@ -47,17 +47,25 @@ type ZonesResponse struct {
 	} `json:"zones"`
 }
 
-// NewCreateHetznerWildcardCmd returns a Cobra command for creating a Hetzner wildcard DNS record.
+// NewCreateHetznerWildcardCmd creates a Cobra command for setting a wildcard A record (with fallback) on Hetzner.
 func NewCreateHetznerWildcardCmd() *cobra.Command {
-	var (
-		domain string
-		ip     string
-	)
+    var (
+        domain string
+        ip     string
+    )
 
-	cmd := &cobra.Command{
-		Use:   "hetzner-dns",
-		Short: "Create a DNS record at Hetzner, ideally with a wildcard but with a fallback to a subdomain if wildcard fails",
-		RunE: func(cmd *cobra.Command, args []string) error {
+    cmd := &cobra.Command{
+        Use:   "hetzner-dns",
+        Short: "Create a DNS A record on Hetzner (wildcard by default)",
+        Long: `Create a DNS A record on Hetzner for the given domain and IP address.
+By default, this attempts to create a wildcard record (*.example.com). If the provider
+doesn't allow it or returns an error, it falls back to creating 'wildcard-fallback.example.com'.
+    
+Examples:
+  hecate create hetzner-dns --domain example.com --ip 1.2.3.4
+
+Note: You must set the environment variable HETZNER_DNS_API_TOKEN for authentication.`,
+	Run: func(cmd *cobra.Command, args []string) error {
 			// Basic validation
 			if domain == "" || ip == "" {
 				err := fmt.Errorf("domain and ip are required")
