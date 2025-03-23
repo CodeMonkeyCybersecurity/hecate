@@ -44,52 +44,37 @@ Examples:
   hecate deploy jenkins --force
 `,
 	Args:  cobra.ExactArgs(1),
-	Run:   runDeploy,
+	Run:   runDeploy, // This generic function is used for non-specific deployments.
 }
 
-// ✅ New `force` flag (kept here because it's specific to this command)
-var force bool
-
-var log = logger.GetSafeLogger()
 
 func runDeploy(cmd *cobra.Command, args []string) {
-	
-	app := strings.ToLower(args[0]) // ✅ Normalize input to lowercase
+	app := strings.ToLower(args[0])
 
-	// ✅ Validate application before proceeding
+	// Validate the application.
 	if !utils.IsValidApp(app) {
-		errMsg := fmt.Sprintf("❌ Invalid application: %s. Supported: %v", app, config.GetSupportedAppNames())
-		utils.PrintError(log, errMsg)
-		return
-	}	
-
-	utils.SafeLog(log, "🚀 Deploying application", zap.String("app", app), zap.Bool("force", utils.GetForce()))
-	
-	// ✅ Proceed with deployment
-	if err := deployApplication(app, cmd); err != nil {
-		utils.PrintError(log, fmt.Sprintf("❌ Deployment failed for '%s': %v", app, err))
+		fmt.Printf("❌ Invalid application: %s. Supported: %v\n", app, config.GetSupportedAppNames())
 		return
 	}
 
-	utils.SafeLog(log, "✅ Deployment completed successfully", zap.String("app", app))
+	fmt.Printf("🚀 Deploying application %s (force: %v)\n", app, force)
+
+	// Proceed with deployment.
+	if err := deployApplication(app); err != nil {
+		fmt.Printf("❌ Deployment failed for '%s': %v\n", app, err)
+		return
+	}
+
+	fmt.Printf("✅ Deployment completed successfully for %s\n", app)
 }
 
-
-// ✅ Deployment wrapper function
-func deployApplication(app string, cmd *cobra.Command) error {
-	if err := utils.DeployApp(app, utils.GetForce()); err != nil {
-		return fmt.Errorf("❌ Deployment failed for '%s': %w", app, err)
+func deployApplication(app string) error {
+	if err := utils.DeployApp(app, force); err != nil {
+		return fmt.Errorf("Deployment failed for '%s': %w", app, err)
 	}
 	return nil
 }
 
-// ✅ Ensure `force` flag is handled correctly
 func init() {
-	DeployCmd.Flags().BoolVarP(&force, "force", "f", false, "Force redeployment (overwrite existing)")
-	DeployCmd.PreRun = func(cmd *cobra.Command, args []string) {
-		utils.SetForce(force)
-		if force { // ✅ Only log when force is actually enabled
-			utils.SafeLog(logger.GetLogger(), "⚠️ Force mode enabled: Existing deployments may be overwritten.")
-		}
-	}
+	DeployCmd.AddCommand(jenkins.NewDeployJenkinsCmd())
 }
