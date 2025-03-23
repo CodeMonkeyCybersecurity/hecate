@@ -97,20 +97,17 @@ func FindLatestBackup(prefix string) (string, error) {
 //---------------------------- DEPLOY ---------------------------- //
 //
 
+// OrganizeAssetsForDeployment moves any files in the assets directory 
+// that are not explicitly needed for the given app into the "other" directory 
+// located at the project root (not inside assets).
+// A file is considered relevant if its base filename (case-insensitive) contains the app name.
 func OrganizeAssetsForDeployment(app string) error {
 	assetsDir := "assets"
-	otherDir := filepath.Join(assetsDir, "other")
-	
-	// Ensure the other directory exists.
-	if err := os.MkdirAll(otherDir, 0755); err != nil {
-		return fmt.Errorf("failed to create assets/other directory: %w", err)
-	}
+	otherDir := "other" // "other" is at the project root
 
-	// Define generic allowed filenames (in lowercase for comparison)
-	allowedGenerics := map[string]bool{
-		"http.conf":   true,
-		"stream.conf": true,
-		"nginx.conf":  true,
+	// Ensure the "other" directory exists.
+	if err := os.MkdirAll(otherDir, 0755); err != nil {
+		return fmt.Errorf("failed to create 'other' directory: %w", err)
 	}
 
 	// Walk the assets directory.
@@ -119,36 +116,25 @@ func OrganizeAssetsForDeployment(app string) error {
 			return err
 		}
 
-		// Skip directories and the "other" directory itself.
+		// Skip directories.
 		if info.IsDir() {
-			// Do not descend into assets/other again.
-			if path == otherDir {
-				return filepath.SkipDir
-			}
 			return nil
 		}
 
-		// Compute the relative path from assetsDir.
+		// Compute the file's relative path from assetsDir.
 		relPath, err := filepath.Rel(assetsDir, path)
 		if err != nil {
 			return err
 		}
 
-		// Skip files that are already in the "other" directory.
-		if strings.HasPrefix(relPath, "other"+string(os.PathSeparator)) {
-			return nil
-		}
-
-		// Check if the file is allowed:
-		// - Allowed if the filename (lowercase) contains the app name
-		// - Or if the filename exactly matches one of the generic allowed names.
-		filename := strings.ToLower(filepath.Base(path))
-		if strings.Contains(filename, strings.ToLower(app)) || allowedGenerics[filename] {
+		// Determine if the file is relevant: it must have the app name in its filename.
+		base := strings.ToLower(filepath.Base(path))
+		if strings.Contains(base, strings.ToLower(app)) {
 			// File is relevant; do nothing.
 			return nil
 		}
 
-		// Otherwise, move the file to assets/other, preserving its subdirectory structure.
+		// Otherwise, move the file to the "other" directory, preserving its relative structure.
 		dest := filepath.Join(otherDir, relPath)
 		// Ensure the destination directory exists.
 		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
@@ -157,17 +143,14 @@ func OrganizeAssetsForDeployment(app string) error {
 
 		// Move (rename) the file.
 		if err := os.Rename(path, dest); err != nil {
-			log.Error("Failed to move file to assets/other", zap.String("file", path), zap.Error(err))
+			log.Error("Failed to move file to 'other'", zap.String("file", path), zap.Error(err))
 			return fmt.Errorf("failed to move file %s to %s: %w", path, dest, err)
 		}
 
-		log.Info("Moved unused asset file to assets/other", zap.String("from", path), zap.String("to", dest))
+		log.Info("Moved unused asset file to 'other'", zap.String("from", path), zap.String("to", dest))
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 
@@ -213,14 +196,8 @@ func DeployApp(app string, force bool) error {
 	}
 	log.Info("✅ HTTP config copied", zap.String("dest", httpDest))
 
-	// Copy Stream config (if present)
-	if FileExists(streamSrc) {
-		if err := CopyFile(streamSrc, streamDest); err != nil {
-			log.Error("❌ Failed to copy stream config", zap.String("src", streamSrc), zap.Error(err))
-			return fmt.Errorf("failed to copy stream config: %w", err)
-		}
-		log.Info("✅ Stream config copied", zap.String("dest", streamDest))
-	}
+	// Skip copying stream config; we are using the file directly from the assets directory.
+	log.Info("Skipping stream config copy; using assets directory mount", zap.String("streamConfig", streamSrc))
 
 	// Symlink into sites-enabled
 	if err := os.Symlink(httpDest, symlinkPath); err != nil && !os.IsExist(err) {
