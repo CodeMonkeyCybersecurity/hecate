@@ -24,7 +24,7 @@ import (
 )
 
 
-var log = logger.GetSafeLogger()
+var log = logger.GetLogger()
 
 //
 //---------------------------- RESTORE ---------------------------- //
@@ -97,22 +97,14 @@ func FindLatestBackup(prefix string) (string, error) {
 //---------------------------- DEPLOY ---------------------------- //
 //
 
-
-// DeployApp deploys the application by copying necessary config files and restarting services
 // DeployApp deploys the application by copying necessary config files and restarting services
 func DeployApp(app string, force bool) error {
-	
-	if log == nil {
-		fmt.Println("⚠️ Warning: Logger is nil. Defaulting to console output.")
-	}
-
 	log.Info("🚀 Starting deployment", zap.String("app", app), zap.Bool("force", force))
 
 	if err := ValidateConfigPaths(app); err != nil {
 		return fmt.Errorf("failed to validate config paths: %w", err)
 	}
 	
-
 	httpSrc := filepath.Join("assets/servers", app+".conf")
 	httpDest := filepath.Join("/etc/nginx/sites-available", app)
 	streamSrc := filepath.Join("assets/stream", app+".conf")
@@ -121,8 +113,15 @@ func DeployApp(app string, force bool) error {
 
 	// Check if config already exists
 	if _, err := os.Stat(httpDest); err == nil && !force {
-		log.Warn("❌ Application already deployed. Use --force to overwrite.", zap.String("app", app))
-		return fmt.Errorf("application %s already deployed. Use --force to overwrite", app)
+	    if !isContainerRunning(app) {
+	        log.Warn("No active container detected, cleaning up stale deployment", zap.String("app", app))
+	        if err := RemoveApp(app); err != nil {
+	            return fmt.Errorf("failed to remove stale deployment: %w", err)
+	        }
+	    } else {
+	        log.Warn("❌ Application already deployed. Use --force to overwrite.", zap.String("app", app))
+	        return fmt.Errorf("application %s already deployed. Use --force to overwrite", app)
+	    }
 	}
 
 	// Clean up existing files if force is enabled
@@ -173,6 +172,18 @@ func DeployApp(app string, force bool) error {
 
 	log.Info("✅ Deployment successful", zap.String("app", app))
 	return nil
+}
+
+// isContainerRunning checks whether a container with the given app name is running.
+func isContainerRunning(app string) bool {
+	// Adjust the filter if your container names differ.
+	out, err := exec.Command("docker", "ps", "--filter", "name="+app, "--format", "{{.Names}}").Output()
+	if err != nil {
+		log.Error("Error checking container status", zap.Error(err))
+		return false
+	}
+	containerNames := strings.TrimSpace(string(out))
+	return containerNames != ""
 }
 
 
