@@ -166,19 +166,6 @@ func DeployApp(app string, force bool) error {
 	streamSrc := filepath.Join("assets/stream", app+".conf")
 	symlinkPath := filepath.Join("/etc/nginx/sites-enabled", app)
 
-	// Check if config already exists
-	if _, err := os.Stat(httpDest); err == nil && !force {
-	    if !isContainerRunning(app) {
-	        log.Warn("No active container detected, cleaning up stale deployment", zap.String("app", app))
-	        if err := RemoveApp(app); err != nil {
-	            return fmt.Errorf("failed to remove stale deployment: %w", err)
-	        }
-	    } else {
-	        log.Warn("❌ Application already deployed. Use --force to overwrite.", zap.String("app", app))
-	        return fmt.Errorf("application %s already deployed. Use --force to overwrite", app)
-	    }
-	}
-
 	// Clean up existing files if force is enabled
 	if force {
 		log.Warn("⚠️ Overwriting existing deployment", zap.String("app", app))
@@ -187,23 +174,8 @@ func DeployApp(app string, force bool) error {
 		}
 	}	
 
-	// Copy HTTP config
-	if err := CopyFile(httpSrc, httpDest); err != nil {
-		log.Error("❌ Failed to copy HTTP config", zap.String("src", httpSrc), zap.Error(err))
-		return fmt.Errorf("failed to copy HTTP config: %w", err)
-	}
-	log.Info("✅ HTTP config copied", zap.String("dest", httpDest))
-
 	// Skip copying stream config; we are using the file directly from the assets directory.
 	log.Info("Skipping stream config copy; using assets directory mount", zap.String("streamConfig", streamSrc))
-
-	// Symlink into sites-enabled
-	if err := os.Symlink(httpDest, symlinkPath); err != nil && !os.IsExist(err) {
-		log.Error("❌ Failed to create symlink", zap.String("link", symlinkPath), zap.Error(err))
-		return fmt.Errorf("failed to create symlink: %w", err)
-	}
-
-	log.Info("🔗 Symlink created", zap.String("from", symlinkPath), zap.String("to", httpDest))
 
 	// Test Nginx configuration
 	cmdTest := exec.Command("nginx", "-t")
@@ -570,35 +542,6 @@ func ProcessMap(data map[string]interface{}, indent string) {
 // quote adds quotes around a string for cleaner logging
 func quote(s string) string {
 	return fmt.Sprintf("%q", s)
-}
-
-// RemoveApp deletes existing deployment files safely (used with --force)
-func RemoveApp(app string) error {
-	
-	httpDest := filepath.Join("/etc/nginx/sites-available", app)
-	streamDest := filepath.Join("/etc/nginx/stream.d", app+".conf")
-	symlinkPath := filepath.Join("/etc/nginx/sites-enabled", app)
-
-	// Remove main config
-	if err := os.RemoveAll(httpDest); err != nil && !os.IsNotExist(err) {
-		log.Error("❌ Failed to remove HTTP config", zap.String("file", httpDest), zap.Error(err))
-		return fmt.Errorf("failed to remove HTTP config: %w", err)
-	}
-
-	// Remove stream config if it exists
-	if err := os.RemoveAll(streamDest); err != nil && !os.IsNotExist(err) {
-		log.Error("❌ Failed to remove stream config", zap.String("file", streamDest), zap.Error(err))
-		return fmt.Errorf("failed to remove stream config: %w", err)
-	}
-
-	// Remove symlink
-	if err := os.RemoveAll(symlinkPath); err != nil && !os.IsNotExist(err) {
-		log.Error("❌ Failed to remove symlink", zap.String("link", symlinkPath), zap.Error(err))
-		return fmt.Errorf("failed to remove symlink: %w", err)
-	}
-
-	log.Info("✅ Existing deployment cleaned up", zap.String("app", app))
-	return nil
 }
 
 // ValidateConfigPaths checks that the app’s Nginx source config files exist
