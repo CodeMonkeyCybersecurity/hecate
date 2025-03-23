@@ -165,13 +165,14 @@ type HecateConfig struct {
     	Email      string  // email for certificate requests
 }
 
-// LoadConfig reads LastValuesFile (.hecate.conf) and returns the configuration.
-// If the file does not exist or the values need to be updated, it prompts the user.
+
+// LoadConfig reads the .hecate.conf file and returns the configuration.
+// If the file does not exist or values are missing, it prompts the user with friendly messages.
 func LoadConfig() (*HecateConfig, error) {
 	configPath := LastValuesFile
 	cfg := &HecateConfig{}
 
-	// Check if file exists.
+	// Check if the configuration file exists.
 	if _, err := os.Stat(configPath); err == nil {
 		// Read existing config.
 		f, err := os.Open(configPath)
@@ -187,6 +188,10 @@ func LoadConfig() (*HecateConfig, error) {
 				cfg.BaseDomain = strings.TrimSpace(strings.TrimPrefix(line, "BASE_DOMAIN="))
 			} else if strings.HasPrefix(line, "backendIP=") {
 				cfg.BackendIP = strings.TrimSpace(strings.TrimPrefix(line, "backendIP="))
+			} else if strings.HasPrefix(line, "SUBDOMAIN=") {
+				cfg.Subdomain = strings.TrimSpace(strings.TrimPrefix(line, "SUBDOMAIN="))
+			} else if strings.HasPrefix(line, "EMAIL=") {
+				cfg.Email = strings.TrimSpace(strings.TrimPrefix(line, "EMAIL="))
 			}
 		}
 		if err := scanner.Err(); err != nil {
@@ -194,16 +199,41 @@ func LoadConfig() (*HecateConfig, error) {
 		}
 	}
 
-	// Show current configuration.
-	fmt.Printf("Current configuration:\n  BASE_DOMAIN: %s\n  backendIP: %s\n", cfg.BaseDomain, cfg.BackendIP)
-	// Ask user whether to keep these values. If the file is missing or user declines, prompt for new values.
-	if !yesOrNo("Do you want to keep these values? (Y/n): ") || cfg.BaseDomain == "" || cfg.BackendIP == "" {
-		cfg.BaseDomain = prompt("Enter new BASE_DOMAIN: ")
-		cfg.BackendIP = prompt("Enter new backendIP: ")
+	// Display current configuration.
+	fmt.Println("Current configuration:")
+	fmt.Printf("  Base Domain: %s\n", cfg.BaseDomain)
+	fmt.Printf("  Backend IP: %s\n", cfg.BackendIP)
+	fmt.Printf("  Subdomain: %s\n", cfg.Subdomain)
+	fmt.Printf("  Email: %s\n", cfg.Email)
+
+	// Ask the user whether to keep the current values.
+	if !yesOrNo("Do you want to keep these values? (Y/n): ") || 
+	   cfg.BaseDomain == "" || cfg.BackendIP == "" || cfg.Subdomain == "" || cfg.Email == "" {
+		if cfg.BaseDomain == "" {
+			cfg.BaseDomain = prompt("Please enter the base domain for your reverse proxy (e.g., example.com): ")
+		} else {
+			cfg.BaseDomain = prompt("Enter a new base domain for your reverse proxy (e.g., example.com): ")
+		}
+		if cfg.BackendIP == "" {
+			cfg.BackendIP = prompt("Please enter the backend IP address for your services (e.g., 192.168.1.100): ")
+		} else {
+			cfg.BackendIP = prompt("Enter a new backend IP address for your services (e.g., 192.168.1.100): ")
+		}
+		if cfg.Subdomain == "" {
+			cfg.Subdomain = prompt("Please enter the subdomain for this application (e.g., jenkins): ")
+		} else {
+			cfg.Subdomain = prompt("Enter a new subdomain for this application (e.g., jenkins): ")
+		}
+		if cfg.Email == "" {
+			cfg.Email = prompt("Please enter the email address for certificate requests (e.g., admin@example.com): ")
+		} else {
+			cfg.Email = prompt("Enter a new email address for certificate requests (e.g., admin@example.com): ")
+		}
 	}
 
-	// Write (or overwrite) configuration.
-	content := fmt.Sprintf("BASE_DOMAIN=%s\nbackendIP=%s\n", cfg.BaseDomain, cfg.BackendIP)
+	// Write the confirmed configuration back to .hecate.conf.
+	content := fmt.Sprintf("BASE_DOMAIN=%s\nbackendIP=%s\nSUBDOMAIN=%s\nEMAIL=%s\n",
+		cfg.BaseDomain, cfg.BackendIP, cfg.Subdomain, cfg.Email)
 	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
 		return nil, fmt.Errorf("failed to write %s: %w", configPath, err)
 	}
