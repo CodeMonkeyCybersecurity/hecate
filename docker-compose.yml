@@ -5,7 +5,7 @@ services:
     container_name: hecate-nginx
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro          #  main NGINX configuration
-      - ./conf.d:/etc/nginx/conf.d:ro                  # All  additional config files (http.conf, stream.conf, servers, etc.)
+      - ./assets:/etc/nginx/conf.d:ro                  # All  additional config files (http.conf, stream.conf, servers, etc.)
       - ./snippets:/etc/nginx/snippets:ro              #  snippets (security-headers and error-pages)
       - ./certs:/etc/nginx/certs:ro                    #  SSL certificates
       - ./error_pages:/usr/share/nginx/html:ro         #  error pages (custom_error.html, etc.)
