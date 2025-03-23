@@ -28,7 +28,7 @@ that are not relevant to Jenkins into the "other" directory at the project root.
 			log.Info("Starting Jenkins deployment")
 
 			// Stop the container if it's running.
-			if err := docker.StopContainerBySubstring("hecate"); err != nil {
+			if err := docker.StopContainersBySubstring("hecate"); err != nil {
 				log.Error("Error stopping container", zap.String("substring", "hecate"), zap.Error(err))
 				fmt.Printf("Error stopping container: %v\n", err)
 				return
