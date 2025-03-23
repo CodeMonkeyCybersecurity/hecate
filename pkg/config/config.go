@@ -16,19 +16,19 @@ import (
 
 // Constants for file and directory names.
 const (
-	LastValuesFile    = ".hecate.conf"
-	DefaultComposeYML = "docker-compose.yml"
-	DefaultCertsDir   = "certs"
-	DefaultConfDir    = "conf.d"
-	AssetsPath        = "assets"
-	NginxConfPath     = "/etc/nginx/conf.d/"
-	NginxStreamPath   = "/etc/nginx/stream.d/"
-	DockerNetworkName = "arachne-net"
-	DockerIPv4Subnet  = "10.1.0.0/16"
-	DockerIPv6Subnet  = "fd42:1a2b:3c4d:5e6f::/64"
-	DefaultConfigPath = "./config/default.yaml"
-	AssetServerPath = "assets/servers"
-    AssetStreamPath = "assets/stream"
+	LastValuesFile    	= ".hecate.conf"
+	DefaultComposeYML 	= "docker-compose.yml"
+	DefaultCertsDir   	= "certs"
+	DefaultConfDir    	= "conf.d"
+	AssetsPath        	= "assets"
+	NginxConfPath     	= "/etc/nginx/conf.d/"
+	NginxStreamPath   	= "/etc/nginx/stream.d/"
+	DockerNetworkName 	= "arachne-net"
+	DockerIPv4Subnet  	= "10.1.0.0/16"
+	DockerIPv6Subnet  	= "fd42:1a2b:3c4d:5e6f::/64"
+	DefaultConfigPath 	= "./config/default.yaml"
+	AssetServerPath 	= "assets/servers"
+    	AssetStreamPath 	= "assets/stream"
 )
 
 // DefaultMarkers holds the default port markers that apply to all apps.
@@ -150,4 +150,79 @@ func GetUserSelection(defaultSelection string) (map[string]App, string) {
 		return GetUserSelection(defaultSelection)
 	}
 	return selectedApps, selection
+}
+
+
+//
+// ---------------------------- HECATE CONFIGURATION MANAGEMENT ---------------------------- //
+//
+
+// HecateConfig holds the primary configuration values.
+type HecateConfig struct {
+	BaseDomain string
+	BackendIP  string
+}
+
+// LoadConfig reads LastValuesFile (.hecate.conf) and returns the configuration.
+// If the file does not exist or the values need to be updated, it prompts the user.
+func LoadConfig() (*HecateConfig, error) {
+	configPath := LastValuesFile
+	cfg := &HecateConfig{}
+
+	// Check if file exists.
+	if _, err := os.Stat(configPath); err == nil {
+		// Read existing config.
+		f, err := os.Open(configPath)
+		if err != nil {
+			return nil, fmt.Errorf("unable to open %s: %w", configPath, err)
+		}
+		defer f.Close()
+
+		scanner := bufio.NewScanner(f)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "BASE_DOMAIN=") {
+				cfg.BaseDomain = strings.TrimSpace(strings.TrimPrefix(line, "BASE_DOMAIN="))
+			} else if strings.HasPrefix(line, "backendIP=") {
+				cfg.BackendIP = strings.TrimSpace(strings.TrimPrefix(line, "backendIP="))
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, fmt.Errorf("error reading %s: %w", configPath, err)
+		}
+	}
+
+	// Show current configuration.
+	fmt.Printf("Current configuration:\n  BASE_DOMAIN: %s\n  backendIP: %s\n", cfg.BaseDomain, cfg.BackendIP)
+	// Ask user whether to keep these values. If the file is missing or user declines, prompt for new values.
+	if !yesOrNo("Do you want to keep these values? (Y/n): ") || cfg.BaseDomain == "" || cfg.BackendIP == "" {
+		cfg.BaseDomain = prompt("Enter new BASE_DOMAIN: ")
+		cfg.BackendIP = prompt("Enter new backendIP: ")
+	}
+
+	// Write (or overwrite) configuration.
+	content := fmt.Sprintf("BASE_DOMAIN=%s\nbackendIP=%s\n", cfg.BaseDomain, cfg.BackendIP)
+	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
+		return nil, fmt.Errorf("failed to write %s: %w", configPath, err)
+	}
+
+	return cfg, nil
+}
+
+// prompt reads a line from standard input after displaying the provided message.
+func prompt(message string) string {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print(message)
+	text, _ := reader.ReadString('\n')
+	return strings.TrimSpace(text)
+}
+
+// yesOrNo asks the user a yes/no question and returns true if the answer is yes (default yes).
+func yesOrNo(message string) bool {
+	response := prompt(message)
+	if response == "" {
+		return true // default yes
+	}
+	response = strings.ToLower(response)
+	return response == "y" || response == "yes"
 }
