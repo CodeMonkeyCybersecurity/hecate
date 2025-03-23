@@ -28,7 +28,7 @@ import (
 func main() {
     // Initialize logging
     logger.Initialize()
-    log := logger.GetSafeLogger()
+    log := logger.GetLogger()
     defer logger.Sync() // ✅ Ensures logs are flushed properly
 	
     fallbackLogging := log == nil
