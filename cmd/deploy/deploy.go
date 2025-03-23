@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"hecate/cmd/deploy/jenkins"
 	"hecate/pkg/utils"
 	"hecate/pkg/logger"
 	"hecate/pkg/config"
@@ -49,23 +50,29 @@ Examples:
 
 func runDeploy(cmd *cobra.Command, args []string) {
 	app := strings.ToLower(args[0])
-
-	// Validate the application.
 	if !utils.IsValidApp(app) {
 		fmt.Printf("❌ Invalid application: %s. Supported: %v\n", app, config.GetSupportedAppNames())
 		return
 	}
 
-
-	// Proceed with deployment.
+	log.Info("Deploying application", "app", app)
 	if err := deployApplication(app); err != nil {
+		log.Error("Deployment failed", "app", app, "error", err)
 		fmt.Printf("❌ Deployment failed for '%s': %v\n", app, err)
 		return
 	}
-
+	log.Info("Deployment completed successfully", "app", app)
 	fmt.Printf("✅ Deployment completed successfully for %s\n", app)
 }
 
+func deployApplication(app string) error {
+	if err := utils.DeployApp(app, false); err != nil {
+		return fmt.Errorf("Deployment failed for '%s': %w", app, err)
+	}
+	return nil
+}
+
 func init() {
+	// Register the Jenkins subcommand as a child of DeployCmd.
 	DeployCmd.AddCommand(jenkins.NewDeployJenkinsCmd())
 }
