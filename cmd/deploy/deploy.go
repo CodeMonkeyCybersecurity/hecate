@@ -14,6 +14,8 @@ import (
 	"hecate/pkg/config"
 )
 
+var log = logger.GetLogger()
+
 // DeployCmd represents the deploy command
 var DeployCmd = &cobra.Command{
 	Use:   "deploy [app]",
@@ -38,11 +40,8 @@ Supported applications:
 Examples:
 
   # Deploy Nextcloud
-  hecate deploy nextcloud
-
-  # Force redeploy Jenkins (overwrite existing)
-  hecate deploy jenkins --force
-`,
+  hecate deploy nextcloud`,
+	
 	Args:  cobra.ExactArgs(1),
 	Run:   runDeploy, // This generic function is used for non-specific deployments.
 }
@@ -57,7 +56,6 @@ func runDeploy(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	fmt.Printf("🚀 Deploying application %s (force: %v)\n", app, force)
 
 	// Proceed with deployment.
 	if err := deployApplication(app); err != nil {
@@ -66,13 +64,6 @@ func runDeploy(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("✅ Deployment completed successfully for %s\n", app)
-}
-
-func deployApplication(app string) error {
-	if err := utils.DeployApp(app, force); err != nil {
-		return fmt.Errorf("Deployment failed for '%s': %w", app, err)
-	}
-	return nil
 }
 
 func init() {
