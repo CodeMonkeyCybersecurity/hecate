@@ -97,6 +97,80 @@ func FindLatestBackup(prefix string) (string, error) {
 //---------------------------- DEPLOY ---------------------------- //
 //
 
+func OrganizeAssetsForDeployment(app string) error {
+	assetsDir := "assets"
+	otherDir := filepath.Join(assetsDir, "other")
+	
+	// Ensure the other directory exists.
+	if err := os.MkdirAll(otherDir, 0755); err != nil {
+		return fmt.Errorf("failed to create assets/other directory: %w", err)
+	}
+
+	// Define generic allowed filenames (in lowercase for comparison)
+	allowedGenerics := map[string]bool{
+		"http.conf":   true,
+		"stream.conf": true,
+		"nginx.conf":  true,
+	}
+
+	// Walk the assets directory.
+	err := filepath.Walk(assetsDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip directories and the "other" directory itself.
+		if info.IsDir() {
+			// Do not descend into assets/other again.
+			if path == otherDir {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// Compute the relative path from assetsDir.
+		relPath, err := filepath.Rel(assetsDir, path)
+		if err != nil {
+			return err
+		}
+
+		// Skip files that are already in the "other" directory.
+		if strings.HasPrefix(relPath, "other"+string(os.PathSeparator)) {
+			return nil
+		}
+
+		// Check if the file is allowed:
+		// - Allowed if the filename (lowercase) contains the app name
+		// - Or if the filename exactly matches one of the generic allowed names.
+		filename := strings.ToLower(filepath.Base(path))
+		if strings.Contains(filename, strings.ToLower(app)) || allowedGenerics[filename] {
+			// File is relevant; do nothing.
+			return nil
+		}
+
+		// Otherwise, move the file to assets/other, preserving its subdirectory structure.
+		dest := filepath.Join(otherDir, relPath)
+		// Ensure the destination directory exists.
+		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+			return fmt.Errorf("failed to create destination directory %s: %w", filepath.Dir(dest), err)
+		}
+
+		// Move (rename) the file.
+		if err := os.Rename(path, dest); err != nil {
+			log.Error("Failed to move file to assets/other", zap.String("file", path), zap.Error(err))
+			return fmt.Errorf("failed to move file %s to %s: %w", path, dest, err)
+		}
+
+		log.Info("Moved unused asset file to assets/other", zap.String("from", path), zap.String("to", dest))
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+
 // DeployApp deploys the application by copying necessary config files and restarting services
 func DeployApp(app string, force bool) error {
 	log.Info("🚀 Starting deployment", zap.String("app", app), zap.Bool("force", force))
