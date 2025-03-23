@@ -161,6 +161,8 @@ func GetUserSelection(defaultSelection string) (map[string]App, string) {
 type HecateConfig struct {
 	BaseDomain string
 	BackendIP  string
+	Subdomain  string  // e.g. "jenkins"
+    	Email      string  // email for certificate requests
 }
 
 // LoadConfig reads LastValuesFile (.hecate.conf) and returns the configuration.
