@@ -103,6 +103,12 @@ func FindLatestBackup(prefix string) (string, error) {
 //   - Its base filename (lowercase) exactly matches one of the generic allowed names ("http.conf", "stream.conf", "nginx.conf"), or
 //   - Its base filename (lowercase) contains the app name (e.g., "jenkins").
 // Files not meeting these criteria are moved into the "other" directory, preserving their relative structure.
+// OrganizeAssetsForDeployment moves every file in the assets directory that is not explicitly needed
+// for the given app into the "other" directory located at the project root.
+// A file is considered relevant if either:
+//   - Its base filename (lowercase) exactly matches one of the generic allowed names ("http.conf", "stream.conf", "nginx.conf"), or
+//   - Its base filename (lowercase) contains the app name (e.g., "jenkins").
+// Files not meeting these criteria are moved into the "other" directory, preserving their relative structure.
 func OrganizeAssetsForDeployment(app string) error {
 	assetsDir := "assets"
 	otherDir := "other" // "other" is at the project root
@@ -139,19 +145,19 @@ func OrganizeAssetsForDeployment(app string) error {
 			log.Error("Failed to compute relative path", zap.String("path", path), zap.Error(err))
 			return err
 		}
-
 		log.Debug("Processing file", zap.String("relativePath", relPath))
 
 		// Get the base filename in lowercase.
 		base := strings.ToLower(filepath.Base(path))
+		log.Debug("Base filename", zap.String("base", base))
 
 		// Check if the file is relevant.
 		if allowedGenerics[base] || strings.Contains(base, strings.ToLower(app)) {
-			log.Debug("File is relevant, leaving it in assets", zap.String("file", path))
+			log.Debug("File is relevant; leaving it in assets", zap.String("file", path))
 			return nil
 		}
 
-		// Otherwise, move the file to the other directory, preserving its relative structure.
+		// File is not relevant; log that it will be moved.
 		dest := filepath.Join(otherDir, relPath)
 		log.Debug("File not relevant; preparing to move", zap.String("file", path), zap.String("destination", dest))
 
