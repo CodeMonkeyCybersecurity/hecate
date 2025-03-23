@@ -69,15 +69,19 @@ Note: You must set the environment variable HETZNER_DNS_API_TOKEN for authentica
  	-> Manage API tokens,
   	-> Enter name, eg. 'hecate-token',
   	-> Follow the prompts to then select 'Create access token'.
+   	-> Copy the token value and store it securely.
 
-   	Copy the token value and store it securely.
+To use it here, run:
+ 
+ 	export HETZNER_DNS_API_TOKEN="YOUR-HETZNER-TOKEN-HERE"
 
-	To use it here, run:
- 	'export HETZNER_DNS_API_TOKEN="YOUR-HETZNER-TOKEN-HERE"'
+Replace YOUR-HETZNER-TOKEN-HERE with the actual token you copied from Hetzner.
 
-  	Replace YOUR-HETZNER-TOKEN-HERE with the actual token you copied from Hetzner.
+To confirm that your variable is set correctly, run:
+
+    	echo $HETZNER_DNS_API_TOKEN
    
-   	Then, run this command again.
+Then, run this command again.
      `,
 	RunE: func(cmd *cobra.Command, args []string) error {
 			// Basic validation
