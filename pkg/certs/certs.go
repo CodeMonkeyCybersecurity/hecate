@@ -27,18 +27,18 @@ func EnsureCertificates(appName, baseDomain, email string) error {
 		return fmt.Errorf("failed to create local certs directory: %w", err)
 	}
 
-	// Construct the fully qualified domain name.
+	// Construct the fully qualified domain name for certbot.
 	fqdn := fmt.Sprintf("%s.%s", appName, baseDomain)
-	privKey := filepath.Join(certDir, fmt.Sprintf("%s.privkey.pem", fqdn))
-	fullChain := filepath.Join(certDir, fmt.Sprintf("%s.fullchain.pem", fqdn))
+	// Local destination file names use only the subdomain.
+	destPrivKey := filepath.Join(certDir, fmt.Sprintf("%s.privkey.pem", appName))
+	destFullChain := filepath.Join(certDir, fmt.Sprintf("%s.fullchain.pem", appName))
 
-	// Check if the certificate files exist.
-	if _, err := os.Stat(privKey); os.IsNotExist(err) || os.IsNotExist(func() error {
-		_, err := os.Stat(fullChain)
+	// Check if the local certificate files exist.
+	if _, err := os.Stat(destPrivKey); os.IsNotExist(err) || os.IsNotExist(func() error {
+		_, err := os.Stat(destFullChain)
 		return err
 	}()) {
-		log.Info("No certificate found locally; attempting to retrieve via certbot",
-			zap.String("domain", fqdn))
+		log.Info("No certificate found locally; attempting to retrieve via certbot", zap.String("domain", fqdn))
 		
 		// Execute certbot to obtain a certificate.
 		cmd := exec.Command("sudo", "certbot", "certonly", "--standalone", "--preferred-challenges", "http", "-d", fqdn, "-m", email, "--agree-tos", "--non-interactive")
