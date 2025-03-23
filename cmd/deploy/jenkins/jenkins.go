@@ -55,7 +55,10 @@ that are not relevant to Jenkins into the "other" directory at the project root.
 			log.Info("Configuration loaded", zap.Any("config", cfg))
 			fmt.Printf("Configuration loaded:\n  Base Domain: %s\n  Backend IP: %s\n  Subdomain: %s\n  Email: %s\n",
 			    cfg.BaseDomain, cfg.BackendIP, cfg.Subdomain, cfg.Email)
-			
+
+			// Define fullDomain using subdomain and base domain.
+			fullDomain := fmt.Sprintf("%s.%s", cfg.Subdomain, cfg.BaseDomain)
+
 			if err := certs.EnsureCertificates(cfg.Subdomain, cfg.BaseDomain, cfg.Email); err != nil {
 			    log.Error("Certificate generation failed", zap.Error(err))
 			    fmt.Printf("Certificate generation failed: %v\n", err)
