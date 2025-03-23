@@ -163,9 +163,7 @@ func DeployApp(app string, force bool) error {
 	}
 	
 	httpSrc := filepath.Join("assets/servers", app+".conf")
-	httpDest := filepath.Join("/etc/nginx/sites-available", app)
 	streamSrc := filepath.Join("assets/stream", app+".conf")
-	streamDest := filepath.Join("/etc/nginx/stream.d", app+".conf")
 	symlinkPath := filepath.Join("/etc/nginx/sites-enabled", app)
 
 	// Check if config already exists
