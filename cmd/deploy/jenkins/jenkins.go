@@ -47,16 +47,14 @@ that are not relevant to Jenkins into the "other" directory at the project root.
 			// Load configuration from .hecate.conf.
 			cfg, err := config.LoadConfig()
 			if err != nil {
-				log.Error("Configuration error", zap.Error(err))
-				fmt.Printf("Configuration error: %v\n", err)
-				return
+			    log.Error("Configuration error", zap.Error(err))
+			    fmt.Printf("Configuration error: %v\n", err)
+			    return
 			}
-
-			// Display the loaded configuration (for debugging and confirmation).
 			log.Info("Configuration loaded", zap.Any("config", cfg))
 			fmt.Println("Configuration loaded:")
-			fmt.Printf("  BASE_DOMAIN: %s\n", cfg.BaseDomain)
-			fmt.Printf("  backendIP: %s\n", cfg.BackendIP)
+			fmt.Printf("  Base Domain: %s\n", cfg.BaseDomain)
+			fmt.Printf("  Backend IP: %s\n", cfg.BackendIP)
 			fmt.Printf("  Subdomain: %s\n", cfg.Subdomain)
 			fmt.Printf("  Email: %s\n", cfg.Email)
 
