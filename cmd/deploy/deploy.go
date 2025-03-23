@@ -39,10 +39,8 @@ Supported applications:
   - Persephone
 
 Examples:
-
-  # Deploy Nextcloud
-  hecate deploy nextcloud`,
-	
+  hecate deploy nextcloud
+  hecate deploy jenkins`,
 	Args:  cobra.ExactArgs(1),
 	Run:   runDeploy, // This generic function is used for non-specific deployments.
 }
@@ -55,13 +53,13 @@ func runDeploy(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	log.Info("Deploying application", "app", app)
+	log.Info("Deploying application", zap.String("app", app))
 	if err := deployApplication(app); err != nil {
-		log.Error("Deployment failed", "app", app, "error", err)
+		log.Error("Deployment failed", zap.String("app", app), zap.Error(err))
 		fmt.Printf("❌ Deployment failed for '%s': %v\n", app, err)
 		return
 	}
-	log.Info("Deployment completed successfully", "app", app)
+	log.Info("Deployment completed successfully", zap.String("app", app))
 	fmt.Printf("✅ Deployment completed successfully for %s\n", app)
 }
 
