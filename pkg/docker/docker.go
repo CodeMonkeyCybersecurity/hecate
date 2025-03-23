@@ -23,6 +23,39 @@ var log = logger.GetLogger()
 //---------------------------- STOP FUNCTIONS ---------------------------- //
 //
 
+// StopContainersBySubstring stops all containers whose names contain the given substring.
+func StopContainersBySubstring(substring string) error {
+	// Run "docker ps" with a filter for the substring.
+	out, err := exec.Command("docker", "ps", "--filter", "name="+substring, "--format", "{{.Names}}").Output()
+	if err != nil {
+		return fmt.Errorf("failed to check container status: %w", err)
+	}
+	
+	outputStr := strings.TrimSpace(string(out))
+	if outputStr == "" {
+		log.Info("No containers found matching substring", zap.String("substring", substring))
+		return nil
+	}
+	
+	// Split the output by newline to get each container name.
+	containerNames := strings.Split(outputStr, "\n")
+	for _, name := range containerNames {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		log.Info("Stopping container", zap.String("container", name))
+		stopCmd := exec.Command("docker", "stop", name)
+		if output, err := stopCmd.CombinedOutput(); err != nil {
+			log.Error("Failed to stop container", zap.String("container", name), zap.Error(err), zap.String("output", string(output)))
+		} else {
+			log.Info("Container stopped successfully", zap.String("container", name))
+		}
+	}
+	return nil
+}
+
+
 // StopContainer checks if a container with the given name is running, and stops it if it is.
 func StopContainer(containerName string) error {
 	// Run "docker ps" to check if the container is running.
