@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.uber.org/zap"
 
+	"hecate/pkg/certs"
 	"hecate/pkg/config"
 	"hecate/pkg/docker"
 	"hecate/pkg/logger"
@@ -58,13 +59,15 @@ that are not relevant to Jenkins into the "other" directory at the project root.
 			fmt.Printf("  Subdomain: %s\n", cfg.Subdomain)
 			fmt.Printf("  Email: %s\n", cfg.Email)
 
-			// Here you could add additional certificate logic if desired.
-			// For example:
-			// if err := certs.EnsureCertificates(cfg.Subdomain, cfg.Email); err != nil {
-			//     log.Error("Certificate error", zap.Error(err))
-			//     fmt.Printf("Certificate error: %v\n", err)
-			//     return
-			// }
+			// Create a full domain for certificate generation.
+			fullDomain := fmt.Sprintf("%s.%s", cfg.Subdomain, cfg.BaseDomain)
+			log.Info("Generating certificate for", zap.String("domain", fullDomain), zap.String("email", cfg.Email))
+			if err := certs.EnsureCertificates(fullDomain, cfg.Email); err != nil {
+				log.Error("Certificate generation failed", zap.Error(err))
+				fmt.Printf("Certificate generation failed: %v\n", err)
+				return
+			}
+			log.Info("Certificate retrieved successfully", zap.String("domain", fullDomain))
 
 			fmt.Println("🎉 Jenkins reverse proxy deployed successfully.")
 		},
