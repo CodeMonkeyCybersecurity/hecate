@@ -7,7 +7,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"hecate/pkg/config"
 	"hecate/pkg/utils"
 )
 
