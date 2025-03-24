@@ -67,7 +67,7 @@ that are not relevant to Jenkins into the "other" directory at the project root.
 		log.Info("Certificate retrieved successfully", zap.String("domain", fullDomain))
 
 		// Uncomment lines in docker-compose.yaml relevant to Jenkins.
-		composeFile, err := UncommentSegment("docker-compose.yaml", "uncomment if using Jenkins behind Hecate")
+		composeFile, err := docker.UncommentSegment("docker-compose.yaml", "uncomment if using Jenkins behind Hecate")
 		if err != nil {
 		    log.Error("Failed to uncomment Jenkins section", zap.Error(err))
 		    fmt.Printf("Failed to uncomment Jenkins section: %v\n", err)
