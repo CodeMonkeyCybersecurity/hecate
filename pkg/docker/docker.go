@@ -366,28 +366,30 @@ func UncommentSegment(segmentComment string) error {
     for scanner.Scan() {
         line := scanner.Text()
 
-        // Start uncommenting when the marker is found.
+        // If the line contains the start marker, start uncommenting.
         if strings.Contains(line, segmentComment) {
             uncommenting = true
         }
 
+        // If the line contains the finish marker, then do not uncomment it; instead, leave it intact
+        // (or you can choose to remove it entirely) and stop uncommenting.
+        if uncommenting && strings.Contains(line, "<- finish") {
+            lines = append(lines, line) // Append finish marker as is.
+            uncommenting = false
+            continue // Skip further processing for this line.
+        }
+
+        // If we are in uncommenting mode, remove a leading '#' if present.
         if uncommenting {
-            // Remove the first '#' character if the trimmed line starts with it.
-            trim := strings.TrimSpace(line)
-            if strings.HasPrefix(trim, "#") {
-                idx := strings.Index(line, "#")
-                if idx != -1 {
-                    line = line[:idx] + line[idx+1:]
-                }
+            // Remove only the first '#' after any leading whitespace.
+            // We can use a simple regex here to ensure we preserve indentation and any dash.
+            re := regexp.MustCompile(`^(\s*)#\s*(.*)$`)
+            if re.MatchString(line) {
+                line = re.ReplaceAllString(line, "$1$2")
             }
         }
 
         lines = append(lines, line)
-
-        // Stop uncommenting when the finish marker is found.
-        if uncommenting && strings.Contains(line, "# <- finish") {
-            uncommenting = false
-        }
     }
 
     if err := scanner.Err(); err != nil {
