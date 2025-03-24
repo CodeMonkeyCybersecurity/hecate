@@ -199,6 +199,11 @@ func BackupVolumes(volumes []string, backupDir string) (map[string]string, error
 	return backupResults, nil
 }
 
+
+//
+//---------------------------- COMPOSE YML FUNCTIONS ---------------------------- //
+//
+
 // ParseComposeFile reads a docker-compose file and returns container names, images, and volumes.
 func ParseComposeFile(composePath string) ([]string, []string, []string, error) {
 	data, err := os.ReadFile(composePath)
@@ -275,4 +280,74 @@ func CheckDockerContainers() error {
 
 	log.Info("Docker ps output", zap.String("output", string(output)))
 	return nil
+}
+
+
+
+// UncommentSegment finds the marker (e.g. "uncomment if using Jenkins behind Hecate") in dockerComposePath
+// and uncomments every line (removes a leading '#') until reaching the line that contains "# <- finish".
+func UncommentSegment(dockerComposePath, segmentComment string) error {
+    inputFile, err := os.Open(dockerComposePath)
+    if err != nil {
+        return fmt.Errorf("failed to open file %s: %w", dockerComposePath, err)
+    }
+    defer inputFile.Close()
+
+    // We’ll store the modified lines here
+    var lines []string
+
+    scanner := bufio.NewScanner(inputFile)
+    uncommenting := false
+
+    for scanner.Scan() {
+        line := scanner.Text()
+
+        // Check if line contains the marker that starts this segment
+        if strings.Contains(line, segmentComment) {
+            // Start uncommenting from *this* line
+            uncommenting = true
+        }
+
+        if uncommenting {
+            // “Uncomment” means: if line begins with “#”, remove that “#” only if
+            // it’s actually a leading comment marker (watch out for lines with indentation).
+            // E.g., if line is: `# - "50000:50000" # <- uncomment if using Jenkins behind Hecate`
+            // we could remove just the first occurrence of “#”. 
+            trim := strings.TrimSpace(line)
+            if strings.HasPrefix(trim, "#") {
+                // Find the position of '#' in the original line and remove it.
+                idx := strings.Index(line, "#")
+                if idx != -1 {
+                    // Rebuild the line without that '#' character
+                    line = line[:idx] + line[idx+1:]
+                }
+            }
+        }
+
+        // Regardless, append the (possibly modified) line to the list
+        lines = append(lines, line)
+
+        // If we found the “finish” marker in the line, stop uncommenting
+        if uncommenting && strings.Contains(line, "# <- finish") {
+            uncommenting = false
+        }
+    }
+
+    // Handle any scanning error
+    if err := scanner.Err(); err != nil {
+        return fmt.Errorf("error reading file %s: %w", dockerComposePath, err)
+    }
+
+    // Rewrite the file with updated lines
+    outputFile, err := os.Create(dockerComposePath)
+    if err != nil {
+        return fmt.Errorf("failed to open file for writing %s: %w", dockerComposePath, err)
+    }
+    defer outputFile.Close()
+
+    for _, l := range lines {
+        _, _ = fmt.Fprintln(outputFile, l)
+    }
+
+    return nil
 }
