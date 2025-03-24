@@ -180,44 +180,39 @@ func OrganizeAssetsForDeployment(app string) error {
 }
 
 
-// ReplaceTokensInFile reads the file at filePath, replaces tokens, and writes it back.
-func ReplaceTokensInFile(filePath, baseDomain, backendIP string) error {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to read file %s: %w", filePath, err)
-	}
 
-	content := string(data)
-	// Replace tokens.
-	content = strings.ReplaceAll(content, "${BASE_DOMAIN}", baseDomain)
-	content = strings.ReplaceAll(content, "${backendIP}", backendIP)
-
-	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
-		return fmt.Errorf("failed to write file %s: %w", filePath, err)
-	}
-
-	return nil
-}
-
-// ReplaceTokensInDirectory recursively walks through the directory and processes files that you want to update.
-// Here we assume we process files with the ".conf" extension.
-func ReplaceTokensInDirectory(dir, baseDomain, backendIP string) error {
-	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+// ReplaceTokensInAllFiles recursively walks through the given directory,
+// reading every file and replacing every instance of "${BASE_DOMAIN}" and "${backendIP}"
+// with the provided values, then writes the updated content back to the file.
+func ReplaceTokensInAllFiles(rootDir, baseDomain, backendIP string) error {
+	return filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
 			return nil
 		}
-		// Process only .conf files (adjust as needed).
-		if strings.HasSuffix(d.Name(), ".conf") {
-			if err := ReplaceTokensInFile(path, baseDomain, backendIP); err != nil {
-				return fmt.Errorf("failed to process file %s: %w", path, err)
-			}
+		// Read the file
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read file %s: %w", path, err)
+		}
+		content := string(data)
+		// Replace tokens
+		content = strings.ReplaceAll(content, "${BASE_DOMAIN}", baseDomain)
+		content = strings.ReplaceAll(content, "${backendIP}", backendIP)
+		// Write the file back with the same permissions
+		info, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("failed to stat file %s: %w", path, err)
+		}
+		if err := os.WriteFile(path, []byte(content), info.Mode()); err != nil {
+			return fmt.Errorf("failed to write file %s: %w", path, err)
 		}
 		return nil
 	})
 }
+
 
 // DeployApp deploys the application by copying necessary config files and restarting services
 func DeployApp(app string, force bool) error {
