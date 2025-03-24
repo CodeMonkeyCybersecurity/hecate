@@ -88,22 +88,21 @@ func StopContainer(containerName string) error {
 //
 
 // RunDockerComposeService starts a specific service from a docker-compose file
-func RunDockerComposeService(composeFile string, service string) error {
-	log.Info("Starting Docker service", zap.String("service", service), zap.String("composeFile", composeFile))
-	
-	cmd := exec.Command("docker-compose", "-f", composeFile, "up", "-d", service)
-	output, err := cmd.CombinedOutput() // Capture logs
+func RunDockerComposeAllServices(composeFile string) error {
+    log.Info("Starting all Docker services", zap.String("composeFile", composeFile))
 
-	fmt.Println(string(output)) // Print logs to console
+    cmd := exec.Command("docker-compose", "-f", composeFile, "up", "-d")
+    output, err := cmd.CombinedOutput()
 
-	
-	if err != nil {
-		log.Error("Failed to start Docker service", zap.String("service", service), zap.Error(err), zap.String("output", string(output)))
-		return fmt.Errorf("docker-compose failed: %s", output)
-	}
+    fmt.Println(string(output)) // Print logs to console
 
-	log.Info("Docker service started successfully", zap.String("service", service))
-	return nil
+    if err != nil {
+        log.Error("Failed to start Docker services", zap.Error(err), zap.String("output", string(output)))
+        return fmt.Errorf("docker-compose up failed: %s", output)
+    }
+
+    log.Info("All Docker services started successfully")
+    return nil
 }
 
 // StopContainers stops the specified Docker containers.
