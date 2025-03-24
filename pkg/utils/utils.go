@@ -9,6 +9,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"io"
+	"io/fs"
 	"path/filepath"
 	"os"
 	"os/exec"
@@ -97,12 +99,7 @@ func FindLatestBackup(prefix string) (string, error) {
 //---------------------------- DEPLOY ---------------------------- //
 //
 
-// OrganizeAssetsForDeployment moves every file in the assets directory that is not explicitly needed
-// for the given app into the "other" directory located at the project root.
-// A file is considered relevant if either:
-//   - Its base filename (lowercase) exactly matches one of the generic allowed names ("http.conf", "stream.conf", "nginx.conf"), or
-//   - Its base filename (lowercase) contains the app name (e.g., "jenkins").
-// Files not meeting these criteria are moved into the "other" directory, preserving their relative structure.
+
 // OrganizeAssetsForDeployment moves every file in the assets directory that is not explicitly needed
 // for the given app into the "other" directory located at the project root.
 // A file is considered relevant if either:
@@ -182,6 +179,45 @@ func OrganizeAssetsForDeployment(app string) error {
 	return err
 }
 
+
+// ReplaceTokensInFile reads the file at filePath, replaces tokens, and writes it back.
+func ReplaceTokensInFile(filePath, baseDomain, backendIP string) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read file %s: %w", filePath, err)
+	}
+
+	content := string(data)
+	// Replace tokens.
+	content = strings.ReplaceAll(content, "${BASE_DOMAIN}", baseDomain)
+	content = strings.ReplaceAll(content, "${backendIP}", backendIP)
+
+	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", filePath, err)
+	}
+
+	return nil
+}
+
+// ReplaceTokensInDirectory recursively walks through the directory and processes files that you want to update.
+// Here we assume we process files with the ".conf" extension.
+func ReplaceTokensInDirectory(dir, baseDomain, backendIP string) error {
+	return filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		// Process only .conf files (adjust as needed).
+		if strings.HasSuffix(d.Name(), ".conf") {
+			if err := ReplaceTokensInFile(path, baseDomain, backendIP); err != nil {
+				return fmt.Errorf("failed to process file %s: %w", path, err)
+			}
+		}
+		return nil
+	})
+}
 
 // DeployApp deploys the application by copying necessary config files and restarting services
 func DeployApp(app string, force bool) error {
