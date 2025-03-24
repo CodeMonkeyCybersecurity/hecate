@@ -234,11 +234,12 @@ func EnsureArachneNetwork() error {
 //
 
 // RunDockerComposeService starts a specific service from a docker-compose file
-func RunDockerComposeAllServices(composeFile string) error {
-    log.Info("Starting all Docker services", zap.String("composeFile", composeFile))
+func RunDockerComposeAllServices() error {
+    dockerComposePath := "docker-compose.yml" // Always use this file.
+    log.Info("Starting all Docker services", zap.String("composeFile", dockerComposePath))
     
     // Build arguments for the compose command.
-    args := []string{"-f", composeFile, "up", "-d"}
+    args := []string{"-f", dockerComposePath, "up", "-d"}
     cmd, err := GetDockerComposeCmd(args...)
     if err != nil {
         return err
@@ -346,18 +347,11 @@ func CheckDockerContainers() error {
 
 
 
-// UncommentSegment finds the marker (e.g. "uncomment if using Jenkins behind Hecate") in dockerComposePath
-// and uncomments every line (removes a leading '#') until reaching the line that contains "# <- finish".
-func UncommentSegment(dockerComposePath, segmentComment string) error {
-    // Check if the provided dockerComposePath exists.
-    if _, err := os.Stat(dockerComposePath); err != nil {
-        // Attempt to find a valid docker compose file.
-        found, err := FindDockerComposeFile()
-        if err != nil {
-            return fmt.Errorf("failed to locate a docker-compose file: %w", err)
-        }
-        dockerComposePath = found
-    }
+// UncommentSegment finds the marker (e.g. "uncomment if using Jenkins behind Hecate")
+// in the docker compose file ("docker-compose.yml") and uncomments every line (removes a leading '#')
+// until reaching the line that contains "# <- finish". It returns an error if something goes wrong.
+func UncommentSegment(segmentComment string) error {
+    dockerComposePath := "docker-compose.yml" // Always use this file.
 
     inputFile, err := os.Open(dockerComposePath)
     if err != nil {
@@ -372,43 +366,34 @@ func UncommentSegment(dockerComposePath, segmentComment string) error {
     for scanner.Scan() {
         line := scanner.Text()
 
-        // Check if line contains the marker that starts this segment
+        // Start uncommenting when the marker is found.
         if strings.Contains(line, segmentComment) {
-            // Start uncommenting from *this* line
             uncommenting = true
         }
 
         if uncommenting {
-            // “Uncomment” means: if line begins with “#”, remove that “#” only if
-            // it’s actually a leading comment marker (watch out for lines with indentation).
-            // E.g., if line is: `# - "50000:50000" # <- uncomment if using Jenkins behind Hecate`
-            // we could remove just the first occurrence of “#”. 
+            // Remove the first '#' character if the trimmed line starts with it.
             trim := strings.TrimSpace(line)
             if strings.HasPrefix(trim, "#") {
-                // Find the position of '#' in the original line and remove it.
                 idx := strings.Index(line, "#")
                 if idx != -1 {
-                    // Rebuild the line without that '#' character
                     line = line[:idx] + line[idx+1:]
                 }
             }
         }
 
-        // Regardless, append the (possibly modified) line to the list
         lines = append(lines, line)
 
-        // If we found the “finish” marker in the line, stop uncommenting
+        // Stop uncommenting when the finish marker is found.
         if uncommenting && strings.Contains(line, "# <- finish") {
             uncommenting = false
         }
     }
 
-    // Handle any scanning error
     if err := scanner.Err(); err != nil {
         return fmt.Errorf("error reading file %s: %w", dockerComposePath, err)
     }
 
-    // Rewrite the file with updated lines
     outputFile, err := os.Create(dockerComposePath)
     if err != nil {
         return fmt.Errorf("failed to open file for writing %s: %w", dockerComposePath, err)
