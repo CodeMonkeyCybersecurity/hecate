@@ -200,6 +200,7 @@ func ReplaceTokensInAllFiles(rootDir, baseDomain, backendIP string) error {
 		// Replace tokens
 		content = strings.ReplaceAll(content, "${BASE_DOMAIN}", baseDomain)
 		content = strings.ReplaceAll(content, "${backendIP}", backendIP)
+		content = strings.ReplaceAll(content, "${BACKEND_IP}", backendIP)
 		// Write the file back with the same permissions
 		info, err := os.Stat(path)
 		if err != nil {
