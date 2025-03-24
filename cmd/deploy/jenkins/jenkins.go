@@ -66,25 +66,22 @@ that are not relevant to Jenkins into the "other" directory at the project root.
 		}
 		log.Info("Certificate retrieved successfully", zap.String("domain", fullDomain))
 
-		// Uncomment lines in docker-compose.yaml relevant to Jenkins.
-		composeFile, err := docker.UncommentSegment("docker-compose.yaml", "uncomment if using Jenkins behind Hecate")
-		if err != nil {
-		    log.Error("Failed to uncomment Jenkins section", zap.Error(err))
-		    fmt.Printf("Failed to uncomment Jenkins section: %v\n", err)
-		    return
-		}
-		log.Info("Successfully uncommented Jenkins lines", zap.String("composeFile", composeFile))
-
-		
-		// Now use the effective compose file for starting the services.
-		err = docker.RunDockerComposeAllServices(composeFile)
-		if err != nil {
-		    log.Error("Failed to start Docker services", zap.Error(err))
-		    fmt.Printf("Failed to run docker-compose up: %v\n", err)
-		    return
-		}
-		
-		fmt.Println("🎉 Jenkins reverse proxy deployed successfully.")
+		// Uncomment lines in docker-compose.yml relevant to Jenkins.
+	            if err := docker.UncommentSegment("uncomment if using Jenkins behind Hecate"); err != nil {
+	                log.Error("Failed to uncomment Jenkins section", zap.Error(err))
+	                fmt.Printf("Failed to uncomment Jenkins section: %v\n", err)
+	                return
+	            }
+	            log.Info("Successfully uncommented Jenkins lines")
+	
+	            // Now use the compose file for starting the services.
+	            if err := docker.RunDockerComposeAllServices(); err != nil {
+	                log.Error("Failed to start Docker services", zap.Error(err))
+	                fmt.Printf("Failed to run docker-compose up: %v\n", err)
+	                return
+	            }
+	            
+	            fmt.Println("🎉 Jenkins reverse proxy deployed successfully.")
 		},
 	}
 	return cmd
