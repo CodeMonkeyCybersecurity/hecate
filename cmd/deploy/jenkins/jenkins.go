@@ -66,6 +66,25 @@ that are not relevant to Jenkins into the "other" directory at the project root.
 			}
 			log.Info("Certificate retrieved successfully", zap.String("domain", fullDomain))
 
+			// Uncomment lines in docker-compose.yaml relevant to Jenkins.
+			            composeFile := "docker-compose.yaml"
+			            marker := "uncomment if using Jenkins behind Hecate"  // Must match your line's text
+			            err = docker.UncommentSegment(composeFile, marker)
+			            if err != nil {
+			                log.Error("Failed to uncomment Jenkins section", zap.Error(err))
+			                fmt.Printf("Failed to uncomment Jenkins section: %v\n", err)
+			                return
+			            }
+			            log.Info("Successfully uncommented Jenkins lines in docker-compose.yaml")
+			
+			// Bring up *all* services from docker-compose.yaml (including Jenkins).
+		            err = docker.RunDockerComposeAllServices(composeFile)
+		            if err != nil {
+		                log.Error("Failed to start Docker services", zap.Error(err))
+		                fmt.Printf("Failed to run docker-compose up: %v\n", err)
+		                return
+            		}
+			
 			fmt.Println("🎉 Jenkins reverse proxy deployed successfully.")
 		},
 	}
