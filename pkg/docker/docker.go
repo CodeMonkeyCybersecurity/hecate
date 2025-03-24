@@ -1,4 +1,5 @@
 // pkg/docker/docker.go
+
 package docker
 
 import (
@@ -249,6 +250,22 @@ func EnsureArachneNetwork() error {
 //---------------------------- COMPOSE YML FUNCTIONS ---------------------------- //
 //
 
+func FindDockerComposeFile() (string, error) {
+    filesToCheck := []string{
+        "docker-compose.yaml",
+        "docker-compose.yml",
+    }
+
+    for _, file := range filesToCheck {
+        if _, err := os.Stat(file); err == nil {
+            // Found a file that exists
+            return file, nil
+        }
+    }
+    return "", fmt.Errorf("could not find docker-compose.yaml or docker-compose.yml")
+}
+
+
 // ParseComposeFile reads a docker-compose file and returns container names, images, and volumes.
 func ParseComposeFile(composePath string) ([]string, []string, []string, error) {
 	data, err := os.ReadFile(composePath)
@@ -307,15 +324,23 @@ func CheckDockerContainers() error {
 // UncommentSegment finds the marker (e.g. "uncomment if using Jenkins behind Hecate") in dockerComposePath
 // and uncomments every line (removes a leading '#') until reaching the line that contains "# <- finish".
 func UncommentSegment(dockerComposePath, segmentComment string) error {
+    // Check if the provided dockerComposePath exists.
+    if _, err := os.Stat(dockerComposePath); err != nil {
+        // Attempt to find a valid docker compose file.
+        found, err := FindDockerComposeFile()
+        if err != nil {
+            return fmt.Errorf("failed to locate a docker-compose file: %w", err)
+        }
+        dockerComposePath = found
+    }
+
     inputFile, err := os.Open(dockerComposePath)
     if err != nil {
         return fmt.Errorf("failed to open file %s: %w", dockerComposePath, err)
     }
     defer inputFile.Close()
 
-    // We’ll store the modified lines here
     var lines []string
-
     scanner := bufio.NewScanner(inputFile)
     uncommenting := false
 
