@@ -84,7 +84,7 @@ func StopContainer(containerName string) error {
 
 
 //
-//---------------------------- CONTAINER FUNCTIONS ---------------------------- //
+//---------------------------- UP / DOWN FUNCTIONS ---------------------------- //
 //
 
 // RunDockerComposeService starts a specific service from a docker-compose file
@@ -106,19 +106,6 @@ func RunDockerComposeService(composeFile string, service string) error {
 	return nil
 }
 
-// RemoveVolumes removes the specified Docker volumes.
-func RemoveVolumes(volumes []string) error {
-    for _, volume := range volumes {
-        //  the docker volume rm command.
-        if err := execute.Execute("docker", "volume", "rm", volume); err != nil {
-            log.Warn("failed to remove volume", zap.String("volume", volume), zap.Error(err))
-        } else {
-            log.Info("Volume removed successfully", zap.String("volume", volume))
-        }
-    }
-    return nil
-}
-
 // StopContainers stops the specified Docker containers.
 func StopContainers(containers []string) error {
 	args := append([]string{"stop"}, containers...)
@@ -130,6 +117,11 @@ func StopContainers(containers []string) error {
 	return nil
 }
 
+
+//
+//---------------------------- CONTAINER FUNCTIONS ---------------------------- //
+//
+
 // RemoveContainers removes the specified Docker containers.
 func RemoveContainers(containers []string) error {
 	args := append([]string{"rm"}, containers...)
@@ -139,6 +131,11 @@ func RemoveContainers(containers []string) error {
 	log.Info("Containers removed successfully", zap.Any("containers", containers))
 	return nil
 }
+
+
+//
+//---------------------------- IMAGE FUNCTIONS ---------------------------- //
+//
 
 // RemoveImages removes the specified Docker images.
 // It logs a warning if an image cannot be removed, but continues with the others.
@@ -151,6 +148,24 @@ func RemoveImages(images []string) error {
 		}
 	}
 	return nil
+}
+
+
+//
+//---------------------------- VOLUME FUNCTIONS ---------------------------- //
+//
+
+// RemoveVolumes removes the specified Docker volumes.
+func RemoveVolumes(volumes []string) error {
+    for _, volume := range volumes {
+        //  the docker volume rm command.
+        if err := execute.Execute("docker", "volume", "rm", volume); err != nil {
+            log.Warn("failed to remove volume", zap.String("volume", volume), zap.Error(err))
+        } else {
+            log.Info("Volume removed successfully", zap.String("volume", volume))
+        }
+    }
+    return nil
 }
 
 // BackupVolume backs up a single Docker volume by running a temporary Alpine container.
@@ -201,6 +216,36 @@ func BackupVolumes(volumes []string, backupDir string) (map[string]string, error
 
 
 //
+//---------------------------- NETWORK FUNCTIONS ---------------------------- //
+//
+
+
+// EnsureArachneNetwork checks if the Docker network "arachne-net" exists.
+func EnsureArachneNetwork() error {
+	cmd := exec.Command("docker", "network", "inspect", config.DockerNetworkName)
+	if err := cmd.Run(); err == nil {
+	    log.Info("Docker network already exists", zap.String("network", config.DockerNetworkName))
+	    return nil
+	}
+
+	createCmd := exec.Command("docker", "network", "create",
+		"--driver", "bridge",
+		"--subnet", config.DockerIPv4Subnet,
+		"--ipv6",
+		"--subnet", config.DockerIPv6Subnet,
+		config.DockerNetworkName,
+	)
+
+	output, err := createCmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to create network %s: %v, output: %s", config.DockerNetworkName, err, output)
+	}
+
+	log.Info("Created Docker network", zap.String("network", config.DockerNetworkName))
+	return nil
+}
+
+//
 //---------------------------- COMPOSE YML FUNCTIONS ---------------------------- //
 //
 
@@ -239,31 +284,6 @@ func ParseComposeFile(composePath string) ([]string, []string, []string, error) 
 		zap.Any("containers", containers), zap.Any("images", images), zap.Any("volumes", volumes))
 
 	return containers, images, volumes, nil
-}
-
-// EnsureArachneNetwork checks if the Docker network "arachne-net" exists.
-func EnsureArachneNetwork() error {
-	cmd := exec.Command("docker", "network", "inspect", config.DockerNetworkName)
-	if err := cmd.Run(); err == nil {
-	    log.Info("Docker network already exists", zap.String("network", config.DockerNetworkName))
-	    return nil
-	}
-
-	createCmd := exec.Command("docker", "network", "create",
-		"--driver", "bridge",
-		"--subnet", config.DockerIPv4Subnet,
-		"--ipv6",
-		"--subnet", config.DockerIPv6Subnet,
-		config.DockerNetworkName,
-	)
-
-	output, err := createCmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("failed to create network %s: %v, output: %s", config.DockerNetworkName, err, output)
-	}
-
-	log.Info("Created Docker network", zap.String("network", config.DockerNetworkName))
-	return nil
 }
 
 // CheckDockerContainers runs "docker ps" and logs its output.
