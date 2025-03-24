@@ -55,6 +55,14 @@ that are not relevant to Jenkins into the "other" directory at the project root.
 		log.Info("Configuration loaded", zap.Any("config", cfg))
 		fmt.Printf("Configuration loaded:\n  Base Domain: %s\n  Backend IP: %s\n  Subdomain: %s\n  Email: %s\n",
 		    cfg.BaseDomain, cfg.BackendIP, cfg.Subdomain, cfg.Email)
+		
+		assetsDir := "./assets" // or the appropriate directory
+		if err := utils.ReplaceTokensInAllFiles(assetsDir, cfg.BaseDomain, cfg.BackendIP); err != nil {
+		    log.Error("Failed to replace tokens in assets", zap.Error(err))
+		    fmt.Printf("Error replacing tokens: %v\n", err)
+		    return
+		}
+		log.Info("Tokens replaced successfully in all files under assets")
 
 		// Define fullDomain using subdomain and base domain.
 		fullDomain := fmt.Sprintf("%s.%s", cfg.Subdomain, cfg.BaseDomain)
