@@ -86,26 +86,9 @@ func StopContainer(containerName string) error {
 
 
 //
-//---------------------------- UP / DOWN FUNCTIONS ---------------------------- //
+//---------------------------- STOP / START FUNCTIONS ---------------------------- //
 //
 
-// RunDockerComposeService starts a specific service from a docker-compose file
-func RunDockerComposeAllServices(composeFile string) error {
-    log.Info("Starting all Docker services", zap.String("composeFile", composeFile))
-
-    cmd := exec.Command("docker-compose", "-f", composeFile, "up", "-d")
-    output, err := cmd.CombinedOutput()
-
-    fmt.Println(string(output)) // Print logs to console
-
-    if err != nil {
-        log.Error("Failed to start Docker services", zap.Error(err), zap.String("output", string(output)))
-        return fmt.Errorf("docker-compose up failed: %s", output)
-    }
-
-    log.Info("All Docker services started successfully")
-    return nil
-}
 
 // StopContainers stops the specified Docker containers.
 func StopContainers(containers []string) error {
@@ -249,6 +232,48 @@ func EnsureArachneNetwork() error {
 //
 //---------------------------- COMPOSE YML FUNCTIONS ---------------------------- //
 //
+
+// RunDockerComposeService starts a specific service from a docker-compose file
+func RunDockerComposeAllServices(composeFile string) error {
+    log.Info("Starting all Docker services", zap.String("composeFile", composeFile))
+    
+    // Build arguments for the compose command.
+    args := []string{"-f", composeFile, "up", "-d"}
+    cmd, err := GetDockerComposeCmd(args...)
+    if err != nil {
+        return err
+    }
+
+    output, err := cmd.CombinedOutput()
+    fmt.Println(string(output)) // Print logs to console
+
+    if err != nil {
+        log.Error("Failed to start Docker services", zap.Error(err), zap.String("output", string(output)))
+        return fmt.Errorf("docker-compose up failed: %s", output)
+    }
+
+    log.Info("All Docker services started successfully")
+    return nil
+}
+
+
+// GetDockerComposeCmd returns an *exec.Cmd for running Docker Compose commands.
+// It first checks for "docker-compose". If not found, it falls back to "docker compose".
+// The provided args should include the subcommands (e.g. "-f", "docker-compose.yaml", "up", "-d").
+func GetDockerComposeCmd(args ...string) (*exec.Cmd, error) {
+    // Check for the old docker-compose binary.
+    if _, err := exec.LookPath("docker-compose"); err == nil {
+        return exec.Command("docker-compose", args...), nil
+    }
+    // Fallback to "docker compose" (as two separate tokens).
+    if _, err := exec.LookPath("docker"); err == nil {
+        // Prepend "compose" as the first argument.
+        newArgs := append([]string{"compose"}, args...)
+        return exec.Command("docker", newArgs...), nil
+    }
+    return nil, fmt.Errorf("neither docker-compose nor docker CLI with compose plugin found in PATH")
+}
+
 
 func FindDockerComposeFile() (string, error) {
     filesToCheck := []string{
