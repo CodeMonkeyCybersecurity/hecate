@@ -71,7 +71,6 @@ services:
   #     - hecate-net                                                # <-
   ##############################################################    # <- finish
 
-services:
   kc-db:
     image: postgres:15
     container_name: hecate-kc-db
