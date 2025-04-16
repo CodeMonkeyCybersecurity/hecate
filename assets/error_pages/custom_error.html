@@ -90,6 +90,7 @@
   <!-- Dino Run Game (vanilla, no deps) -->
   <script>
     const canvas = document.getElementById('gameCanvas');
+    document.querySelector('.btn').addEventListener('click', startDino);
     const ctx = canvas.getContext('2d');
     const dino = { x: 50, y: 100, w: 20, h: 40, vy: 0, jumping: false };
     const gravity = 0.9;
@@ -163,9 +164,13 @@
     }
 
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && !dino.jumping) {
-        dino.vy = -15;
-        dino.jumping = true;
+      if (e.code === 'Space') {
+        if (!playing) {
+          startDino(); // restart if game not playing
+        } else if (!dino.jumping) {
+          dino.vy = -15;
+          dino.jumping = true;
+        }
       }
     });
   </script>
