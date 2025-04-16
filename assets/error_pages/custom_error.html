@@ -45,24 +45,6 @@
       box-shadow: none;
     }
 
-    .btn {
-      margin-top: 2rem;
-      background-color: none;
-      border: none;
-      color: var(--oc-teal-7);
-      font-weight: bold;
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .btn:hover {
-      background-color: var(--oc-yellow-4);
-      color: none;
-    }
-
     #gameMessage {
       font-size: 1rem;
       margin-top: 1rem;
@@ -96,9 +78,9 @@
     <p>Website: <a href="https://cybermonkey.net.au">cybermonkey.net.au</a></p>
 
     <!-- Dino Game -->
-    <button onclick="startGame()" class="btn">Start Dino 🦖!</button>
-    <p id="gameMessage" style="display:none;">Press space to jump! Avoid obstacles.</p>
-    <canvas id="gameCanvas" width="600" height="150"></canvas>
+    <button onclick="startGame()" class="btn">Dino!</button>
+    <p id="gameMessage" style="display:none;">Press space to jump!.</p>
+    <canvas id="gameCanvas" width="600" height="200"></canvas>
   </main>
 
   <footer>
@@ -115,7 +97,7 @@
     const ctx = canvas.getContext('2d');
     ctx.font = "16px 'Noto Sans'";
   
-    const dino = { x: 50, y: 100, w: 20, h: 20, vy: 0, jumping: false };
+    const dino = { x: 50, y: 100, w: 20, h: 40, vy: 0, jumping: false };
     const gravity = 0.9;
     const ground = 130;
   
@@ -189,7 +171,7 @@
     function spawnObstacle() {
       if (!playing) return;
       const size = 20 + Math.random() * 20;
-      obstacles.push({ x: canvas.width, y: ground, w: size, h: size });
+      obstacles.push({ x: canvas.width, y: ground, w: dino.w, h: size });
       setTimeout(spawnObstacle, 2000 + Math.random() * 2000);
     }
   
