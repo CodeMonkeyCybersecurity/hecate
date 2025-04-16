@@ -93,12 +93,18 @@
       return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
     }
     const canvas = document.getElementById('gameCanvas');
-    document.querySelector('.btn').addEventListener('click', startDino);
+    const btn = document.querySelector('.btn');
     const ctx = canvas.getContext('2d');
+    const gameMessage = document.getElementById('gameMessage');
+    const logo = document.querySelector('.logo-spin');
+
     const dino = { x: 50, y: 100, w: 20, h: 40, vy: 0, jumping: false };
     const gravity = 0.9;
     const ground = 130;
-    let obstacles = [], score = 0, playing = false;
+
+    let obstacles = [];
+    let score = 0;
+    let playing = false;
 
     function startDino() {
       canvas.style.display = 'block';
@@ -110,6 +116,7 @@
       obstacles = [];
       score = 0;
       playing = true;
+      logo.style.animationPlayState = 'running';
       spawnObstacle();
       requestAnimationFrame(updateGame);
     }
@@ -117,7 +124,12 @@
     function spawnObstacle() {
       if (!playing) return;
       const size = 20 + Math.random() * 20;
-      obstacles.push({ x: canvas.width, y: ground, w: size, h: size });
+      obstacles.push({ 
+        x: canvas.width, 
+        y: ground, 
+        w: size, 
+        h: size 
+      });
       setTimeout(spawnObstacle, 2000 + Math.random() * 2000);
     }
 
@@ -135,6 +147,7 @@
         dino.jumping = false;
       }
 
+      // Draw dino
       ctx.fillStyle = cssVar('--oc-teal-7');
       ctx.fillRect(dino.x, dino.y, dino.w, dino.h);
 
@@ -174,16 +187,24 @@
       ctx.fillText(`Score: ${score}`, 10, 25);
     }
 
+    // Start/jump with space
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space') {
         if (!playing) {
-          startDino(); // restart if game not playing
+          startDino();
         } else if (!dino.jumping) {
           dino.vy = -15;
           dino.jumping = true;
         }
       }
     });
-  </script>
+
+    // Also allow click to start game
+    canvas.addEventListener('click', () => {
+      if (!playing) startDino();
+    });
+
+    btn.addEventListener('click', startDino);
+</script>
 </body>
 </html>
