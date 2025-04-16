@@ -77,14 +77,17 @@
   <script>
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
+    ctx.font = "16px 'Noto Sans'";
+  
     const dino = { x: 50, y: 100, w: 20, h: 20, vy: 0, jumping: false };
     const gravity = 0.9;
     const ground = 130;
+  
     let obstacles = [], score = 0, playing = false;
-
-    function startDino() {
+  
+    function startGame() {
+      // Reset everything
       canvas.style.display = 'block';
-      document.querySelector('.btn').style.display = 'none';
       document.getElementById('gameMessage').style.display = 'block';
       dino.y = ground;
       dino.vy = 0;
@@ -95,19 +98,19 @@
       spawnObstacle();
       requestAnimationFrame(updateGame);
     }
-
+  
     function spawnObstacle() {
       if (!playing) return;
       const size = 20 + Math.random() * 20;
       obstacles.push({ x: canvas.width, y: ground, w: size, h: size });
       setTimeout(spawnObstacle, 2000 + Math.random() * 2000);
     }
-
+  
     function updateGame() {
       if (!playing) return;
-
+  
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+  
       // Move Dino
       dino.vy += gravity;
       dino.y += dino.vy;
@@ -116,16 +119,16 @@
         dino.vy = 0;
         dino.jumping = false;
       }
-
-      ctx.fillStyle = "#007acc";
+  
+      ctx.fillStyle = "#40c057";
       ctx.fillRect(dino.x, dino.y, dino.w, dino.h);
-
+  
       // Obstacles
-      ctx.fillStyle = "#f44336";
+      ctx.fillStyle = "#ffe066";
       obstacles.forEach((obs, i) => {
         obs.x -= 4;
         ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-
+  
         // Collision
         if (
           dino.x < obs.x + obs.w &&
@@ -133,25 +136,38 @@
           dino.y < obs.y + obs.h &&
           dino.y + dino.h > obs.y
         ) {
-          playing = false;
-          ctx.fillStyle = "#000";
-          ctx.fillText("Game Over! Reload to play again.", 200, 75);
+          ctx.fillStyle = "#f8f9fa";
+          ctx.textAlign = "center";
+          ctx.font = "16px 'Noto Sans'";
+          ctx.fillText("Game Over! Press space to restart.", canvas.width / 2, 70);
+          ctx.fillText(`Your Score: ${score}`, canvas.width / 2, 95);
         }
-
-        // Remove passed
-        if (obs.x + obs.w < 0) {
-          obstacles.splice(i, 1);
-          score++;
-        }
+  
+      // Remove passed
+      if (obs.x + obs.w < 0) {
+        obstacles.splice(i, 1);
+        score++;
+      }
       });
+
+      // 🆕 Draw live score
+      ctx.fillStyle = "#343a40";
+      ctx.font = "14px 'Noto Sans'";
+      ctx.textAlign = "left";
+      ctx.fillText(`Score: ${score}`, 10, 25);
 
       if (playing) requestAnimationFrame(updateGame);
     }
-
+  
     window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space' && !dino.jumping) {
-        dino.vy = -15;
-        dino.jumping = true;
+      if (e.code === 'Space') {
+        if (!playing) {
+          startGame();
+        } else if (!dino.jumping) {
+          dino.vy = -15;
+          dino.jumping = true;
+          score++; // increment score
+        }
       }
     });
   </script>
