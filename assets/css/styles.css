@@ -1,0 +1,246 @@
+/* assets/css/styles.css  */
+
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('../fonts/static/NotoSans-Regular.ttf') format('truetype');
+  font-weight: normal;
+}
+
+
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('../fonts/static/NotoSans-Bold.ttf') format('truetype');
+  font-weight: bold;
+}
+
+@media (max-width: 600px) {
+  header h1 {
+    font-size: 1.8rem;
+  }
+
+  header p {
+    font-size: 1rem;
+  }
+}
+
+
+@media (max-width: 768px) {
+  nav ul {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  nav li, nav a {
+    width: 100%;
+  }
+
+  .dropdown-content a {
+    padding: 1rem;
+    font-size: 1.1rem;
+  }
+
+  .dropdown:hover .dropdown-content {
+    display: block;
+  }
+}
+
+@media (max-width: 600px) {
+  .btn {
+    width: 100%;
+  }
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  display: inline-block;
+  text-align: center;
+}
+
+body {
+    font-family: 'Noto Sans', arial;
+    margin: 0;
+    padding: 0;
+    background: var(--oc-gray-0);
+    color: var(--gray-9);
+}
+
+header {
+    background: var(--oc-teal-9);
+    color: var(--oc-gray-0);
+    text-align: center;
+    padding: 2rem 1rem;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin: 0;
+}
+
+header p {
+    font-size: 1.2rem;
+    margin: 0.5rem 0 0;
+}
+
+nav {
+    background-color: var(--oc-teal-8);
+    padding: 10px 0;
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+nav ul li {
+    margin: 0 15px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: var(--oc-gray-0);
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+nav ul li a:hover {
+    color: var(--oc-orange-5);
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 2rem auto;
+}
+
+.section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--oc-gray-0);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    color: var(--oc-teal-9);
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.8rem 1.5rem;
+    background: var(--oc-teal-9);
+    color: var(--oc-gray-0);
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+.btn:hover {
+    background: var(--oc-orange-5);
+}
+
+footer {
+    text-align: center;
+    padding: 1rem 0;
+    background: var(--oc-teal-9);
+    color: var(--oc-gray-0);
+}
+/* Logo link styling */
+.logo-link {
+    text-decoration: none; 
+    display: inline-block; 
+    margin-right: 10px;
+}
+
+/* Logo image styling */
+.logo-image {
+    vertical-align: middle; 
+    width: 128px; 
+    height: 128px; 
+    margin-right: 10px; 
+}
+
+
+/* Desktop nav */
+@media (min-width: 769px) {
+  nav ul {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+}
+
+/* Mobile nav behavior */
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    padding: 10px;
+    margin-left: 20px;
+    gap: 0.5rem;
+  }
+
+  .hamburger span {
+    height: 3px;
+    width: 25px;
+    background: var(--oc-gray-0);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+
+  nav ul {
+    flex-direction: column;
+    align-items: flex-start;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease-out;
+  }
+
+  nav ul.active {
+    max-height: 500px;
+  }
+
+  nav li, nav a {
+    width: 100%;
+  }
+}
+  
+@media (max-width: 768px) {
+  .dropdown-content {
+    position: static;
+  }
+  .dropdown:hover .dropdown-content {
+    display: none;
+  }
+  .dropdown .dropbtn:focus + .dropdown-content,
+  .dropdown .dropbtn.active + .dropdown-content {
+    display: block;
+  }
+}
+
+/* Hamburger animation */
+.hamburger.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+.hamburger.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
