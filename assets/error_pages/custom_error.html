@@ -80,7 +80,7 @@
     <!-- Dino Game -->
     <button onclick="startDino()" class="btn">Dino!</button>
     <p id="gameMessage" style="display:none;">Press space to jump!.</p>
-    <canvas id="gameCanvas" width="600" height="200"></canvas>
+    <canvas id="gameCanvas" width="600" height="200" tabindex="0"></canvas>
   </main>
 
   <footer>
@@ -205,6 +205,8 @@
     });
 
     btn.addEventListener('click', startDino);
-</script>
+
+    window.onload = () => window.focus();
+  </script>
 </body>
 </html>
