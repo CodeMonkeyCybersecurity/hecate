@@ -89,6 +89,9 @@
 
   <!-- Dino Run Game (vanilla, no deps) -->
   <script>
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
     const canvas = document.getElementById('gameCanvas');
     document.querySelector('.btn').addEventListener('click', startDino);
     const ctx = canvas.getContext('2d');
@@ -132,11 +135,11 @@
         dino.jumping = false;
       }
 
-      ctx.fillStyle = "#007acc";
+      ctx.fillStyle = cssVar('--oc-teal-7');
       ctx.fillRect(dino.x, dino.y, dino.w, dino.h);
 
       // Obstacles
-      ctx.fillStyle = "#f44336";
+      ctx.fillStyle = cssVar('--oc-yellow-5');
       obstacles.forEach((obs, i) => {
         obs.x -= 4;
         ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
@@ -147,10 +150,14 @@
           dino.x + dino.w > obs.x &&
           dino.y < obs.y + obs.h &&
           dino.y + dino.h > obs.y
-        ) {
+          ) {
           playing = false;
-          ctx.fillStyle = "#000";
-          ctx.fillText("Game Over! Reload to play again.", 200, 75);
+          logo.style.animationPlayState = 'paused';
+          ctx.fillStyle = cssVar('--oc-gray-6');
+          ctx.textAlign = "center";
+          ctx.font = "16px 'Noto Sans'";
+          ctx.fillText("Game Over! Press space to restart.", canvas.width / 2, 70);
+          ctx.fillText(`Your Score: ${score}`, canvas.width / 2, 95);
         }
 
         // Remove passed
@@ -160,7 +167,11 @@
         }
       });
 
-      if (playing) requestAnimationFrame(updateGame);
+    // Score
+      ctx.fillStyle = cssVar('--oc-gray-6');
+      ctx.font = "14px 'Noto Sans'";
+      ctx.textAlign = "left";
+      ctx.fillText(`Score: ${score}`, 10, 25);
     }
 
     window.addEventListener('keydown', (e) => {
