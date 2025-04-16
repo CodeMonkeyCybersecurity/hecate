@@ -6,7 +6,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro          #  main NGINX configuration
       - ./assets/conf.d:/etc/nginx/conf.d:ro                  # All  additional config files (http.conf, stream.conf, servers, etc.)
-      - .assets/snippets:/etc/nginx/snippets:ro              #  snippets (security-headers and error-pages)
+      - ./assets/snippets:/etc/nginx/snippets:ro              #  snippets (security-headers and error-pages)
       - ./certs:/etc/nginx/certs:ro                    #  SSL certificates
       - ./assets/error_pages:/usr/share/nginx/html:ro         #  error pages (custom_error.html, etc.)
       - ./logs:/var/log/nginx
