@@ -25,9 +25,9 @@ go.work.sum
 *.pem
 *.key
 *.env
+*.secret
+*.bak
 
-# Ignore any certs directories and all its contents
-**/certs/
 
 # Reverse proxy internal values
 *.bak
