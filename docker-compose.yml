@@ -33,7 +33,7 @@ services:
       ##############################################################
     restart: always
     networks:
-      - arachne-net
+      - hecate-net
 
   ##############################################################
   # coturn:                                                         # <- uncomment if using Nextcloud behind Hecate
@@ -68,17 +68,42 @@ services:
   #     --verbose # enable this for debug/verbose logging           # <-
   #                                                                 # <-
   #   networks:                                                     # <-
-  #     - arachne-net                                               # <-
+  #     - hecate-net                                                # <-
   ##############################################################    # <- finish
 
+services:
+  kc-db:
+    image: postgres:15
+    container_name: hecate-kc-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: changeme1
+    volumes:
+      - kc-db-data:/var/lib/postgresql/data
+    networks:
+      - hecate-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0
+    container_name: hecate-kc
+    command: start-dev --hostname-strict=false --hostname-url=https://hera.domain.com --proxy=edge
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://hecate-kc-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: changeme1
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: changeme
+      KC_HOSTNAME_ADMIN_URL: https://hera.domain.com
+      KC_HOSTNAME_URL: https://hera.domain.com
+    depends_on:
+      - kc-db
+    networks:
+      - hecate-net
+
 networks:
-  arachne-net: 
-    driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: br-arachne
-    enable_ipv6: true
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.28.0.0/22
-        - subnet: fd4d:6169:6c63:6f77::/64
+  hecate-net:
+
+volumes:
+  kc-db-data:
