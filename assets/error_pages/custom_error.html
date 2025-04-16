@@ -1,212 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="description" content="Cybersecurity with Humans - Staging"/>
-  <meta name="keywords" content="Cybersecurity, Staging, XDR, SEIM, Penetration Testing, Backup Solutions">
-  <title>Oops! Something went wrong :( | CyberMonkey</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="description" content="Cybersecurity with Humans - Staging"/>
+    <meta name="keywords" content="Cybersecurity, Staging, XDR, SEIM, Penetration Testing, Backup Solutions">
+    <title>Oops! Something went wrong :( | CyberMonkey</title>
 
-  <link rel="stylesheet" href="/assets/openColour/open-color.css" />
-  <link rel="stylesheet" href="/assets/css/styles.css" />
-  <link rel="stylesheet" href="/assets/css/dropdown.css" />
-  <link rel="icon" href="/assets/images/favicon-circular-128x128.png" type="image/png">
+    <link rel="stylesheet" href="/assets/openColour/open-color.css" />
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+    <link rel="stylesheet" href="/assets/css/dropdown.css" />
+    <link rel="icon" href="/assets/images/favicon-circular-128x128.png" type="image/png">
 
-  <!-- Tracking -->
-  <!-- script defer src="https://u.cybermonkey.dev/script.js" data-website-id="1dbe3fee-508e-41be-82d9-576c46db5274"></script -->
+    <!-- analytics -->
+    <!-- script defer src="https://u.cybermonkey.dev/script.js" data-website-id="1dbe3fee-508e-41be-82d9-576c46db5274"></script -->
 
-  <style>
-    main {
-      max-width: 720px;
-      margin: 4rem auto;
-      text-align: center;
-      padding: 2rem;
-    }
-
-    .logo-spin {
-      width: 96px;
-      height: auto;
-      margin-bottom: 1.5rem;
-      animation: spin 12s linear infinite;
-      transform-origin: center;
-      animation-play-state: running; /* default */
-    }
-
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(-360deg); }
-    }
-
-    canvas {
-      margin: 2rem auto;
-      height: auto;
-      display: block;
-      border: none;
-      box-shadow: none;
-    }
-
-    #gameMessage {
-      font-size: 1rem;
-      margin-top: 1rem;
-      color: var(--oc-gray-6);
-    }
-
-    .game-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-    }
-  </style>
-</head>
-<body>
-    <header>
-      <h1>
-          <a href="/" class="logo-link">
-              <img src="assets/images/fingerprint_flipped_whitebackground_circle_1000dp_oc-teal-9_FILL0_wght400_GRAD0_opsz48.png" 
-                  alt="Code Monkey Logo (Staging)" class="logo-image">
-          </a>
-          Oops! Something went wrong
-      </h1>
-      <h2>That’s all we know :(</h2>
-  </header>
-
-  <main>
-    <img class="logo-spin" src="/assets/images/fingerprint_flipped_whitebackground_circle_1000dp_oc-teal-9_FILL0_wght400_GRAD0_opsz48.png" alt="CyberMonkey Logo" />
-    <p>Please <strong>let us know</strong> and try again later.</p>
-    <p>Email: <a href="mailto:main@cybermonkey.net.au">main@cybermonkey.net.au</a></p>
+  </head>
+  <body>
+    <h2>Oops! An error occurred.</h2>
+    <h1>That's all we know :(</h1>
+    <p>Please <strong>let us know</strong> and try again later...</p>
+    <p>Secure email: <a href="mailto:main@cybermonkey.net.au">main@cybermonkey.net.au</a></p>
     <p>Website: <a href="https://cybermonkey.net.au">cybermonkey.net.au</a></p>
 
-    <!-- Dino Game -->
-    <button onclick="startDino()" class="btn">Dino!</button>
-    <p id="gameMessage" style="display:none;">Press space to jump!.</p>
-    <canvas id="gameCanvas" width="600" height="200" tabindex="0"></canvas>
-  </main>
-
-  <footer>
-    <p>&copy; 2025 Code Monkey Cybersecurity - Staging. All rights reserved.</p>
-  </footer>
-
-  <!-- Dino Run Game (vanilla, no deps) -->
-  <script>
-    function cssVar(name) {
-      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    }
-    const canvas = document.getElementById('gameCanvas');
-    const btn = document.querySelector('.btn');
-    const ctx = canvas.getContext('2d');
-    const gameMessage = document.getElementById('gameMessage');
-    const logo = document.querySelector('.logo-spin');
-
-    const dino = { x: 50, y: 100, w: 20, h: 40, vy: 0, jumping: false };
-    const gravity = 0.9;
-    const ground = 130;
-
-    let obstacles = [];
-    let score = 0;
-    let playing = false;
-
-    function startDino() {
-      canvas.style.display = 'block';
-      document.querySelector('.btn').style.display = 'none';
-      document.getElementById('gameMessage').style.display = 'block';
-      dino.y = ground;
-      dino.vy = 0;
-      dino.jumping = false;
-      obstacles = [];
-      score = 0;
-      playing = true;
-      logo.style.animationPlayState = 'running';
-      spawnObstacle();
-      requestAnimationFrame(updateGame);
-    }
-
-    function spawnObstacle() {
-      if (!playing) return;
-      const size = 20 + Math.random() * 20;
-      obstacles.push({ 
-        x: canvas.width, 
-        y: ground, 
-        w: size, 
-        h: size 
-      });
-      setTimeout(spawnObstacle, 2000 + Math.random() * 2000);
-    }
-
-    function updateGame() {
-      if (!playing) return;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Move Dino
-      dino.vy += gravity;
-      dino.y += dino.vy;
-      if (dino.y > ground) {
-        dino.y = ground;
-        dino.vy = 0;
-        dino.jumping = false;
-      }
-
-      // Draw dino
-      ctx.fillStyle = cssVar('--oc-teal-7');
-      ctx.fillRect(dino.x, dino.y, dino.w, dino.h);
-
-      // Obstacles
-      ctx.fillStyle = cssVar('--oc-yellow-5');
-      obstacles.forEach((obs, i) => {
-        obs.x -= 4;
-        ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
-
-        // Collision
-        if (
-          dino.x < obs.x + obs.w &&
-          dino.x + dino.w > obs.x &&
-          dino.y < obs.y + obs.h &&
-          dino.y + dino.h > obs.y
-          ) {
-          playing = false;
-          logo.style.animationPlayState = 'paused';
-          ctx.fillStyle = cssVar('--oc-gray-6');
-          ctx.textAlign = "center";
-          ctx.font = "16px 'Noto Sans'";
-          ctx.fillText("Game Over! Press space to restart.", canvas.width / 2, 70);
-          ctx.fillText(`Your Score: ${score}`, canvas.width / 2, 95);
-        }
-
-        // Remove passed
-        if (obs.x + obs.w < 0) {
-          obstacles.splice(i, 1);
-          score++;
-        }
-      });
-
-    // Score
-      ctx.fillStyle = cssVar('--oc-gray-6');
-      ctx.font = "14px 'Noto Sans'";
-      ctx.textAlign = "left";
-      ctx.fillText(`Score: ${score}`, 10, 25);
-    }
-
-    // Start/jump with space
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space') {
-        if (!playing) {
-          startDino();
-        } else if (!dino.jumping) {
-          dino.vy = -15;
-          dino.jumping = true;
-        }
-      }
-    });
-
-    // Also allow click to start game
-    canvas.addEventListener('click', () => {
-      if (!playing) startDino();
-    });
-
-    btn.addEventListener('click', startDino);
-
-    window.onload = () => window.focus();
-  </script>
-</body>
+    <!-- Centered spinning logo -->
+    <img class="logo-spin" src="/assets/images/fingerprint_flipped_whitebackground_circle_1000dp_oc-teal-9_FILL0_wght400_GRAD0_opsz48.png" alt="CyberMonkey Logo" href="https://cybermonkey.net.au">
+  </body>
 </html>
