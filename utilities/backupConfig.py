@@ -4,11 +4,11 @@ import shutil
 import sys
 
 # Define source and backup paths
-SRC_CONF = "conf.d"
+SRC_CONF = "assets/conf.d"
 SRC_CERTS = "certs"
 SRC_COMPOSE = "docker-compose.yml"
 
-BACKUP_CONF = "conf.d.bak"
+BACKUP_CONF = "assets/conf.d.bak"
 BACKUP_CERTS = "certs.bak"
 BACKUP_COMPOSE = "docker-compose.yml.bak"
 

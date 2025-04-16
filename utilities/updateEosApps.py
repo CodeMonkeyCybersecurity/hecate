@@ -33,7 +33,7 @@ import shutil
 from datetime import datetime
 
 LAST_VALUES_FILE = ".hecate.conf"
-CONF_DIR = "conf.d"
+CONF_DIR = "assets/conf.d"
 
 def load_last_values():
     """Load saved values from LAST_VALUES_FILE, if it exists."""
