@@ -75,8 +75,47 @@
     <p>Email: <a href="mailto:main@cybermonkey.net.au">main@cybermonkey.net.au</a></p>
     <p>Website: <a href="https://cybermonkey.net.au">cybermonkey.net.au</a></p>
 
-    <a href="/" class="btn btn-home">Back to Safety</a>
+    <a href="/" 
+    
 
+    <div style="margin-top:3rem">
+      <button onclick="startGame()" class="btn">I'm bored. Play a game 🐒</button>
+    </div>
+    
+    <canvas id="gameCanvas" width="300" height="150" style="display:none; margin-top: 2rem; border:1px solid #ccc;"></canvas>
+    
+    <script>
+      let canvas, ctx, x, y, dx, dy, radius;
+    
+      function startGame() {
+        canvas = document.getElementById("gameCanvas");
+        ctx = canvas.getContext("2d");
+        canvas.style.display = 'block';
+        x = canvas.width / 2;
+        y = canvas.height / 2;
+        dx = 2;
+        dy = 3;
+        radius = 10;
+        requestAnimationFrame(draw);
+      }
+    
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = "#007acc";
+        ctx.fill();
+        ctx.closePath();
+    
+        if (x + dx > canvas.width - radius || x + dx < radius) dx = -dx;
+        if (y + dy > canvas.height - radius || y + dy < radius) dy = -dy;
+    
+        x += dx;
+        y += dy;
+        requestAnimationFrame(draw);
+      }
+    </script>
+    
     <footer>
       &copy; 2025 CyberMonkey — Security with Style™
     </footer>
