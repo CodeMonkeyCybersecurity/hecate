@@ -2,43 +2,85 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Something went wrong :(</title>
+  <title>Oops — Something went wrong</title>
+
+  <!-- Load favicon -->
+  <link rel="icon" href="/assets/images/favicon-circular-32x32.png" type="image/png" sizes="32x32">
+
+  <!-- Load CyberMonkey CSS -->
+  <link rel="stylesheet" href="/assets/css/styles.css">
+
   <style>
-    body {
-      font-family: sans-serif;
+    main {
+      max-width: 720px;
+      margin: 4rem auto;
       text-align: center;
-      margin-top: 50px;
-      background-color: #fafafa;
-      color: #333;
+      padding: 2rem;
     }
-    /* Style for the ASCII art */
-    .ascii-art {
-      font-family: "Courier New", Courier, monospace; /* ensures a monospaced font */
-      background-color: #f0f0f0; /* a light background to set it apart */
-      padding: 15px;
-      border: 1px solid #ddd;
-      display: inline-block; /* centers nicely when combined with text-align: center on body */
-      margin-top: 20px;
-      font-size: 14px;
-      line-height: 1.4;
-      white-space: pre; /* preserves spacing */
+
+    .error-logo {
+      width: 96px;
+      height: auto;
+      margin-bottom: 1.5rem;
     }
-    /* Style for your links */
-    a {
-      color: #007acc;
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--oc-teal-9);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: normal;
+      color: var(--oc-gray-8);
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-home {
+      margin-top: 2rem;
       text-decoration: none;
+      font-size: 1rem;
     }
-    a:hover {
-      text-decoration: underline;
+
+    footer {
+      font-size: 0.9rem;
+      color: var(--oc-gray-6);
+      margin-top: 4rem;
+    }
+
+    @keyframes spin-slow {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    .error-logo {
+      animation: spin-slow 10s linear infinite;
+      transform-origin: center;
     }
   </style>
 </head>
 <body>
-  <h2>Oops! An error occurred.</h2>
-  <h1>That's all we know :(</h1>
-  <p>Please <strong>let us know</strong> and try again later...</p>
-  <p>Secure email: <a href="mailto:main@cybermonkey.net.au">main@cybermonkey.net.au</a></p>
-  <p>Website: <a href="https://cybermonkey.net.au">cybermonkey.net.au</a></p>
-  
+
+  <main>
+    <img
+      class="error-logo"
+      src="/assets/images/fingerprint_flipped_whitebackground_circle_1000dp_oc-teal-9_FILL0_wght400_GRAD0_opsz48.png"
+      alt="CyberMonkey Logo">
+
+    <h1>Oops! Something went wrong</h1>
+    <h2>That’s all we know :(</h2>
+
+    <p>Please <strong>let us know</strong> and try again later.</p>
+    <p>Email: <a href="mailto:main@cybermonkey.net.au">main@cybermonkey.net.au</a></p>
+    <p>Website: <a href="https://cybermonkey.net.au">cybermonkey.net.au</a></p>
+
+    <a href="/" class="btn btn-home">Back to Safety</a>
+
+    <footer>
+      &copy; 2025 CyberMonkey — Security with Style™
+    </footer>
+  </main>
+
 </body>
 </html>
