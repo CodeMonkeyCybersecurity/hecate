@@ -10,7 +10,10 @@
   <link rel="stylesheet" href="/assets/openColour/open-color.css" />
   <link rel="stylesheet" href="/assets/css/styles.css" />
   <link rel="stylesheet" href="/assets/css/dropdown.css" />
-  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/assets/images/favicon-circular-128x128.png" type="image/png">
+
+  <!-- Tracking -->
+  <!-- script defer src="https://u.cybermonkey.dev/script.js" data-website-id="1dbe3fee-508e-41be-82d9-576c46db5274"></script -->
 
   <style>
     main {
@@ -36,6 +39,7 @@
 
     canvas {
       margin: 2rem auto;
+      height: auto;
       display: block;
       border: none;
       box-shadow: none;
@@ -43,9 +47,9 @@
 
     .btn {
       margin-top: 2rem;
-      background-color: #ffe066;
+      background-color: none;
       border: none;
-      color: #333;
+      color: var(--oc-teal-7);
       font-weight: bold;
       padding: 0.75rem 1.5rem;
       font-size: 1rem;
@@ -55,13 +59,21 @@
     }
 
     .btn:hover {
-      background-color: #fab005;
+      background-color: var(--oc-yellow-4);
+      color: none;
     }
 
     #gameMessage {
       font-size: 1rem;
       margin-top: 1rem;
       color: var(--oc-gray-6);
+    }
+
+    .game-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
     }
   </style>
 </head>
@@ -95,6 +107,9 @@
 
   <!-- Dino Run Game (vanilla, no deps) -->
   <script>
+    function cssVar(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
     const logo = document.querySelector('.logo-spin');
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -116,13 +131,13 @@
         dino.jumping = false;
       }
 
-      ctx.fillStyle = "#40c057";
+      ctx.fillStyle = cssVar('--oc-teal-7');
       ctx.fillRect(dino.x, dino.y, dino.w, dino.h);
 
       // Draw Obstacles
-      ctx.fillStyle = "#ffe066";
+      ctx.fillStyle = cssVar('--oc-yellow-5');
       obstacles.forEach((obs, i) => {
-        if (playing) obs.x -= 4; // only move if playing
+        if (playing) obs.x -= 2; // only move if playing
         ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
 
         // Collision check
@@ -135,7 +150,7 @@
         ) {
           playing = false;
           logo.style.animationPlayState = 'paused';
-          ctx.fillStyle = "#f8f9fa";
+          ctx.fillStyle = cssVar('--oc-gray-6');
           ctx.textAlign = "center";
           ctx.font = "16px 'Noto Sans'";
           ctx.fillText("Game Over! Press space to restart.", canvas.width / 2, 70);
@@ -149,7 +164,7 @@
       });
 
       // Score
-      ctx.fillStyle = "#343a40";
+      ctx.fillStyle = cssVar('--oc-gray-6');
       ctx.font = "14px 'Noto Sans'";
       ctx.textAlign = "left";
       ctx.fillText(`Score: ${score}`, 10, 25);
