@@ -1,0 +1,77 @@
+{
+	# Global options
+	email hostmaster@example.com              # ACME account e-mail
+	# acme_ca https://acme-v02.api.letsencrypt.org/directory  # default
+	servers :443 {
+		protocol {
+			experimental_http3                 # enable QUIC/HTTP/3
+		}
+	}
+	# Optional: reduce Caddy’s very chatty logs
+	log default {
+		level INFO
+		output file /var/log/caddy/global.log
+	}
+}
+
+# -------------------------------------------------------------------
+# Main web site (fronted by nginx inside the compose)
+# -------------------------------------------------------------------
+example.com, www.example.com {
+	# Let nginx serve static / dynamic content
+	reverse_proxy hecate-nginx:80
+
+	# Optional gzip / zstd compression
+	encode gzip zstd
+
+	# Custom error pages
+	handle_errors {
+		rewrite * /{http.error.status_code}.html
+		file_server {root /usr/share/caddy/error_pages}
+	}
+
+	# Access logs
+	log {
+		output file /var/log/caddy/example.com.access.log
+		format single_field common_log
+	}
+}
+
+# -------------------------------------------------------------------
+# Authentik (SSO / IDP)
+# -------------------------------------------------------------------
+hera.example.com {
+
+	# Websocket support required for the event stream
+	reverse_proxy authentik-server:9000 {
+		transport http {
+			versions h2c 1.1
+		}
+	}
+
+	# (Optional) send the original Host header upstream
+	header_up Host {http.reverse_proxy.upstream.hostport}
+
+	log {
+		output file /var/log/caddy/authentik.access.log
+	}
+}
+
+# -------------------------------------------------------------------
+# Stalwart Mail admin & API
+# -------------------------------------------------------------------
+mail.example.com {
+	reverse_proxy stalwart:8080
+
+	log {
+		output file /var/log/caddy/mail.access.log
+	}
+}
+
+# -------------------------------------------------------------------
+# Redirect any plain-HTTP traffic to HTTPS
+# (Uncomment if you mapped port 80:80 on the Caddy container)
+# -------------------------------------------------------------------
+# :80 {
+#     redir https://{host}{uri} permanent
+# }
